@@ -256,6 +256,10 @@
   .snd.is-loading .snd-toggle { opacity: 0.6; }
   .snd.is-loading .snd-toggle span::after { content: " …"; }
   .credit { margin: 0; font-size: 11px; color: var(--ink-faint); }
+  .music-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .music-bar label.btn { cursor: pointer; }
+  .music-bar .hint { flex-basis: 100%; }
+  .snd-toggle span { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .presets { display: flex; gap: 6px; flex-wrap: wrap; }
   .preset {
     border: 1px solid var(--line); background: var(--paper); color: var(--ink);
@@ -629,6 +633,13 @@
   </div>
   <div class="dock-body" id="dockBody" hidden>
     <div class="snd-cats" id="sndCats" role="tablist" aria-label="أقسام الأصوات"></div>
+    <div class="music-bar" id="musicBar" hidden>
+      <button type="button" class="btn btn-primary" id="musicAllow" hidden>اسمح بالوصول لمجلد الموسيقى</button>
+      <button type="button" class="btn btn-quiet" id="musicFolder">اختر مجلد الموسيقى</button>
+      <label class="btn btn-quiet" for="musicFiles">إضافة ملفات</label>
+      <input type="file" id="musicFiles" accept="audio/*,.m4a,.mp3,.wav,.ogg,.flac" multiple hidden>
+      <p class="hint" id="musicHint" aria-live="polite"></p>
+    </div>
     <div class="presets" id="sndPresets" aria-label="مزيج جاهز"></div>
     <div class="snd-grid" id="sndGrid"></div>
     <p class="credit">التسجيلات من مشروع Moodist المفتوح المصدر، برخصة CC0 ورخصة محتوى Pixabay.</p>

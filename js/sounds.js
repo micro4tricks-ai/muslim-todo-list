@@ -8,7 +8,8 @@
   const I = window.noonI18n, T = I.t;
 
   const CATS = [
-    ['rain', 'مطر'], ['nature', 'طبيعة'], ['animals', 'حيوانات'], ['places', 'أماكن'], ['things', 'أشياء'], ['noise', 'ضوضاء وموجات']
+    ['rain', 'مطر'], ['nature', 'طبيعة'], ['animals', 'حيوانات'], ['places', 'أماكن'], ['things', 'أشياء'], ['noise', 'ضوضاء وموجات'],
+    ['music', 'موسيقاي']
   ];
   // [id, Arabic name, category, file, icon]
   const SOUNDS = [
@@ -69,7 +70,8 @@
     vinyl: 'M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
     fan: 'M8 8c0-4 2-6 4-6-1 3-2 5-4 6zm0 0c4 0 6 2 6 4-3-1-5-2-6-4zm0 0c0 4-2 6-4 6 1-3 2-5 4-6zm0 0c-4 0-6-2-6-4 3 1 5 2 6 4z',
     noise: 'M2 8h1M5 4v8M8 2v12M11 5v6M14 7v2',
-    headphones: 'M2 10V8a6 6 0 0 1 12 0v2M2 10h2v4H2zM12 10h2v4h-2z'
+    headphones: 'M2 10V8a6 6 0 0 1 12 0v2M2 10h2v4H2zM12 10h2v4h-2z',
+    music: 'M6 12V3l8-2v9M6 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm8-2a2 2 0 1 1-4 0 2 2 0 0 1 4 0z'
   };
   const PRESETS = [
     ['مطر ومدفأة', { 'light-rain': 0.6, campfire: 0.5 }],
@@ -93,10 +95,60 @@
     return order.map((b) => ({ base: b, url: b + byId[id][3] }));
   };
 
+  // ---- my music: the listener's own tracks, played from their device ----
+  // Nothing is uploaded. A chosen folder is remembered (as a browser file
+  // handle) so it only needs a one-click permission on later visits; single
+  // files added with the file picker last until the page is closed.
+  const music = new Map(); // id -> { name, handle?, file?, objectUrl? }
+  const isMusic = (id) => id.startsWith('music:');
+  const AUDIO_EXT = /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/i;
+  const prettyName = (file) => file.replace(/\.[^.]+$/, '').replace(/\s+/g, ' ').trim();
+  const canPickFolder = typeof window.showDirectoryPicker === 'function';
+  async function musicUrl(id) {
+    const m = music.get(id);
+    if (!m) return null;
+    if (!m.objectUrl) {
+      const file = m.file || (m.handle && await m.handle.getFile());
+      if (!file) return null;
+      m.objectUrl = URL.createObjectURL(file);
+    }
+    return m.objectUrl;
+  }
+  function idbOpen() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('noon-sweep', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbGet(k) {
+    const db = await idbOpen();
+    return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  }
+  async function idbSet(k, v) {
+    const db = await idbOpen();
+    return new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); });
+  }
+  let musicDir = null; // remembered folder handle
+  async function loadFolder(dir) {
+    let n = 0;
+    for await (const [name, h] of dir.entries()) {
+      if (h.kind === 'file' && AUDIO_EXT.test(name)) {
+        const id = 'music:' + dir.name + '/' + name;
+        if (!music.has(id)) music.set(id, { name: prettyName(name), handle: h });
+        n++;
+      }
+    }
+    musicNote(n ? '' : T('لا توجد ملفات صوت في هذا المجلد.'));
+    buildMusicTiles();
+  }
+
   // ---- state ----
   const S = { selected: {}, master: 0.8, sync: true, cat: 'rain', open: false };
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
-  Object.keys(S.selected).forEach((id) => { if (!byId[id]) delete S.selected[id]; });
+  // Keep remembered music selections: their folder is reconnected after load.
+  Object.keys(S.selected).forEach((id) => { if (!byId[id] && !isMusic(id)) delete S.selected[id]; });
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} };
   let playing = false;
   const live = {}; // id -> player
@@ -149,57 +201,69 @@
   }
   const elementLevel = (id) => (S.selected[id] || 0) * S.master;
 
+  // Streams through a looping <audio> element, trying each source in turn.
+  // It starts within a second, before the whole file has downloaded.
+  function playElement(p, sources) {
+    const id = p.id;
+    const next = sources.shift();
+    if (live[id] !== p) return; // stopped while loading
+    if (!next) { p.loading = false; p.failed = true; render(); return; }
+    const el = new Audio(next.url);
+    el.loop = true;
+    el.volume = 0;
+    p.el = el;
+    el.play().then(() => {
+      // Stopped, or already handed over to the buffer: stay silent.
+      if (live[id] !== p || p.el !== el) { el.pause(); return; }
+      if (next.base) workingBase = next.base;
+      p.loading = false; render();
+      fadeElement(el, elementLevel(id), 1000);
+    }).catch(() => {
+      // A missing file surfaces as a media error; anything else (such as the
+      // browser blocking autoplay) will not be fixed by another source.
+      if (el.error && sources.length) playElement(p, sources);
+      else { p.loading = false; p.failed = true; render(); }
+    });
+  }
+  // Once the full recording has downloaded, hand over from the streaming
+  // element to a Web Audio buffer, which loops with no gap at the seam.
+  function upgradeToBuffer(p) {
+    const id = p.id;
+    loadBuffer(id).then((buf) => {
+      if (live[id] !== p) return;
+      const g = ac.createGain();
+      g.gain.value = 0;
+      g.connect(master);
+      const s = ac.createBufferSource();
+      s.buffer = buf;
+      s.loop = true;
+      s.connect(g);
+      const el = p.el;
+      s.start(0, el && !el.paused ? el.currentTime % buf.duration : 0);
+      p.node = s; p.gain = g; p.el = null; p.loading = false;
+      g.gain.setTargetAtTime(S.selected[id], ac.currentTime, 0.15);
+      if (el) fadeElement(el, 0, 600, () => { el.pause(); el.removeAttribute('src'); el.load(); });
+      render();
+    }).catch(() => { /* keep streaming through the element */ });
+  }
+
   function startSound(id) {
     if (live[id]) return;
+    if (isMusic(id) && !music.has(id)) return; // its folder isn't connected yet
     ensureAudio();
     const p = { id, loading: true, node: null, gain: null, el: null, failed: false };
     live[id] = p;
-    // Looping <audio> element, trying each source in turn.
-    const useElement = () => {
-      const sources = urlsFor(id);
-      const tryNext = () => {
-        const next = sources.shift();
-        if (live[id] !== p) return; // stopped while loading
-        if (!next) { p.loading = false; p.failed = true; render(); return; }
-        const el = new Audio(next.url);
-        el.loop = true;
-        el.volume = 0;
-        p.el = el;
-        el.play().then(() => {
-          workingBase = next.base;
-          p.loading = false; render();
-          fadeElement(el, elementLevel(id), 1200);
-        }).catch(() => {
-          // A missing file surfaces as a media error; anything else (such as the
-          // browser blocking autoplay) will not be fixed by another source.
-          if (el.error && sources.length) tryNext();
-          else { p.loading = false; p.failed = true; render(); }
-        });
-      };
-      tryNext();
-    };
-    if (ac && location.protocol !== 'file:') {
-      p.gain = ac.createGain();
-      p.gain.gain.value = 0;
-      p.gain.connect(master);
-      loadBuffer(id).then((buf) => {
+    if (isMusic(id)) {
+      // Your own long tracks always stream: decoding an hour of audio into
+      // memory would take over a gigabyte.
+      musicUrl(id).then((url) => {
         if (live[id] !== p) return;
-        const s = ac.createBufferSource();
-        s.buffer = buf;
-        s.loop = true;
-        s.connect(p.gain);
-        s.start(0, Math.random() * buf.duration);
-        p.node = s;
-        p.loading = false;
-        p.gain.gain.setTargetAtTime(S.selected[id], ac.currentTime, 0.35);
-        render();
-      }).catch(() => {
-        if (live[id] !== p) return;
-        p.gain.disconnect(); p.gain = null;
-        useElement();
-      });
+        if (!url) { p.loading = false; p.failed = true; render(); return; }
+        playElement(p, [{ base: null, url }]);
+      }).catch(() => { p.loading = false; p.failed = true; render(); });
     } else {
-      useElement();
+      playElement(p, urlsFor(id));
+      if (ac && location.protocol !== 'file:') upgradeToBuffer(p);
     }
     render();
   }
@@ -211,7 +275,10 @@
       p.gain.gain.setTargetAtTime(0, ac.currentTime, 0.2);
       setTimeout(() => { try { if (p.node) p.node.stop(); } catch (_) {} p.gain.disconnect(); }, 900);
     }
-    if (p.el) fadeElement(p.el, 0, 700, () => { p.el.pause(); p.el.src = ''; });
+    if (p.el) {
+      const el = p.el;
+      fadeElement(el, 0, 700, () => { el.pause(); el.removeAttribute('src'); el.load(); });
+    }
   }
   function setLevel(id) {
     const p = live[id];
@@ -227,9 +294,12 @@
   }
 
   // ---- UI ----
-  const nameOf = (id) => T(byId[id][1]);
+  const nameOf = (id) => (isMusic(id) ? (music.get(id) || { name: id.split('/').pop() }).name : T(byId[id][1]));
+  const catOf = (id) => (isMusic(id) ? 'music' : byId[id][2]);
+  function musicNote(msg) { $('musicHint').textContent = msg || T('ملفاتك تبقى على جهازك ولا تُرفع لأي مكان.'); }
   function render() {
     const ids = Object.keys(S.selected);
+    const loading = playing && ids.some((id) => live[id] && live[id].loading);
     const btn = $('sndPlay');
     btn.textContent = T(playing ? 'إيقاف' : 'تشغيل');
     btn.setAttribute('aria-pressed', String(playing));
@@ -239,15 +309,16 @@
     const failed = ids.filter((id) => live[id] && live[id].failed);
     $('sndStatus').textContent = failed.length ? `${T('تعذّر تحميل:')} ${I.list(failed.map(nameOf))}. ${T('تأكد من اتصال الإنترنت أو من وجود مجلد sounds بجانب الصفحة.')}`
       : !ids.length ? T('اختر صوتاً أو مزيجاً جاهزاً')
-      : playing ? ids.map(nameOf).join(' · ')
+      : playing ? ids.map(nameOf).join(' · ') + (loading ? ` — ${T('جارٍ التحميل…')}` : '')
       : S.sync ? `${ids.map(nameOf).join(' · ')} — ${T('يبدأ مع جلسة التركيز')}` : ids.map(nameOf).join(' · ');
     const dockBody = $('dockBody');
     dockBody.hidden = !S.open;
     $('dockToggle').setAttribute('aria-expanded', String(S.open));
     document.querySelectorAll('#sndCats button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.cat === S.cat)));
+    $('musicBar').hidden = S.cat !== 'music';
     document.querySelectorAll('.snd').forEach((el) => {
       const id = el.dataset.id, on = id in S.selected;
-      el.hidden = byId[id][2] !== S.cat;
+      el.hidden = catOf(id) !== S.cat;
       el.classList.toggle('is-on', on);
       el.classList.toggle('is-loading', !!(live[id] && live[id].loading));
       el.querySelector('.snd-toggle').setAttribute('aria-pressed', String(on));
@@ -256,9 +327,41 @@
       if (on) vol.value = String(Math.round(S.selected[id] * 100));
     });
     document.querySelectorAll('#sndCats button').forEach((b) => {
-      const n = SOUNDS.filter((s) => s[2] === b.dataset.cat && s[0] in S.selected).length;
+      const n = Object.keys(S.selected).filter((id) => catOf(id) === b.dataset.cat).length;
       b.querySelector('.cat-count').textContent = n ? I.num(n) : '';
     });
+  }
+  function makeTile(id, label, icon) {
+    const wrap = document.createElement('div');
+    wrap.className = 'snd';
+    wrap.dataset.id = id;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'snd-toggle';
+    b.title = label;
+    b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[icon]}"/></svg>`;
+    const span = document.createElement('span');
+    span.textContent = label;
+    b.append(span);
+    const vol = document.createElement('input');
+    vol.type = 'range'; vol.min = '0'; vol.max = '100'; vol.className = 'snd-vol';
+    vol.id = 'snd-vol-' + id.replace(/[^a-z0-9-]/gi, '_');
+    vol.setAttribute('aria-label', `${T('مستوى صوت')} ${label}`);
+    vol.hidden = true;
+    wrap.append(b, vol);
+    return wrap;
+  }
+  function buildMusicTiles() {
+    document.querySelectorAll('.snd.is-music').forEach((el) => el.remove());
+    const grid = $('sndGrid');
+    for (const [id, m] of music) {
+      const tile = makeTile(id, m.name, 'music');
+      tile.classList.add('is-music');
+      grid.append(tile);
+    }
+    // Resume remembered tracks if sound is already playing.
+    if (playing) Object.keys(S.selected).filter((id) => music.has(id)).forEach(startSound);
+    render();
   }
   function buildUI() {
     $('sndCats').replaceChildren(...CATS.map(([id, name]) => {
@@ -272,25 +375,7 @@
       b.append(c);
       return b;
     }));
-    $('sndGrid').replaceChildren(...SOUNDS.map(([id, name, , , icon]) => {
-      const wrap = document.createElement('div');
-      wrap.className = 'snd';
-      wrap.dataset.id = id;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'snd-toggle';
-      b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[icon]}"/></svg>`;
-      const label = document.createElement('span');
-      label.textContent = T(name);
-      b.append(label);
-      const vol = document.createElement('input');
-      vol.type = 'range'; vol.min = '0'; vol.max = '100'; vol.className = 'snd-vol';
-      vol.id = `snd-vol-${id}`;
-      vol.setAttribute('aria-label', `${T('مستوى صوت')} ${T(name)}`);
-      vol.hidden = true;
-      wrap.append(b, vol);
-      return wrap;
-    }));
+    $('sndGrid').replaceChildren(...SOUNDS.map(([id, name, , , icon]) => makeTile(id, T(name), icon)));
     $('sndPresets').replaceChildren(...PRESETS.map(([name, mix]) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -358,6 +443,53 @@
   });
   // Browsers only start audio after a tap; resume on the first one.
   document.addEventListener('pointerdown', () => { if (ac && ac.state === 'suspended') ac.resume(); });
+
+  // ---- my music controls ----
+  const folderBtn = $('musicFolder'), allowBtn = $('musicAllow');
+  folderBtn.hidden = !canPickFolder;
+  folderBtn.addEventListener('click', async () => {
+    try {
+      const dir = await window.showDirectoryPicker({ id: 'noon-music', mode: 'read' });
+      musicDir = dir;
+      allowBtn.hidden = true;
+      try { await idbSet('musicDir', dir); } catch (_) { /* remembered for this visit only */ }
+      await loadFolder(dir);
+    } catch (e) {
+      if (e && e.name !== 'AbortError') musicNote(T('تعذّر فتح المجلد. جرّب مرة أخرى أو أضف الملفات يدوياً.'));
+    }
+  });
+  allowBtn.addEventListener('click', async () => {
+    if (!musicDir) return;
+    try {
+      if (await musicDir.requestPermission({ mode: 'read' }) === 'granted') {
+        allowBtn.hidden = true;
+        await loadFolder(musicDir);
+      }
+    } catch (_) { musicNote(T('تعذّر فتح المجلد. جرّب مرة أخرى أو أضف الملفات يدوياً.')); }
+  });
+  $('musicFiles').addEventListener('change', (ev) => {
+    for (const f of ev.target.files) {
+      if (!f.type.startsWith('audio/') && !AUDIO_EXT.test(f.name)) continue;
+      const id = 'music:file/' + f.name + '/' + f.size;
+      if (!music.has(id)) music.set(id, { name: prettyName(f.name), file: f });
+    }
+    ev.target.value = '';
+    if (!canPickFolder) musicNote(T('الملفات المضافة بهذه الطريقة تعمل حتى تغلق الصفحة.'));
+    buildMusicTiles();
+  });
+  // Reconnect the remembered folder: silently if permission is still granted,
+  // otherwise with one click on "Allow access".
+  (async () => {
+    if (!canPickFolder) { musicNote(T('هذا المتصفح يسمح بإضافة ملفات فقط، وتعمل حتى تغلق الصفحة.')); return; }
+    musicNote('');
+    try {
+      const dir = await idbGet('musicDir');
+      if (!dir) return;
+      musicDir = dir;
+      if (await dir.queryPermission({ mode: 'read' }) === 'granted') await loadFolder(dir);
+      else { allowBtn.hidden = false; allowBtn.textContent = `${T('اسمح بالوصول إلى')} «${dir.name}»`; }
+    } catch (_) { /* no remembered folder */ }
+  })();
 
   buildUI();
   render();
