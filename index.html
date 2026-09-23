@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Noon Sweep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground: #EFEFEC;
+    --surface: #F8F8F6;
+    --paper: #FFFFFF;
+    --ink: #2A2E35;
+    --ink-soft: #5B616A;
+    --ink-faint: #8A9097;
+    --line: #DCDDD8;
+    --accent: #C4492C;
+    --accent-deep: #A93C22;
+    --accent-wash: #F6E4DE;
+    --accent-ink: #FFFFFF;
+    --done: #3F7D5A;
+    --done-wash: #E1EDE5;
+    --glass: rgba(248, 248, 246, 0.86);
+    --dock-h: 58px;
+    --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+  [hidden] { display: none !important; }
+  html, body {
+    margin: 0;
+    height: 100%;
+  }
+  body {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    background-color: var(--ground);
+    background-attachment: fixed;
+    color: var(--ink);
+    font: 15px/1.6 var(--font);
+    box-sizing: border-box;
+    padding-bottom: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px));
+  }
+  .left-pane {
+    position: relative;
+    display: grid;
+    grid-template-rows: minmax(340px, 1fr) auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .clock-pane {
+    position: relative;
+    min-height: 340px;
+    overflow: hidden;
+  }
+  .clock-pane canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    cursor: pointer;
+  }
+  .place-chip {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(30, 34, 42, 0.1);
+  }
+  .place-chip:hover { background: var(--paper); }
+  .place-chip svg { width: 14px; height: 14px; color: var(--accent); flex: none; }
+  .place-panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    max-height: calc(100% - 24px);
+    z-index: 3;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    box-shadow: 0 12px 32px rgba(30, 34, 42, 0.22);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .pp-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .pp-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+  .pp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .pp-grid select {
+    font: inherit; font-size: 14px; color: var(--ink); width: 100%;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px;
+  }
+  .pp-locate { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pp-dates { display: flex; flex-direction: column; gap: 2px; }
+  .pp-dates p { margin: 0; }
+  .pp-here { font-weight: 600; }
+  .pp-date { color: var(--ink-soft); font-size: 14px; }
+  .pp-en { text-align: right; }
+  .pp-times { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .pp-times th, .pp-times td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; font-size: 14px; }
+  .pp-times th { font-weight: 600; }
+  .pp-times .pp-in { color: var(--accent); font-size: 12px; text-align: left; }
+  .pp-times tr.is-next { background: var(--accent-wash); }
+  .pp-times tr.is-next th, .pp-times tr.is-next td:nth-child(2) { color: var(--accent-deep); }
+  .pp-note { margin: 0; font-size: 13px; color: var(--ink-soft); }
+  .todo-pane {
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+    backdrop-filter: blur(18px) saturate(1.15);
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 40px clamp(16px, 5vw, 56px);
+  }
+  .todo {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Header */
+  .todo-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .todo-head h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+  .summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 6px 0 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+  .summary b { color: var(--ink); font-weight: 600; }
+
+  button { font: inherit; cursor: pointer; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .btn {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { background: var(--accent-deep); }
+  .btn-quiet { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+  .btn-quiet:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+  /* Focus timer (under the clock) */
+  .card {
+    margin: 0 16px 16px;
+    border-radius: 18px;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    backdrop-filter: blur(16px) saturate(1.15);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow: 0 8px 28px rgba(20, 24, 32, 0.14);
+  }
+  /* Compact focus card: dial on one side, status and controls on the other */
+  .focus {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "modes modes" "dial info";
+    align-items: center;
+    gap: 10px 16px;
+    padding: 12px 16px;
+  }
+  .focus .modes { grid-area: modes; justify-self: center; }
+  .focus .dial-wrap { grid-area: dial; }
+  .focus-info { grid-area: info; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .focus-info .focus-task { text-align: start; }
+  .focus-info .focus-controls { justify-content: flex-start; }
+  .focus-info .focus-note { text-align: start; min-height: 0; }
+  .focus .btn { padding: 4px 10px; font-size: 13px; }
+
+  /* Sound library: a dock pinned to the bottom of the page */
+  .dock {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    background: rgba(250, 250, 248, 0.92);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    backdrop-filter: blur(18px) saturate(1.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 -8px 28px rgba(20, 24, 32, 0.14);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .dock-bar {
+    min-height: var(--dock-h);
+    box-sizing: border-box;
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 16px;
+    flex-wrap: wrap;
+  }
+  .dock-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: none; background: none; padding: 4px 6px; border-radius: 6px;
+    font-weight: 700; font-size: 15px; color: var(--ink);
+  }
+  .dock-toggle:hover { background: rgba(0, 0, 0, 0.05); }
+  .dock-toggle svg { width: 14px; height: 14px; transition: transform 0.2s; }
+  .dock-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .dock-now { flex: 1; min-width: 120px; font-size: 13px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dock-bar label { font-size: 13px; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 6px; }
+  .dock-bar input[type="range"] { width: 100px; accent-color: var(--accent); }
+  .dock-bar input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
+  #sndPlay { min-width: 78px; }
+  #sndPlay[aria-pressed="true"] { background: var(--ink); }
+  #sndPlay:disabled { opacity: 0.5; cursor: default; }
+  .dock-body {
+    max-height: min(46vh, 420px);
+    overflow-y: auto;
+    padding: 4px 16px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .snd-cats { display: flex; gap: 4px; flex-wrap: wrap; padding-top: 10px; }
+  .snd-cats button {
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft);
+    border-radius: 8px; padding: 5px 12px; font-size: 13px; font-weight: 600;
+  }
+  .snd-cats button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .cat-count { color: var(--accent); }
+  .snd-cats button[aria-selected="true"] .cat-count { color: #FFB59E; }
+  .snd.is-loading .snd-toggle { opacity: 0.6; }
+  .snd.is-loading .snd-toggle span::after { content: " …"; }
+  .credit { margin: 0; font-size: 11px; color: var(--ink-faint); }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .preset {
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    border-radius: 999px; padding: 4px 12px; font-size: 13px;
+  }
+  .preset:hover { border-color: var(--accent); color: var(--accent-deep); }
+  .snd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .snd { display: flex; flex-direction: column; gap: 4px; }
+  .snd-toggle {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 12px 6px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink-soft);
+    font-size: 12.5px; font-weight: 600; line-height: 1.3; text-align: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .snd-toggle svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .snd-toggle:hover { border-color: var(--accent); color: var(--ink); }
+  .snd.is-on .snd-toggle { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .snd-vol { width: 100%; accent-color: var(--accent); margin: 0; }
+
+  /* Appearance panel */
+  .look-chip { left: auto; right: 12px; }
+  .look-section { display: flex; flex-direction: column; gap: 8px; }
+  .look-section h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+  .sw-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; }
+  .sw { border: none; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink-soft); font-size: 12px; }
+  .sw-chip { display: block; border: 2px solid transparent; box-shadow: 0 0 0 1px var(--line), 0 2px 4px rgba(20,24,32,0.15); }
+  .sw-round .sw-chip { width: 40px; height: 40px; border-radius: 50%; }
+  .sw-tile { width: 100%; }
+  .sw-tile .sw-chip { width: 100%; height: 58px; border-radius: 10px; }
+  .sw[aria-pressed="true"] .sw-chip { border-color: var(--paper); box-shadow: 0 0 0 2px var(--accent), 0 2px 6px rgba(20,24,32,0.25); }
+  .sw[aria-pressed="true"] .sw-name { color: var(--ink); font-weight: 700; }
+  .upload { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .upload input { font: inherit; font-size: 13px; max-width: 100%; }
+
+  .modes { display: inline-flex; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .modes button { border: none; background: none; padding: 4px 12px; border-radius: 6px; font-size: 13px; color: var(--ink-soft); }
+  .modes button[aria-selected="true"] { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(30,34,42,0.12); }
+  .dial-wrap { position: relative; width: min(150px, 38vw); max-width: 100%; aspect-ratio: 1; }
+  .dial { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; overflow: visible; }
+  .dial.dragging { cursor: grabbing; }
+  .focus.is-running .dial { cursor: default; }
+  .dial-face { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
+  .dial-track { fill: none; stroke: var(--surface); stroke-width: 18; }
+  .tick { stroke: var(--ink-faint); stroke-width: 1; }
+  .tick-major { stroke: var(--ink); stroke-width: 2; }
+  .dial-arc { fill: none; stroke: var(--accent); stroke-width: 18; transition: stroke 0.3s; }
+  .focus:not([data-mode="focus"]) .dial-arc { stroke: var(--done); }
+  .dial-knob { fill: var(--paper); stroke: var(--accent); stroke-width: 3; cursor: grab; filter: drop-shadow(0 1px 2px rgba(30,34,42,0.35)); }
+  .focus:not([data-mode="focus"]) .dial-knob { stroke: var(--done); }
+  .focus.is-running .dial-knob { cursor: default; }
+  .dial-knob:focus { outline: none; }
+  .dial-knob:focus-visible { stroke-width: 5; }
+  .dial-center {
+    position: absolute;
+    inset: 28%;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 2px 6px rgba(30, 34, 42, 0.14), inset 0 1px 0 #FFFFFF;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    color: var(--ink);
+    padding: 0;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .dial-center:hover { background: var(--paper); box-shadow: 0 4px 10px rgba(30, 34, 42, 0.18), inset 0 1px 0 #FFFFFF; }
+  .dial-center:active { transform: scale(0.97); }
+  .focus-time { font-size: 22px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; direction: ltr; }
+  .dial-hint { font-size: 10px; color: var(--ink-soft); }
+  .focus-label { margin: 0; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+  .cycle { display: inline-flex; gap: 4px; }
+  .cycle i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+  .cycle i.on { background: var(--accent); }
+  .focus-task { margin: 0; font-size: 13px; color: var(--ink-soft); text-align: center; max-width: 34ch; overflow-wrap: anywhere; }
+  .focus-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .focus-note { margin: 0; min-height: 1.4em; font-size: 12px; color: var(--accent); text-align: center; }
+  @media (prefers-reduced-motion: reduce) {
+    .dial-center, .dial-arc { transition: none; }
+  }
+
+  /* Form */
+  .task-form {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .task-form h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .form-row { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .field input, .field textarea {
+    font: inherit;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 11px;
+    resize: vertical;
+  }
+  .field input[aria-invalid="true"] { border-color: var(--accent); }
+  .hint { margin: 0; color: var(--ink-faint); font-size: 12px; }
+  .error { margin: 0; color: var(--accent); font-size: 13px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .check input { width: 16px; height: 16px; accent-color: var(--done); }
+  .form-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Task list */
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .list-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .filter { display: inline-flex; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 2px; }
+  .filter button { border: none; background: none; padding: 3px 10px; border-radius: 4px; font-size: 13px; color: var(--ink-soft); }
+  .filter button[aria-pressed="true"] { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(30,34,42,0.1); }
+
+  .task-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .task {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px 14px;
+    align-items: start;
+    padding: 14px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .task.is-current { background: var(--accent-wash); border-radius: 8px; border-bottom-color: transparent; }
+  .status {
+    width: 22px; height: 22px; margin-top: 2px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink-faint);
+    background: transparent;
+    padding: 0;
+    display: grid; place-items: center;
+  }
+  .status:hover { border-color: var(--done); }
+  .task.is-done .status { background: var(--done); border-color: var(--done); }
+  .status svg { width: 12px; height: 12px; opacity: 0; }
+  .task.is-done .status svg { opacity: 1; }
+  .task-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .task-title { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .task.is-done .task-title { color: var(--ink-faint); text-decoration: line-through; }
+  .task-desc { margin: 0; color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+  .task-meta { margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--ink-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .task-meta .live { color: var(--accent); font-weight: 600; }
+  .est { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .est-bar { flex: 1; max-width: 180px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .est-bar span { display: block; height: 100%; background: var(--done); }
+  .est-text { color: var(--ink-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .est-bar.over span { background: var(--accent); }
+
+  .subtasks { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .subtasks label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+  .subtasks input { accent-color: var(--done); width: 15px; height: 15px; }
+  .subtasks .sub-done span { color: var(--ink-faint); text-decoration: line-through; }
+  .sub-add { margin-top: 4px; }
+  .sub-add input {
+    font: inherit; font-size: 14px; width: 100%; box-sizing: border-box;
+    border: 1px dashed var(--line); background: transparent; border-radius: 6px; padding: 5px 9px; color: var(--ink);
+  }
+  .sub-add input:focus { border-style: solid; background: var(--paper); }
+
+  .task-actions { display: flex; gap: 2px; align-items: center; }
+  .play {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--paper);
+    display: grid; place-items: center; padding: 0; color: var(--ink-soft);
+  }
+  .play:hover { color: var(--accent); border-color: var(--accent); }
+  .task.is-tracking .play { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .play svg { width: 12px; height: 12px; }
+  .link-btn {
+    background: none; border: none; padding: 4px 8px; border-radius: 4px;
+    color: var(--ink-soft); font-size: 13px; font-weight: 600;
+  }
+  .link-btn:hover { background: var(--line); color: var(--ink); }
+  .link-btn.danger { color: var(--accent); }
+  .link-btn.confirming { background: var(--accent); color: var(--accent-ink); }
+  .empty { padding: 28px 0; color: var(--ink-soft); text-align: center; border-bottom: 1px solid var(--line); }
+  .shortcuts { margin: 0; color: var(--ink-faint); font-size: 12px; }
+  kbd { font: inherit; font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--paper); direction: ltr; display: inline-block; }
+
+  @media (max-width: 860px) {
+    html, body { height: auto; }
+    body { grid-template-columns: minmax(0, 1fr); }
+    .left-pane { overflow: visible; grid-template-rows: auto auto; }
+    body { background-attachment: scroll; }
+    .dock-bar label[for="sndSync"] { display: none; }
+    .dock-now { order: 5; flex-basis: 100%; }
+    .todo-pane { border-left: none; border-top: 1px solid var(--line); padding-block: 28px; overflow: visible; }
+    .task { grid-template-columns: auto minmax(0, 1fr); }
+    .task-actions { grid-column: 2; }
+    .form-row { grid-template-columns: minmax(0, 1fr); }
+    .pp-grid { grid-template-columns: minmax(0, 1fr); }
+    .clock-pane { height: min(62vh, 460px); min-height: 320px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="left-pane">
+  <div class="clock-pane" id="clockPane">
+    <canvas id="clock" aria-label="ساعة عقارب تعرض الوقت، والتاريخ الهجري والميلادي، وطور القمر، والشروق والغروب، والصلاة القادمة. اضغط لتغيير الموقع" role="img" title="اضغط لتغيير الموقع"></canvas>
+    <button type="button" class="place-chip" id="placeChip" dir="rtl" lang="ar" aria-label="تغيير الموقع">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a5 5 0 0 0-5 5c0 3.6 5 9 5 9s5-5.4 5-9a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
+      <span id="placeName">القاهرة</span>
+    </button>
+    <button type="button" class="place-chip look-chip" id="lookChip" dir="rtl" lang="ar" aria-label="تغيير المظهر والخلفية">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a7 7 0 0 0 0 14c1 0 1.5-.7 1.2-1.5-.3-.9.2-1.8 1.2-1.8H12a3 3 0 0 0 3-3C15 4.1 11.9 1 8 1zM4.5 8.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm2-3a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3.5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm2 3a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+      <span>المظهر</span>
+    </button>
+  </div>
+
+  <div class="place-panel" id="placePanel" dir="rtl" lang="ar" role="dialog" aria-labelledby="placeTitle" hidden>
+    <div class="pp-head">
+      <h2 id="placeTitle">الموقع ومواقيت الصلاة</h2>
+      <button type="button" class="btn btn-quiet" id="placeClose">تم</button>
+    </div>
+    <div class="pp-grid">
+      <div class="field"><label for="pCountry">الدولة</label><select id="pCountry"></select></div>
+      <div class="field"><label for="pCity">المدينة</label><select id="pCity"></select></div>
+      <div class="field"><label for="pMethod">طريقة حساب الفجر والعشاء</label><select id="pMethod"></select></div>
+      <div class="field"><label for="pAsr">حساب العصر</label>
+        <select id="pAsr"><option value="1">الجمهور (شافعي، مالكي، حنبلي)</option><option value="2">حنفي</option></select>
+      </div>
+    </div>
+    <div class="pp-locate">
+      <button type="button" class="btn btn-quiet" id="pLocate">استخدم موقعي الحالي</button>
+      <p class="hint" id="pLocateMsg" aria-live="polite"></p>
+    </div>
+    <div class="pp-dates" id="ppDates"></div>
+    <table class="pp-times"><tbody id="ppTimes"></tbody></table>
+    <p class="pp-note" id="ppSun"></p>
+    <p class="pp-note" id="ppMoon"></p>
+    <p class="hint" id="ppMethod"></p>
+  </div>
+
+  <div class="place-panel" id="lookPanel" dir="rtl" lang="ar" role="dialog" aria-labelledby="lookTitle" hidden>
+    <div class="pp-head">
+      <h2 id="lookTitle">المظهر</h2>
+      <button type="button" class="btn btn-quiet" id="lookClose">تم</button>
+    </div>
+    <div class="look-section">
+      <h3>لون المينا</h3>
+      <div class="sw-row" id="lookDials"></div>
+    </div>
+    <div class="look-section">
+      <h3>معدن الإطار</h3>
+      <div class="sw-row" id="lookMetals"></div>
+    </div>
+    <div class="look-section">
+      <h3>خلفية الصفحة</h3>
+      <div class="sw-grid" id="lookBgs"></div>
+      <div class="upload">
+        <label class="hint" for="lookUpload">أو استخدم صورة من جهازك:</label>
+        <input type="file" id="lookUpload" accept="image/*">
+      </div>
+      <p class="hint" id="lookUploadMsg" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <section class="focus card" id="focus" data-mode="focus" dir="rtl" lang="ar" aria-label="مؤقت التركيز">
+    <div class="modes" role="tablist" aria-label="نوع الجلسة">
+      <button type="button" role="tab" data-mode="focus" aria-selected="true">تركيز</button>
+      <button type="button" role="tab" data-mode="short" aria-selected="false">استراحة قصيرة</button>
+      <button type="button" role="tab" data-mode="long" aria-selected="false">استراحة طويلة</button>
+    </div>
+
+    <div class="dial-wrap" id="dialWrap">
+      <svg class="dial" id="dial" viewBox="0 0 240 240">
+        <circle class="dial-face" cx="120" cy="120" r="116"></circle>
+        <circle class="dial-track" cx="120" cy="120" r="92"></circle>
+        <g id="dialTicks"></g>
+        <path class="dial-arc" id="dialArc" d=""></path>
+        <circle class="dial-knob" id="dialKnob" cx="120" cy="28" r="10" tabindex="0" role="slider"
+                aria-label="مدة الجلسة بالدقائق" aria-valuemin="1" aria-valuemax="60" aria-valuenow="25"></circle>
+      </svg>
+      <button type="button" class="dial-center" id="focusToggle">
+        <span class="focus-time" id="focusTime">25:00</span>
+        <span class="dial-hint" id="dialHint">اضغط للبدء</span>
+      </button>
+    </div>
+
+    <div class="focus-info">
+      <p class="focus-label"><span id="focusMode">جلسة تركيز</span><span class="cycle" id="cycle" aria-hidden="true"></span></p>
+      <p class="focus-task" id="focusTask"></p>
+      <div class="focus-controls">
+        <button type="button" class="btn btn-quiet" id="focusPlus">+٥ دقائق</button>
+        <button type="button" class="btn btn-quiet" id="focusSkip">تخطَّ</button>
+        <button type="button" class="btn btn-quiet" id="focusReset">إعادة</button>
+      </div>
+      <p class="focus-note" id="focusNote" aria-live="polite"></p>
+    </div>
+  </section>
+</div>
+
+<main class="todo-pane" dir="rtl" lang="ar">
+  <div class="todo">
+    <header class="todo-head">
+      <div>
+        <h1>مهام اليوم</h1>
+        <p class="summary" id="summary"></p>
+      </div>
+      <button type="button" class="btn btn-primary" id="addBtn">إضافة مهمة</button>
+    </header>
+
+    <form class="task-form" id="taskForm" novalidate hidden>
+      <h2 id="formTitle">إضافة مهمة</h2>
+      <div class="form-row">
+        <div class="field">
+          <label for="fTitle">العنوان</label>
+          <input id="fTitle" name="title" maxlength="255" placeholder="اكتب عنوان المهمة" autocomplete="off">
+          <p class="error" id="eTitle" hidden></p>
+        </div>
+        <div class="field">
+          <label for="fEst">الوقت المتوقع (دقائق)</label>
+          <input id="fEst" name="estimate" type="number" min="0" step="5" inputmode="numeric" placeholder="مثلاً ٣٠">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fDesc">الوصف</label>
+        <textarea id="fDesc" name="description" rows="3" placeholder="تفاصيل اختيارية"></textarea>
+      </div>
+      <div class="field">
+        <label for="fSubs">مهام فرعية</label>
+        <textarea id="fSubs" name="subtasks" rows="3" placeholder="كل سطر مهمة فرعية"></textarea>
+        <p class="hint">اكتب كل مهمة فرعية في سطر منفصل.</p>
+      </div>
+      <label class="check" for="fDone"><input type="checkbox" id="fDone" name="completed"> مكتملة</label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="submitBtn">إضافة المهمة</button>
+        <button type="button" class="btn btn-quiet" id="cancelBtn">إلغاء</button>
+      </div>
+    </form>
+
+    <section>
+      <div class="list-head">
+        <h2>المهام</h2>
+        <div class="filter" role="group" aria-label="تصفية المهام">
+          <button type="button" data-filter="open" aria-pressed="true">الحالية</button>
+          <button type="button" data-filter="done" aria-pressed="false">المكتملة</button>
+          <button type="button" data-filter="all" aria-pressed="false">الكل</button>
+        </div>
+      </div>
+      <ul class="task-list" id="list"></ul>
+    </section>
+
+    <p class="shortcuts">اختصارات: <kbd>N</kbd> مهمة جديدة · <kbd>Space</kbd> تشغيل/إيقاف التركيز · اسحب القرص أو استخدم عجلة الماوس لضبط المدة · <kbd>Esc</kbd> إغلاق النموذج</p>
+  </div>
+</main>
+
+<section class="dock" id="dock" dir="rtl" lang="ar" aria-labelledby="dockTitle">
+  <div class="dock-bar">
+    <button type="button" class="dock-toggle" id="dockToggle" aria-expanded="false" aria-controls="dockBody">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 10l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="dockTitle">مكتبة الأصوات</span>
+    </button>
+    <button type="button" class="btn btn-primary" id="sndPlay" aria-pressed="false">تشغيل</button>
+    <span class="dock-now" id="sndStatus" aria-live="polite"></span>
+    <label for="sndMaster">الصوت <input type="range" id="sndMaster" min="0" max="100" value="80"></label>
+    <label for="sndSync"><input type="checkbox" id="sndSync" checked> مع جلسة التركيز</label>
+  </div>
+  <div class="dock-body" id="dockBody" hidden>
+    <div class="snd-cats" id="sndCats" role="tablist" aria-label="أقسام الأصوات"></div>
+    <div class="presets" id="sndPresets" aria-label="مزيج جاهز"></div>
+    <div class="snd-grid" id="sndGrid"></div>
+    <p class="credit">التسجيلات من مشروع Moodist المفتوح المصدر، برخصة CC0 ورخصة محتوى Pixabay.</p>
+  </div>
+</section>
+
+<script src="js/clock.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/look.js"></script>
+<script src="js/sounds.js"></script>
+<script src="js/tasks.js"></script>
+</body>
+</html>
