@@ -1,3 +1,3 @@
 @echo off
-title Noon Sweep
+title Muslim To-Do List
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0serve.ps1"

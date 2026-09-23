@@ -36,7 +36,7 @@ if (-not $listener) {
 }
 
 $url = $listener.Prefixes | Select-Object -First 1
-Write-Host "Noon Sweep is running at $url"
+Write-Host "Muslim To-Do List is running at $url"
 Write-Host 'Keep this window open while you use the page. Close it to stop.'
 if (-not $NoBrowser) { Start-Process $url }
 
