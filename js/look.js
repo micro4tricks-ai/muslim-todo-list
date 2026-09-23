@@ -4,6 +4,7 @@
   const KEY = 'noon-sweep-look';
   const IMG_KEY = 'noon-sweep-look-image';
   const $ = (id) => document.getElementById(id);
+  const T = window.noonI18n.t;
 
   const svg = (w, h, body) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`;
   const NOISE = svg(220, 220, "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .1 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/>");
@@ -80,6 +81,7 @@
   // ---- panel ----
   const panel = $('lookPanel');
   function swatch(label, pressed, style, onClick, cls) {
+    label = T(label);
     const b = document.createElement('button');
     b.type = 'button';
     b.className = cls;
@@ -128,7 +130,7 @@
     const file = ev.target.files && ev.target.files[0];
     const msg = $('lookUploadMsg');
     if (!file) return;
-    if (!file.type.startsWith('image/')) { msg.textContent = 'اختر ملف صورة (JPG أو PNG).'; return; }
+    if (!file.type.startsWith('image/')) { msg.textContent = T('اختر ملف صورة (JPG أو PNG).'); return; }
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
@@ -143,15 +145,15 @@
       save();
       try {
         localStorage.setItem(IMG_KEY, customImage);
-        msg.textContent = 'تم تعيين صورتك كخلفية.';
+        msg.textContent = T('تم تعيين صورتك كخلفية.');
       } catch (_) {
-        msg.textContent = 'تم تعيين صورتك، لكنها كبيرة على مساحة الحفظ فلن تبقى بعد إغلاق الصفحة.';
+        msg.textContent = T('تم تعيين صورتك، لكنها كبيرة على مساحة الحفظ فلن تبقى بعد إغلاق الصفحة.');
       }
       applyBackground();
       renderPanel();
       ev.target.value = '';
     };
-    img.onerror = () => { msg.textContent = 'تعذّر فتح هذه الصورة. جرّب صورة أخرى.'; URL.revokeObjectURL(url); };
+    img.onerror = () => { msg.textContent = T('تعذّر فتح هذه الصورة. جرّب صورة أخرى.'); URL.revokeObjectURL(url); };
     img.src = url;
   });
 

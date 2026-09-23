@@ -1,0 +1,257 @@
+// ---------- Language: Arabic (default) or English ----------
+// Loaded before the other scripts. Picks the language from ?lang=, then the
+// saved choice, then Arabic; translates the static page and exposes helpers
+// the other scripts use for their own text, numbers and dates.
+(() => {
+  'use strict';
+  const KEY = 'noon-sweep-lang';
+
+  // Arabic text -> English. Anything missing falls back to the Arabic.
+  const EN = {
+    // Page chrome
+    'ساعة عقارب تعرض الوقت، والتاريخ الهجري والميلادي، وطور القمر، والشروق والغروب، والصلاة القادمة. اضغط لتغيير الموقع':
+      'Analog clock showing the time, Hijri and Gregorian dates, moon phase, sunrise and sunset, and the next prayer. Click to change the location',
+    'اضغط لتغيير الموقع': 'Click to change the location',
+    'تغيير الموقع': 'Change location',
+    'تغيير المظهر والخلفية': 'Change look and background',
+    'المظهر': 'Look',
+    'الموقع ومواقيت الصلاة': 'Location & prayer times',
+    'تم': 'Done',
+    'الدولة': 'Country',
+    'المدينة': 'City',
+    'طريقة حساب الفجر والعشاء': 'Fajr & Isha calculation',
+    'حساب العصر': 'Asr calculation',
+    'الجمهور (شافعي، مالكي، حنبلي)': 'Standard (Shafi‘i, Maliki, Hanbali)',
+    'حنفي': 'Hanafi',
+    'استخدم موقعي الحالي': 'Use my current location',
+    'لون المينا': 'Dial colour',
+    'معدن الإطار': 'Case metal',
+    'خلفية الصفحة': 'Page background',
+    'أو استخدم صورة من جهازك:': 'Or use a photo from your device:',
+    // Focus timer
+    'مؤقت التركيز': 'Focus timer',
+    'نوع الجلسة': 'Session type',
+    'تركيز': 'Focus',
+    'استراحة قصيرة': 'Short break',
+    'استراحة طويلة': 'Long break',
+    'مدة الجلسة بالدقائق': 'Session length in minutes',
+    'اضغط للبدء': 'Click to start',
+    'اضغط للإيقاف المؤقت': 'Click to pause',
+    'اضغط للاستئناف': 'Click to resume',
+    'إيقاف مؤقت': 'Pause',
+    'استئناف': 'Resume',
+    'ابدأ الجلسة': 'Start session',
+    'جلسة تركيز': 'Focus session',
+    '+٥ دقائق': '+5 min',
+    'تخطَّ': 'Skip',
+    'إعادة': 'Reset',
+    'دقيقة': 'minutes',
+    'خذ استراحة بعيداً عن الشاشة.': 'Take a break away from the screen.',
+    'تعمل على:': 'Working on:',
+    'اختر مهمة بزر التشغيل ▶ لتتبّع وقتها أثناء التركيز.': 'Pick a task with its ▶ button to track its time while you focus.',
+    'أوقف المؤقت أولاً لتغيير المدة.': 'Pause the timer first to change the length.',
+    // Tasks
+    'مهام اليوم': 'Today’s tasks',
+    'إضافة مهمة': 'Add task',
+    'العنوان': 'Title',
+    'اكتب عنوان المهمة': 'Task title',
+    'الوقت المتوقع (دقائق)': 'Estimate (minutes)',
+    'مثلاً ٣٠': 'e.g. 30',
+    'الوصف': 'Description',
+    'تفاصيل اختيارية': 'Optional details',
+    'مهام فرعية': 'Subtasks',
+    'كل سطر مهمة فرعية': 'One subtask per line',
+    'اكتب كل مهمة فرعية في سطر منفصل.': 'Write each subtask on its own line.',
+    'مكتملة': 'Completed',
+    'إضافة المهمة': 'Add task',
+    'إلغاء': 'Cancel',
+    'المهام': 'Tasks',
+    'تصفية المهام': 'Filter tasks',
+    'الحالية': 'Open',
+    'المكتملة': 'Completed',
+    'الكل': 'All',
+    'اختصارات:': 'Shortcuts:',
+    'مهمة جديدة ·': 'new task ·',
+    'تشغيل/إيقاف التركيز · اسحب القرص أو استخدم عجلة الماوس لضبط المدة ·': 'start/pause focus · drag the dial or use the mouse wheel to set the length ·',
+    'إغلاق النموذج': 'close the form',
+    'تعديل المهمة': 'Edit task',
+    'حفظ التعديلات': 'Save changes',
+    'اكتب عنواناً للمهمة.': 'Enter a title for the task.',
+    'توجد مهمة بنفس العنوان. اختر عنواناً مختلفاً.': 'A task with this title already exists. Choose a different title.',
+    'تعديل': 'Edit',
+    'حذف': 'Delete',
+    'تأكيد الحذف': 'Confirm delete',
+    '+ مهمة فرعية (اضغط Enter)': '+ Subtask (press Enter)',
+    'إضافة مهمة فرعية إلى': 'Add a subtask to',
+    'إيقاف تتبّع الوقت': 'Stop tracking time',
+    'ابدأ تتبّع الوقت لهذه المهمة': 'Start tracking time for this task',
+    'إلغاء إكمال': 'Mark as not completed:',
+    'تعليم كمكتملة:': 'Mark as completed:',
+    'اليوم': 'Today',
+    'الإجمالي': 'Total',
+    'أُنشئت': 'Created',
+    'من': 'of',
+    'لا توجد مهام مكتملة بعد.': 'No completed tasks yet.',
+    'أنجزت كل المهام. أحسنت!': 'All tasks done. Well done!',
+    'لا توجد مهام بعد. اضغط «إضافة مهمة» لإنشاء أول مهمة.': 'No tasks yet. Click “Add task” to create your first one.',
+    'مهام حالية': 'open tasks',
+    'أُنجزت اليوم': 'done today',
+    'وقت العمل اليوم': 'worked today',
+    'جلسات تركيز': 'focus sessions',
+    'مثال: ترتيب أولويات الأسبوع': 'Example: plan the week’s priorities',
+    'مهمة تجريبية، عدّلها أو احذفها.': 'Sample task. Edit it or delete it.',
+    'مراجعة البريد': 'Check email',
+    'تحديد أهم ٣ مهام': 'Pick the top 3 tasks',
+    'مثال: قراءة ٢٠ صفحة': 'Example: read 20 pages',
+    'مهمة تجريبية مكتملة.': 'Sample completed task.',
+    // Sound dock
+    'مكتبة الأصوات': 'Sound library',
+    'تشغيل': 'Play',
+    'إيقاف': 'Stop',
+    'الصوت': 'Volume',
+    'مع جلسة التركيز': 'With focus sessions',
+    'أقسام الأصوات': 'Sound categories',
+    'مزيج جاهز': 'Ready-made mixes',
+    'التسجيلات من مشروع Moodist المفتوح المصدر، برخصة CC0 ورخصة محتوى Pixabay.': 'Recordings from the open-source Moodist project, under CC0 and the Pixabay Content License.',
+    'اختر صوتاً أو مزيجاً جاهزاً': 'Pick a sound or a ready-made mix',
+    'يبدأ مع جلسة التركيز': 'starts with your focus session',
+    'تعذّر تحميل:': 'Couldn’t load:',
+    'تأكد من اتصال الإنترنت أو من وجود مجلد sounds بجانب الصفحة.': 'Check your internet connection or that the sounds folder is next to the page.',
+    'مستوى صوت': 'Volume of',
+    'مطر': 'Rain', 'طبيعة': 'Nature', 'حيوانات': 'Animals', 'أماكن': 'Places', 'أشياء': 'Things', 'ضوضاء وموجات': 'Noise & waves',
+    'مطر خفيف': 'Light rain', 'مطر غزير': 'Heavy rain', 'مطر على النافذة': 'Rain on a window', 'مطر على خيمة': 'Rain on a tent',
+    'رعد': 'Thunder', 'أمواج البحر': 'Sea waves', 'نهر': 'River', 'شلال': 'Waterfall', 'قطرات ماء': 'Water droplets',
+    'رياح': 'Wind', 'رياح بين الأشجار': 'Wind in trees', 'نار المخيم': 'Campfire', 'عصافير': 'Birds', 'صراصير الليل': 'Crickets',
+    'نوارس': 'Seagulls', 'خرخرة قطة': 'Cat purring', 'مقهى': 'Café', 'مكتبة': 'Library', 'قرية في الليل': 'Village at night',
+    'داخل قطار': 'Inside a train', 'مركب شراعي': 'Sailboat', 'تكّة ساعة': 'Clock ticking', 'لوحة مفاتيح': 'Keyboard',
+    'آلة كاتبة': 'Typewriter', 'أجراس الرياح': 'Wind chimes', 'وعاء تبتي': 'Singing bowl', 'أسطوانة قديمة': 'Vinyl crackle',
+    'مروحة سقف': 'Ceiling fan', 'ضوضاء بيضاء': 'White noise', 'ضوضاء وردية': 'Pink noise', 'ضوضاء بنية': 'Brown noise',
+    'موجات ألفا (بسماعات)': 'Alpha waves (headphones)',
+    'مطر ومدفأة': 'Rain & fireplace', 'شاطئ': 'Beach', 'غابة': 'Forest', 'مقهى ممطر': 'Rainy café', 'ليل هادئ': 'Quiet night',
+    'تركيز عميق': 'Deep focus',
+    // Appearance
+    'ضباب الصباح': 'Morning mist', 'فجر': 'Dawn', 'غروب': 'Sunset', 'صحراء': 'Desert', 'بحر': 'Sea',
+    'ليل ونجوم': 'Night sky', 'شفق قطبي': 'Aurora', 'لافندر': 'Lavender', 'نعناع': 'Mint', 'وردي': 'Rose', 'ورق': 'Paper',
+    'رخام': 'Marble', 'خشب': 'Wood', 'خرسانة': 'Concrete', 'زخرفة إسلامية': 'Islamic pattern', 'فحمي': 'Charcoal',
+    'سيراميك أبيض': 'White ceramic', 'أزرق ليلي': 'Midnight blue', 'أخضر زمردي': 'Emerald green', 'أسود': 'Black',
+    'سلموني': 'Salmon', 'شامبانيا': 'Champagne', 'أزرق ثلجي': 'Ice blue',
+    'ستانلس ستيل': 'Stainless steel', 'ذهبي': 'Gold', 'ذهبي وردي': 'Rose gold', 'أسود مطفي': 'Matte black',
+    'صورتك': 'Your photo',
+    'اختر ملف صورة (JPG أو PNG).': 'Choose an image file (JPG or PNG).',
+    'تم تعيين صورتك كخلفية.': 'Your photo is now the background.',
+    'تم تعيين صورتك، لكنها كبيرة على مساحة الحفظ فلن تبقى بعد إغلاق الصفحة.': 'Your photo is set, but it’s too large to save, so it won’t stay after you close the page.',
+    'تعذّر فتح هذه الصورة. جرّب صورة أخرى.': 'Couldn’t open this image. Try another one.',
+    // Prayer times, sun, moon
+    'الفجر': 'Fajr', 'الشروق': 'Sunrise', 'الظهر': 'Dhuhr', 'العصر': 'Asr', 'المغرب': 'Maghrib', 'العشاء': 'Isha',
+    'الغروب': 'Sunset', 'طول النهار': 'day length', 'الساعة الآن': 'time now', 'القمر:': 'Moon:', 'الإضاءة': 'lit',
+    'عمره': 'age', 'يوماً': 'days', 'طريقة الحساب:': 'Calculation method:', 'تلقائي حسب الدولة': 'Automatic for the country',
+    'الآن': 'now', 'بعد': 'in', 'ص': 'AM', 'م': 'PM',
+    'محاق': 'New moon', 'هلال متزايد': 'Waxing crescent', 'تربيع أول': 'First quarter', 'أحدب متزايد': 'Waxing gibbous',
+    'بدر': 'Full moon', 'أحدب متناقص': 'Waning gibbous', 'تربيع أخير': 'Last quarter', 'هلال متناقص': 'Waning crescent',
+    'موقعي': 'My location', 'قرب': 'near',
+    'المتصفح لا يدعم تحديد الموقع. اختر المدينة من القائمة.': 'This browser can’t share your location. Pick your city from the list.',
+    'جارٍ تحديد موقعك…': 'Finding your location…',
+    'تم تحديد موقعك.': 'Location found.',
+    'تعذّر الوصول إلى موقعك. اختر الدولة والمدينة من القائمة.': 'Couldn’t get your location. Pick your country and city from the list.',
+    // Calculation methods
+    'الهيئة المصرية العامة للمساحة': 'Egyptian General Authority of Survey',
+    'أم القرى (مكة المكرمة)': 'Umm al-Qura (Makkah)',
+    'رابطة العالم الإسلامي': 'Muslim World League',
+    'أمريكا الشمالية (ISNA)': 'North America (ISNA)',
+    'جامعة العلوم الإسلامية بكراتشي': 'University of Islamic Sciences, Karachi',
+    // "المغرب" is also Maghrib prayer and "تونس" both a country and a city,
+    // so country and method names are looked up with a prefix first.
+    'طريقة:المغرب': 'Morocco', 'دولة:المغرب': 'Morocco', 'دولة:تونس': 'Tunisia',
+    'دبي': 'Dubai', 'الكويت': 'Kuwait', 'قطر': 'Qatar', 'الجزائر': 'Algeria',
+    'تركيا (رئاسة الشؤون الدينية)': 'Turkey (Diyanet)',
+    'سنغافورة وماليزيا وإندونيسيا': 'Singapore, Malaysia & Indonesia',
+    // Countries
+    'مصر': 'Egypt', 'السعودية': 'Saudi Arabia', 'الإمارات': 'UAE', 'البحرين': 'Bahrain', 'عُمان': 'Oman', 'اليمن': 'Yemen',
+    'الأردن': 'Jordan', 'فلسطين': 'Palestine', 'لبنان': 'Lebanon', 'سوريا': 'Syria', 'العراق': 'Iraq', 'السودان': 'Sudan',
+    'ليبيا': 'Libya', 'تونس': 'Tunis', 'موريتانيا': 'Mauritania', 'الصومال': 'Somalia', 'جيبوتي': 'Djibouti',
+    'تركيا': 'Turkey', 'باكستان': 'Pakistan', 'الهند': 'India', 'إندونيسيا': 'Indonesia', 'ماليزيا': 'Malaysia',
+    'بريطانيا': 'United Kingdom', 'فرنسا': 'France', 'ألمانيا': 'Germany', 'الولايات المتحدة': 'United States',
+    'كندا': 'Canada', 'أستراليا': 'Australia',
+    // Cities
+    'القاهرة': 'Cairo', 'الجيزة': 'Giza', 'الإسكندرية': 'Alexandria', 'المنصورة': 'Mansoura', 'طنطا': 'Tanta',
+    'الزقازيق': 'Zagazig', 'دمياط': 'Damietta', 'بورسعيد': 'Port Said', 'الإسماعيلية': 'Ismailia', 'السويس': 'Suez',
+    'الفيوم': 'Faiyum', 'بني سويف': 'Beni Suef', 'المنيا': 'Minya', 'أسيوط': 'Asyut', 'سوهاج': 'Sohag', 'الأقصر': 'Luxor',
+    'أسوان': 'Aswan', 'الغردقة': 'Hurghada', 'شرم الشيخ': 'Sharm El Sheikh', 'مرسى مطروح': 'Marsa Matruh',
+    'مكة المكرمة': 'Makkah', 'المدينة المنورة': 'Madinah', 'الرياض': 'Riyadh', 'جدة': 'Jeddah', 'الدمام': 'Dammam',
+    'الطائف': 'Taif', 'تبوك': 'Tabuk', 'أبها': 'Abha', 'بريدة': 'Buraydah', 'حائل': 'Hail',
+    'أبوظبي': 'Abu Dhabi', 'الشارقة': 'Sharjah', 'العين': 'Al Ain', 'عجمان': 'Ajman', 'رأس الخيمة': 'Ras Al Khaimah',
+    'مدينة الكويت': 'Kuwait City', 'الجهراء': 'Jahra', 'الأحمدي': 'Ahmadi', 'الدوحة': 'Doha', 'الوكرة': 'Al Wakrah',
+    'الخور': 'Al Khor', 'المنامة': 'Manama', 'المحرق': 'Muharraq', 'مسقط': 'Muscat', 'صلالة': 'Salalah', 'صحار': 'Sohar',
+    'نزوى': 'Nizwa', 'صنعاء': 'Sanaa', 'عدن': 'Aden', 'تعز': 'Taiz', 'المكلا': 'Mukalla', 'عمّان': 'Amman', 'إربد': 'Irbid',
+    'الزرقاء': 'Zarqa', 'العقبة': 'Aqaba', 'القدس': 'Jerusalem', 'غزة': 'Gaza', 'رام الله': 'Ramallah', 'نابلس': 'Nablus',
+    'الخليل': 'Hebron', 'بيروت': 'Beirut', 'طرابلس': 'Tripoli', 'صيدا': 'Sidon', 'دمشق': 'Damascus', 'حلب': 'Aleppo',
+    'حمص': 'Homs', 'اللاذقية': 'Latakia', 'بغداد': 'Baghdad', 'البصرة': 'Basra', 'الموصل': 'Mosul', 'أربيل': 'Erbil',
+    'النجف': 'Najaf', 'كربلاء': 'Karbala', 'الخرطوم': 'Khartoum', 'أم درمان': 'Omdurman', 'بورتسودان': 'Port Sudan',
+    'بنغازي': 'Benghazi', 'مصراتة': 'Misrata', 'صفاقس': 'Sfax', 'سوسة': 'Sousse', 'الجزائر العاصمة': 'Algiers',
+    'وهران': 'Oran', 'قسنطينة': 'Constantine', 'الرباط': 'Rabat', 'الدار البيضاء': 'Casablanca', 'فاس': 'Fez',
+    'مراكش': 'Marrakesh', 'طنجة': 'Tangier', 'نواكشوط': 'Nouakchott', 'مقديشو': 'Mogadishu', 'إسطنبول': 'Istanbul',
+    'أنقرة': 'Ankara', 'إزمير': 'Izmir', 'كراتشي': 'Karachi', 'لاهور': 'Lahore', 'إسلام آباد': 'Islamabad', 'دلهي': 'Delhi',
+    'مومباي': 'Mumbai', 'جاكرتا': 'Jakarta', 'كوالالمبور': 'Kuala Lumpur', 'لندن': 'London', 'مانشستر': 'Manchester',
+    'برمنغهام': 'Birmingham', 'باريس': 'Paris', 'مرسيليا': 'Marseille', 'ليون': 'Lyon', 'برلين': 'Berlin', 'ميونخ': 'Munich',
+    'فرانكفورت': 'Frankfurt', 'نيويورك': 'New York', 'واشنطن': 'Washington', 'ديترويت': 'Detroit', 'شيكاغو': 'Chicago',
+    'هيوستن': 'Houston', 'لوس أنجلوس': 'Los Angeles', 'تورونتو': 'Toronto', 'مونتريال': 'Montreal', 'فانكوفر': 'Vancouver',
+    'سيدني': 'Sydney', 'ملبورن': 'Melbourne',
+    // Language switch
+    'English': 'العربية'
+  };
+
+  const params = new URLSearchParams(location.search);
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (_) {}
+  const fromUrl = params.get('lang');
+  const lang = fromUrl === 'en' || fromUrl === 'ar' ? fromUrl : saved === 'en' ? 'en' : 'ar';
+  if (fromUrl && fromUrl !== saved) { try { localStorage.setItem(KEY, lang); } catch (_) {} }
+  const isEn = lang === 'en';
+
+  const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+  const I = {
+    lang,
+    isEn,
+    dir: isEn ? 'ltr' : 'rtl',
+    locale: isEn ? 'en-GB' : 'ar-EG',
+    hijriLocale: isEn ? 'en-GB-u-ca-islamic-umalqura' : 'ar-SA-u-ca-islamic-umalqura-nu-arab',
+    // Translate a fixed Arabic phrase.
+    t: (s) => (isEn && Object.prototype.hasOwnProperty.call(EN, s) ? EN[s] : s),
+    // Same, but try a "prefix:" form first for words with two meanings.
+    tp: (prefix, s) => (isEn && Object.prototype.hasOwnProperty.call(EN, prefix + ':' + s) ? EN[prefix + ':' + s] : I.t(s)),
+    // Digits in the page language.
+    num: (v) => (isEn ? String(v) : String(v).replace(/[0-9]/g, (d) => AR_DIGITS[d])),
+    // A duration such as "1h 25m" / "١س ٢٥د".
+    dur: (h, m) => (isEn ? (h ? `${h}h ${m}m` : `${m}m`) : (h ? `${h}س ${m}د` : `${m}د`).replace(/[0-9]/g, (d) => AR_DIGITS[d])),
+    // Join list items with the right comma.
+    list: (items) => items.join(isEn ? ', ' : '، '),
+    setLang(next) {
+      try { localStorage.setItem(KEY, next); } catch (_) {}
+      const p = new URLSearchParams(location.search);
+      p.set('lang', next);
+      location.search = p.toString();
+    }
+  };
+  window.noonI18n = I;
+
+  // ---- translate the static page ----
+  document.documentElement.lang = lang;
+  if (!isEn) return;
+  document.querySelectorAll('[dir="rtl"]').forEach((el) => { el.dir = 'ltr'; });
+  document.querySelectorAll('[lang="ar"]').forEach((el) => { el.lang = 'en'; });
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((n) => {
+    const key = n.nodeValue.trim();
+    if (key && Object.prototype.hasOwnProperty.call(EN, key)) {
+      n.nodeValue = n.nodeValue.replace(key, EN[key]);
+    }
+  });
+  document.querySelectorAll('[aria-label], [title], [placeholder]').forEach((el) => {
+    ['aria-label', 'title', 'placeholder'].forEach((a) => {
+      const v = el.getAttribute(a);
+      if (v && Object.prototype.hasOwnProperty.call(EN, v)) el.setAttribute(a, EN[v]);
+    });
+  });
+})();

@@ -5,6 +5,8 @@
   // Real local time. Starts from the device clock, then corrects it against an
   // internet time server (if reachable) and re-syncs every 10 minutes.
   const TAU = Math.PI * 2;
+  // Canvas text direction for the page language.
+  const TEXT_DIR = window.noonI18n && window.noonI18n.isEn ? 'ltr' : 'rtl';
   const DEG = Math.PI / 180;
   const RESYNC_MS = 10 * 60 * 1000;
   let offsetMs = 0; // internet time minus device time
@@ -592,7 +594,7 @@
     g.beginPath(); g.arc(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr, R * 0.026, 0, TAU); g.fill(); g.stroke();
     g.fillStyle = D.ink;
     g.beginPath(); g.arc(sx, sy, R * 0.012, 0, TAU); g.fill();
-    g.direction = 'rtl';
+    g.direction = TEXT_DIR;
     g.fillStyle = D.soft;
     g.font = cfont(0.05, 600);
     g.fillText(`${snap.fmtHM(sr, false)} – ${snap.fmtHM(ss, false)}`, sx, sy + rs + R * 0.055);
@@ -615,7 +617,7 @@
     g.direction = 'ltr';
     fitText(g, snap.dateEn, w * 0.9, 0.056, 700);
     g.fillText(snap.dateEn, CX + R * 0.37, y + h * 0.3);
-    g.direction = 'rtl';
+    g.direction = TEXT_DIR;
     g.fillStyle = '#2F6E4E';
     fitText(g, snap.hijri, w * 0.9, 0.058, 600);
     g.fillText(snap.hijri, CX + R * 0.37, y + h * 0.72);
@@ -658,7 +660,7 @@
       g.beginPath(); g.arc(dx * rm, dy * rm, r * rm, 0, TAU); g.fill();
     });
     g.restore();
-    g.direction = 'rtl';
+    g.direction = TEXT_DIR;
     g.fillStyle = T.dial.soft;
     g.font = cfont(0.048, 600);
     g.fillText(snap.moon.name, mx, my + rm * 1.22 + R * 0.05);
@@ -666,7 +668,7 @@
 
   function drawNextPrayer(g, snap) {
     const D = T.dial;
-    g.direction = 'rtl';
+    g.direction = TEXT_DIR;
     g.fillStyle = D.faint;
     fitText(g, snap.place.name, R * 0.5, 0.05, 500);
     g.fillText(snap.place.name, CX, CY - R * 0.45);

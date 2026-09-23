@@ -16,8 +16,8 @@
   const eTitle = $('eTitle');
 
   // ---- formatting ----
-  const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-  const ar = (v) => String(v).replace(/[0-9]/g, (d) => AR_DIGITS[d]);
+  const I = window.noonI18n, T = I.t;
+  const ar = I.num;
   const pad = (n) => String(n).padStart(2, '0');
   const fmtTimer = (ms) => {
     const s = Math.max(0, Math.ceil(ms / 1000));
@@ -26,13 +26,13 @@
   const fmtDur = (ms) => {
     const mins = Math.floor(ms / 60000);
     const h = Math.floor(mins / 60), m = mins % 60;
-    return h ? ar(`${h}س ${m}د`) : ar(`${m}د`);
+    return I.dur(h, m);
   };
   const dayKey = (t = Date.now()) => {
     const d = new Date(t);
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   };
-  const dateFmt = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+  const dateFmt = new Intl.DateTimeFormat(I.locale, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
   const uid = () => Date.now() + Math.floor(Math.random() * 1000);
 
   // ---- state ----
@@ -71,12 +71,12 @@
         const now = Date.now();
         s.tasks = [
           normalizeTask({
-            id: now - 2, title: 'مثال: ترتيب أولويات الأسبوع', description: 'مهمة تجريبية، عدّلها أو احذفها.',
+            id: now - 2, title: T('مثال: ترتيب أولويات الأسبوع'), description: T('مهمة تجريبية، عدّلها أو احذفها.'),
             estimateMin: 30, createdAt: now - 3600e3, timeSpent: { [dayKey()]: 12 * 60000 },
-            subtasks: [{ id: now - 5, title: 'مراجعة البريد', done: true }, { id: now - 4, title: 'تحديد أهم ٣ مهام', done: false }]
+            subtasks: [{ id: now - 5, title: T('مراجعة البريد'), done: true }, { id: now - 4, title: T('تحديد أهم ٣ مهام'), done: false }]
           }),
           normalizeTask({
-            id: now - 1, title: 'مثال: قراءة ٢٠ صفحة', description: 'مهمة تجريبية مكتملة.',
+            id: now - 1, title: T('مثال: قراءة ٢٠ صفحة'), description: T('مهمة تجريبية مكتملة.'),
             estimateMin: 25, completed: true, completedAt: now - 1800e3, createdAt: now - 7200e3,
             timeSpent: { [dayKey()]: 27 * 60000 }
           })
@@ -123,7 +123,7 @@
   // ---- focus timer ----
   const F = S.focus;
   const modeMs = (mode) => F.durations[mode] * 60000;
-  const MODE_LABEL = { focus: 'جلسة تركيز', short: 'استراحة قصيرة', long: 'استراحة طويلة' };
+  const MODE_LABEL = { focus: T('جلسة تركيز'), short: T('استراحة قصيرة'), long: T('استراحة طويلة') };
   if (F.day !== dayKey()) { F.day = dayKey(); F.count = 0; }
 
   // Exposed to the clock script, which draws the session on the dial.
@@ -192,15 +192,15 @@
     const meta = li.querySelector('.task-meta');
     meta.replaceChildren();
     const tracking = isTracking() && S.track.taskId === t.id;
-    const today = el('span', tracking ? 'live' : '', `اليوم ${fmtDur(spentToday(t))}`);
-    meta.append(today, el('span', '', `الإجمالي ${fmtDur(spentTotal(t))}`), el('span', '', `أُنشئت ${dateFmt.format(t.createdAt)}`));
+    const today = el('span', tracking ? 'live' : '', `${T('اليوم')} ${fmtDur(spentToday(t))}`);
+    meta.append(today, el('span', '', `${T('الإجمالي')} ${fmtDur(spentTotal(t))}`), el('span', '', `${T('أُنشئت')} ${dateFmt.format(t.createdAt)}`));
     const est = li.querySelector('.est');
     if (est) {
       const total = spentTotal(t), estMs = t.estimateMin * 60000;
       const bar = est.querySelector('.est-bar');
       bar.classList.toggle('over', total > estMs);
       bar.firstChild.style.width = Math.min(100, (total / estMs) * 100) + '%';
-      est.querySelector('.est-text').textContent = `${fmtDur(total)} من ${fmtDur(estMs)}`;
+      est.querySelector('.est-text').textContent = `${fmtDur(total)} ${T('من')} ${fmtDur(estMs)}`;
     }
   }
 
@@ -215,7 +215,7 @@
     status.type = 'button';
     status.dataset.act = 'toggle';
     status.setAttribute('aria-pressed', String(t.completed));
-    status.setAttribute('aria-label', t.completed ? `إلغاء إكمال «${t.title}»` : `تعليم «${t.title}» كمكتملة`);
+    status.setAttribute('aria-label', t.completed ? `${T('إلغاء إكمال')} «${t.title}»` : (I.isEn ? `${T('تعليم كمكتملة:')} «${t.title}»` : `تعليم «${t.title}» كمكتملة`));
     status.innerHTML = CHECK_SVG;
 
     const body = el('div', 'task-body');
@@ -244,8 +244,8 @@
       const add = el('div', 'sub-add');
       const inp = el('input');
       inp.id = `subadd-${t.id}`;
-      inp.placeholder = '+ مهمة فرعية (اضغط Enter)';
-      inp.setAttribute('aria-label', `إضافة مهمة فرعية إلى «${t.title}»`);
+      inp.placeholder = T('+ مهمة فرعية (اضغط Enter)');
+      inp.setAttribute('aria-label', `${T('إضافة مهمة فرعية إلى')} «${t.title}»`);
       inp.dataset.act = 'subadd';
       add.append(inp);
       body.append(add);
@@ -266,13 +266,13 @@
       play.type = 'button';
       play.dataset.act = 'track';
       play.innerHTML = tracking ? PAUSE_SVG : PLAY_SVG;
-      play.setAttribute('aria-label', tracking ? 'إيقاف تتبّع الوقت' : 'ابدأ تتبّع الوقت لهذه المهمة');
+      play.setAttribute('aria-label', T(tracking ? 'إيقاف تتبّع الوقت' : 'ابدأ تتبّع الوقت لهذه المهمة'));
       play.title = play.getAttribute('aria-label');
       actions.append(play);
     }
-    const edit = el('button', 'link-btn', 'تعديل');
+    const edit = el('button', 'link-btn', T('تعديل'));
     edit.type = 'button'; edit.dataset.act = 'edit';
-    const del = el('button', 'link-btn danger', 'حذف');
+    const del = el('button', 'link-btn danger', T('حذف'));
     del.type = 'button'; del.dataset.act = 'delete';
     actions.append(edit, del);
 
@@ -288,7 +288,7 @@
     document.querySelectorAll('.filter button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === S.filter)));
     list.replaceChildren();
     if (!visible.length) {
-      const msg = S.filter === 'done' ? 'لا توجد مهام مكتملة بعد.' : S.filter === 'open' && S.tasks.length ? 'أنجزت كل المهام. أحسنت!' : 'لا توجد مهام بعد. اضغط «إضافة مهمة» لإنشاء أول مهمة.';
+      const msg = T(S.filter === 'done' ? 'لا توجد مهام مكتملة بعد.' : S.filter === 'open' && S.tasks.length ? 'أنجزت كل المهام. أحسنت!' : 'لا توجد مهام بعد. اضغط «إضافة مهمة» لإنشاء أول مهمة.');
       list.append(el('li', 'empty', msg));
     } else {
       for (const t of visible) list.append(renderTask(t));
@@ -303,10 +303,10 @@
     const doneToday = S.tasks.filter((t) => t.completed && t.completedAt && dayKey(t.completedAt) === today).length;
     const worked = S.tasks.reduce((sum, t) => sum + spentToday(t), 0);
     const parts = [
-      [ar(open), 'مهام حالية'],
-      [ar(doneToday), 'أُنجزت اليوم'],
-      [fmtDur(worked), 'وقت العمل اليوم'],
-      [ar(F.count), 'جلسات تركيز']
+      [ar(open), T('مهام حالية')],
+      [ar(doneToday), T('أُنجزت اليوم')],
+      [fmtDur(worked), T('وقت العمل اليوم')],
+      [ar(F.count), T('جلسات تركيز')]
     ];
     const box = $('summary');
     box.replaceChildren(...parts.map(([v, label]) => {
@@ -366,12 +366,12 @@
     knob.setAttribute('cy', ky);
     const mins = F.durations[F.mode];
     knob.setAttribute('aria-valuenow', String(mins));
-    knob.setAttribute('aria-valuetext', `${ar(mins)} دقيقة`);
+    knob.setAttribute('aria-valuetext', `${ar(mins)} ${T('دقيقة')}`);
     knob.setAttribute('aria-disabled', String(F.running));
     $('focusTime').textContent = fmtTimer(remaining);
     const paused = !F.running && F.remainingMs < modeMs(F.mode);
-    $('dialHint').textContent = F.running ? 'اضغط للإيقاف المؤقت' : paused ? 'اضغط للاستئناف' : 'اضغط للبدء';
-    $('focusToggle').setAttribute('aria-label', F.running ? 'إيقاف مؤقت' : paused ? 'استئناف' : 'ابدأ الجلسة');
+    $('dialHint').textContent = T(F.running ? 'اضغط للإيقاف المؤقت' : paused ? 'اضغط للاستئناف' : 'اضغط للبدء');
+    $('focusToggle').setAttribute('aria-label', T(F.running ? 'إيقاف مؤقت' : paused ? 'استئناف' : 'ابدأ الجلسة'));
     $('focusMode').textContent = MODE_LABEL[F.mode];
     document.querySelectorAll('.modes button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === F.mode)));
     const cyc = $('cycle');
@@ -379,8 +379,8 @@
     cyc.replaceChildren(...Array.from({ length: LONG_EVERY }, (_, i) => el('i', i < filled ? 'on' : '')));
     const cur = taskById(S.track.taskId);
     $('focusTask').textContent = F.mode !== 'focus'
-      ? 'خذ استراحة بعيداً عن الشاشة.'
-      : cur ? `تعمل على: ${cur.title}` : 'اختر مهمة بزر التشغيل ▶ لتتبّع وقتها أثناء التركيز.';
+      ? T('خذ استراحة بعيداً عن الشاشة.')
+      : cur ? `${T('تعمل على:')} ${cur.title}` : T('اختر مهمة بزر التشغيل ▶ لتتبّع وقتها أثناء التركيز.');
   }
 
   function renderLive() {
@@ -397,8 +397,8 @@
   let editingId = null;
   function openForm(task) {
     editingId = task ? task.id : null;
-    $('formTitle').textContent = task ? 'تعديل المهمة' : 'إضافة مهمة';
-    $('submitBtn').textContent = task ? 'حفظ التعديلات' : 'إضافة المهمة';
+    $('formTitle').textContent = T(task ? 'تعديل المهمة' : 'إضافة مهمة');
+    $('submitBtn').textContent = T(task ? 'حفظ التعديلات' : 'إضافة المهمة');
     fTitle.value = task ? task.title : '';
     fDesc.value = task ? task.description : '';
     fEst.value = task && task.estimateMin ? task.estimateMin : '';
@@ -421,14 +421,15 @@
   }
 
   $('addBtn').addEventListener('click', () => openForm(null));
+  $('langBtn').addEventListener('click', () => I.setLang(I.isEn ? 'ar' : 'en'));
   $('cancelBtn').addEventListener('click', closeForm);
 
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
     const title = fTitle.value.trim();
-    if (!title) return showError('اكتب عنواناً للمهمة.');
+    if (!title) return showError(T('اكتب عنواناً للمهمة.'));
     if (S.tasks.some((t) => t.id !== editingId && t.title.toLowerCase() === title.toLowerCase())) {
-      return showError('توجد مهمة بنفس العنوان. اختر عنواناً مختلفاً.');
+      return showError(T('توجد مهمة بنفس العنوان. اختر عنواناً مختلفاً.'));
     }
     const estimateMin = Math.max(0, Math.round(Number(fEst.value) || 0));
     const subTitles = fSubs.value.split('\n').map((s) => s.trim()).filter(Boolean);
@@ -468,11 +469,11 @@
       return;
     } else if (act === 'delete') {
       if (!btn.classList.contains('confirming')) {
-        list.querySelectorAll('.confirming').forEach((b) => { b.classList.remove('confirming'); b.textContent = 'حذف'; });
+        list.querySelectorAll('.confirming').forEach((b) => { b.classList.remove('confirming'); b.textContent = T('حذف'); });
         btn.classList.add('confirming');
-        btn.textContent = 'تأكيد الحذف';
+        btn.textContent = T('تأكيد الحذف');
         clearTimeout(confirmTimer);
-        confirmTimer = setTimeout(() => { btn.classList.remove('confirming'); btn.textContent = 'حذف'; }, 3000);
+        confirmTimer = setTimeout(() => { btn.classList.remove('confirming'); btn.textContent = T('حذف'); }, 3000);
         return;
       }
       clearTimeout(confirmTimer);
@@ -527,7 +528,7 @@
   }
   const blockedWhileRunning = () => {
     if (!F.running) return false;
-    note('أوقف المؤقت أولاً لتغيير المدة.');
+    note(T('أوقف المؤقت أولاً لتغيير المدة.'));
     return true;
   };
 

@@ -5,6 +5,7 @@
   'use strict';
   const KEY = 'noon-sweep-sounds-v2';
   const $ = (id) => document.getElementById(id);
+  const I = window.noonI18n, T = I.t;
 
   const CATS = [
     ['rain', 'مطر'], ['nature', 'طبيعة'], ['animals', 'حيوانات'], ['places', 'أماكن'], ['things', 'أشياء'], ['noise', 'ضوضاء وموجات']
@@ -226,20 +227,20 @@
   }
 
   // ---- UI ----
-  const nameOf = (id) => byId[id][1];
+  const nameOf = (id) => T(byId[id][1]);
   function render() {
     const ids = Object.keys(S.selected);
     const btn = $('sndPlay');
-    btn.textContent = playing ? 'إيقاف' : 'تشغيل';
+    btn.textContent = T(playing ? 'إيقاف' : 'تشغيل');
     btn.setAttribute('aria-pressed', String(playing));
     btn.disabled = !ids.length && !playing;
     $('sndMaster').value = String(Math.round(S.master * 100));
     $('sndSync').checked = !!S.sync;
     const failed = ids.filter((id) => live[id] && live[id].failed);
-    $('sndStatus').textContent = failed.length ? `تعذّر تحميل: ${failed.map(nameOf).join('، ')}. تأكد من اتصال الإنترنت أو من وجود مجلد sounds بجانب الصفحة.`
-      : !ids.length ? 'اختر صوتاً أو مزيجاً جاهزاً'
+    $('sndStatus').textContent = failed.length ? `${T('تعذّر تحميل:')} ${I.list(failed.map(nameOf))}. ${T('تأكد من اتصال الإنترنت أو من وجود مجلد sounds بجانب الصفحة.')}`
+      : !ids.length ? T('اختر صوتاً أو مزيجاً جاهزاً')
       : playing ? ids.map(nameOf).join(' · ')
-      : S.sync ? `${ids.map(nameOf).join(' · ')} — يبدأ مع جلسة التركيز` : ids.map(nameOf).join(' · ');
+      : S.sync ? `${ids.map(nameOf).join(' · ')} — ${T('يبدأ مع جلسة التركيز')}` : ids.map(nameOf).join(' · ');
     const dockBody = $('dockBody');
     dockBody.hidden = !S.open;
     $('dockToggle').setAttribute('aria-expanded', String(S.open));
@@ -256,7 +257,7 @@
     });
     document.querySelectorAll('#sndCats button').forEach((b) => {
       const n = SOUNDS.filter((s) => s[2] === b.dataset.cat && s[0] in S.selected).length;
-      b.querySelector('.cat-count').textContent = n ? String(n).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]) : '';
+      b.querySelector('.cat-count').textContent = n ? I.num(n) : '';
     });
   }
   function buildUI() {
@@ -265,7 +266,7 @@
       b.type = 'button';
       b.setAttribute('role', 'tab');
       b.dataset.cat = id;
-      b.append(name + ' ');
+      b.append(T(name) + ' ');
       const c = document.createElement('span');
       c.className = 'cat-count';
       b.append(c);
@@ -280,12 +281,12 @@
       b.className = 'snd-toggle';
       b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${ICONS[icon]}"/></svg>`;
       const label = document.createElement('span');
-      label.textContent = name;
+      label.textContent = T(name);
       b.append(label);
       const vol = document.createElement('input');
       vol.type = 'range'; vol.min = '0'; vol.max = '100'; vol.className = 'snd-vol';
       vol.id = `snd-vol-${id}`;
-      vol.setAttribute('aria-label', `مستوى صوت ${name}`);
+      vol.setAttribute('aria-label', `${T('مستوى صوت')} ${T(name)}`);
       vol.hidden = true;
       wrap.append(b, vol);
       return wrap;
@@ -294,7 +295,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'preset';
-      b.textContent = name;
+      b.textContent = T(name);
       b.addEventListener('click', () => {
         Object.keys(live).forEach(stopSound);
         S.selected = Object.assign({}, mix);

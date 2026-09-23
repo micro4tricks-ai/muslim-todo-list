@@ -158,6 +158,7 @@
     font-size: 13px;
   }
   .summary b { color: var(--ink); font-weight: 600; }
+  .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
   button { font: inherit; cursor: pointer; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
@@ -564,7 +565,10 @@
         <h1>مهام اليوم</h1>
         <p class="summary" id="summary"></p>
       </div>
-      <button type="button" class="btn btn-primary" id="addBtn">إضافة مهمة</button>
+      <div class="head-actions">
+        <button type="button" class="btn btn-quiet" id="langBtn">English</button>
+        <button type="button" class="btn btn-primary" id="addBtn">إضافة مهمة</button>
+      </div>
     </header>
 
     <form class="task-form" id="taskForm" novalidate hidden>
@@ -631,6 +635,7 @@
   </div>
 </section>
 
+<script src="js/i18n.js"></script>
 <script src="js/clock.js"></script>
 <script src="js/astro.js"></script>
 <script src="js/look.js"></script>

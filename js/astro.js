@@ -4,8 +4,10 @@
 (() => {
   'use strict';
   const PLACE_KEY = 'noon-sweep-place';
-  const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
-  const ar = (v) => String(v).replace(/[0-9]/g, (d) => AR_DIGITS[d]);
+  const I = window.noonI18n, T = I.t;
+  const ar = I.num;
+  const countryName = (s) => I.tp('دولة', s);
+  const methodName = (s) => I.tp('طريقة', s);
   const $ = (id) => document.getElementById(id);
 
   const METHODS = {
@@ -127,10 +129,11 @@
     const c = countryOf(P.country);
     const methodKey = P.method && METHODS[P.method] ? P.method : c.method;
     if (P.custom) {
-      return { name: P.custom.name, country: c.ar, lat: P.custom.lat, lon: P.custom.lon, tz: P.custom.tz, methodKey, asr: P.asr };
+      const name = P.custom.near ? `${T('موقعي')} (${T('قرب')} ${T(P.custom.near)})` : P.custom.name;
+      return { name, country: countryName(c.ar), lat: P.custom.lat, lon: P.custom.lon, tz: P.custom.tz, methodKey, asr: P.asr };
     }
     const ct = c.cities[P.city] || c.cities[0];
-    return { name: ct[0], country: c.ar, lat: ct[1], lon: ct[2], tz: ct[3] || c.tz, methodKey, asr: P.asr };
+    return { name: T(ct[0]), country: countryName(c.ar), lat: ct[1], lon: ct[2], tz: ct[3] || c.tz, methodKey, asr: P.asr };
   }
 
   // ---- time zone ----
@@ -214,7 +217,7 @@
   function moon(epoch) {
     const age = fix((epoch - NEW_MOON_REF) / 86400000, SYNODIC);
     const illum = (1 - Math.cos((2 * Math.PI * age) / SYNODIC)) / 2;
-    return { age, frac: age / SYNODIC, illum, name: PHASES.find((p) => age < p[0])[1] };
+    return { age, frac: age / SYNODIC, illum, name: T(PHASES.find((p) => age < p[0])[1]) };
   }
 
   // ---- formatting ----
@@ -223,13 +226,12 @@
     if (!Number.isFinite(h)) return '—';
     const mins = Math.round(fix(h, 24) * 60) % 1440;
     const hh = Math.floor(mins / 60), mm = mins % 60;
-    return ar(`${hh % 12 || 12}:${pad(mm)}`) + (withSuffix ? (hh < 12 ? ' ص' : ' م') : '');
+    return ar(`${hh % 12 || 12}:${pad(mm)}`) + (withSuffix ? ' ' + T(hh < 12 ? 'ص' : 'م') : '');
   }
   function fmtIn(hours) {
     const mins = Math.max(0, Math.round(hours * 60));
-    if (mins < 1) return 'الآن';
-    const h = Math.floor(mins / 60), m = mins % 60;
-    return 'بعد ' + (h ? ar(`${h}س ${m}د`) : ar(`${m}د`));
+    if (mins < 1) return T('الآن');
+    return T('بعد') + ' ' + I.dur(Math.floor(mins / 60), mins % 60);
   }
   const PRAYER_NAMES = { fajr: 'الفجر', sunrise: 'الشروق', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء' };
   const PRAYER_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -257,15 +259,15 @@
       const tomorrow = prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate(), place.lat, place.lon, tzH, method, place.asr);
       next = { key: 'fajr', h: tomorrow.fajr, inH: tomorrow.fajr + 24 - nowH };
     }
-    next.name = PRAYER_NAMES[next.key];
+    next.name = T(PRAYER_NAMES[next.key]);
     next.time = fmtHM(next.h);
     next.inText = Number.isFinite(next.inH) ? fmtIn(next.inH) : '';
 
     const opt = (o) => Object.assign({ timeZone: place.tz }, o);
     let hijri = '', hijriFull = '';
     try {
-      hijri = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab', opt({ day: 'numeric', month: 'long' })).format(epoch);
-      hijriFull = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab', opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(epoch);
+      hijri = new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'long' })).format(epoch);
+      hijriFull = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(epoch);
     } catch (_) {}
 
     const val = {
@@ -279,7 +281,7 @@
       })(),
       dateEnFull: new Intl.DateTimeFormat('en-US', opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(epoch),
       dateArFull: new Intl.DateTimeFormat('ar-EG', opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(epoch),
-      timeHere: new Intl.DateTimeFormat('ar-EG', opt({ hour: 'numeric', minute: '2-digit' })).format(epoch),
+      timeHere: new Intl.DateTimeFormat(I.locale, opt({ hour: 'numeric', minute: '2-digit' })).format(epoch),
       hijri, hijriFull, fmtHM
     };
     snapCache = { key, val };
@@ -299,11 +301,11 @@
   }
   function syncForm() {
     const c = countryOf(P.country);
-    fillSelect(selCountry, COUNTRIES.map((x) => [x.id, x.ar]), P.country);
-    const cityItems = c.cities.map((ct, i) => [String(i), ct[0]]);
-    if (P.custom) cityItems.unshift(['custom', P.custom.name]);
+    fillSelect(selCountry, COUNTRIES.map((x) => [x.id, countryName(x.ar)]), P.country);
+    const cityItems = c.cities.map((ct, i) => [String(i), T(ct[0])]);
+    if (P.custom) cityItems.unshift(['custom', resolved().name]);
     fillSelect(selCity, cityItems, P.custom ? 'custom' : String(P.city));
-    fillSelect(selMethod, [['', `تلقائي حسب الدولة (${METHODS[c.method].ar})`]].concat(Object.entries(METHODS).map(([k, m]) => [k, m.ar])), P.method || '');
+    fillSelect(selMethod, [['', `${T('تلقائي حسب الدولة')} (${methodName(METHODS[c.method].ar)})`]].concat(Object.entries(METHODS).map(([k, m]) => [k, methodName(m.ar)])), P.method || '');
     selAsr.value = String(P.asr);
     $('placeName').textContent = resolved().name;
   }
@@ -320,15 +322,15 @@
       p.textContent = text;
       dates.append(p);
     };
-    line(`${s.place.name}، ${s.place.country} · الساعة الآن ${s.timeHere}`, 'pp-here');
+    line(`${s.place.name}${I.isEn ? ', ' : '، '}${s.place.country} · ${T('الساعة الآن')} ${s.timeHere}`, 'pp-here');
     line(s.hijriFull, 'pp-date');
-    line(s.dateArFull, 'pp-date');
+    if (!I.isEn) line(s.dateArFull, 'pp-date');
     line(s.dateEnFull, 'pp-date pp-en', 'ltr');
 
     const rows = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'].map((k) => {
       const tr = document.createElement('tr');
       if (s.next && s.next.key === k) tr.className = 'is-next';
-      const a = document.createElement('th'); a.scope = 'row'; a.textContent = PRAYER_NAMES[k];
+      const a = document.createElement('th'); a.scope = 'row'; a.textContent = T(PRAYER_NAMES[k]);
       const b = document.createElement('td'); b.textContent = fmtHM(s.today[k]);
       const c = document.createElement('td'); c.className = 'pp-in';
       c.textContent = s.next && s.next.key === k ? s.next.inText : '';
@@ -337,10 +339,10 @@
     });
     $('ppTimes').replaceChildren(...rows);
     const dl = s.dayLen;
-    const dlText = Number.isFinite(dl) ? ar(`${Math.floor(dl)}س ${Math.round((dl % 1) * 60)}د`) : '—';
-    $('ppSun').textContent = `الشروق ${fmtHM(s.today.sunrise)} · الغروب ${fmtHM(s.today.sunset)} · طول النهار ${dlText}`;
-    $('ppMoon').textContent = `القمر: ${s.moon.name} · الإضاءة ${ar(Math.round(s.moon.illum * 100))}٪ · عمره ${ar(Math.floor(s.moon.age))} يوماً`;
-    $('ppMethod').textContent = `طريقة الحساب: ${s.method.ar}`;
+    const dlText = Number.isFinite(dl) ? I.dur(Math.floor(dl), Math.round((dl % 1) * 60)) : '—';
+    $('ppSun').textContent = `${T('الشروق')} ${fmtHM(s.today.sunrise)} · ${T('الغروب')} ${fmtHM(s.today.sunset)} · ${T('طول النهار')} ${dlText}`;
+    $('ppMoon').textContent = `${T('القمر:')} ${s.moon.name} · ${T('الإضاءة')} ${ar(Math.round(s.moon.illum * 100))}${I.isEn ? '%' : '٪'} · ${T('عمره')} ${ar(Math.floor(s.moon.age))} ${T('يوماً')}`;
+    $('ppMethod').textContent = `${T('طريقة الحساب:')} ${methodName(s.method.ar)}`;
   }
   function openPanel() {
     syncForm();
@@ -373,8 +375,8 @@
 
   $('pLocate').addEventListener('click', () => {
     const msg = $('pLocateMsg');
-    if (!navigator.geolocation) { msg.textContent = 'المتصفح لا يدعم تحديد الموقع. اختر المدينة من القائمة.'; return; }
-    msg.textContent = 'جارٍ تحديد موقعك…';
+    if (!navigator.geolocation) { msg.textContent = T('المتصفح لا يدعم تحديد الموقع. اختر المدينة من القائمة.'); return; }
+    msg.textContent = T('جارٍ تحديد موقعك…');
     navigator.geolocation.getCurrentPosition((pos) => {
       const { latitude: lat, longitude: lon } = pos.coords;
       let best = null;
@@ -386,11 +388,11 @@
       try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (_) {}
       P.country = best.c.id;
       P.city = best.i;
-      P.custom = { name: `موقعي (قرب ${best.c.cities[best.i][0]})`, lat, lon, tz };
-      msg.textContent = 'تم تحديد موقعك.';
+      P.custom = { name: `موقعي (قرب ${best.c.cities[best.i][0]})`, near: best.c.cities[best.i][0], lat, lon, tz };
+      msg.textContent = T('تم تحديد موقعك.');
       changed();
     }, () => {
-      msg.textContent = 'تعذّر الوصول إلى موقعك. اختر الدولة والمدينة من القائمة.';
+      msg.textContent = T('تعذّر الوصول إلى موقعك. اختر الدولة والمدينة من القائمة.');
     }, { timeout: 10000, maximumAge: 600000 });
   });
 
