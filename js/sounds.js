@@ -89,6 +89,7 @@
   // jsDelivr (pinned to one commit so they never change underneath the page).
   const CDN = 'https://cdn.jsdelivr.net/gh/remvze/moodist@285ecdbfc67fb082833eee8cef9cd34bbdb1d755/public/sounds/';
   const BASES = ['sounds/', CDN];
+  const SITE_URL = 'https://micro4tricks-ai.github.io/muslim-todo-list/';
   let workingBase = null; // the first source that served a file; tried first afterwards
   const urlsFor = (id) => {
     const order = workingBase ? [workingBase].concat(BASES.filter((b) => b !== workingBase)) : BASES;
@@ -212,17 +213,34 @@
     el.loop = true;
     el.volume = 0;
     p.el = el;
+    let settled = false;
+    // Try the next source, or report the sound as unavailable.
+    const giveUp = (retry) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (live[id] !== p || p.el !== el) return;
+      el.pause();
+      if (retry && sources.length) playElement(p, sources);
+      else { p.loading = false; p.failed = true; render(); }
+    };
+    // Some pages block outside media without ever answering play(), which
+    // would leave the tile silently "loading"; give each source 12 seconds.
+    const timer = setTimeout(() => { if (p.loading && p.el === el) giveUp(true); }, 12000);
+    el.addEventListener('error', () => giveUp(true), { once: true });
     el.play().then(() => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       // Stopped, or already handed over to the buffer: stay silent.
       if (live[id] !== p || p.el !== el) { el.pause(); return; }
       if (next.base) workingBase = next.base;
-      p.loading = false; render();
+      p.loading = false; p.failed = false; render();
       fadeElement(el, elementLevel(id), 1000);
     }).catch(() => {
       // A missing file surfaces as a media error; anything else (such as the
       // browser blocking autoplay) will not be fixed by another source.
-      if (el.error && sources.length) playElement(p, sources);
-      else { p.loading = false; p.failed = true; render(); }
+      giveUp(!!el.error);
     });
   }
   // Once the full recording has downloaded, hand over from the streaming
@@ -240,7 +258,7 @@
       s.connect(g);
       const el = p.el;
       s.start(0, el && !el.paused ? el.currentTime % buf.duration : 0);
-      p.node = s; p.gain = g; p.el = null; p.loading = false;
+      p.node = s; p.gain = g; p.el = null; p.loading = false; p.failed = false;
       g.gain.setTargetAtTime(S.selected[id], ac.currentTime, 0.15);
       if (el) fadeElement(el, 0, 600, () => { el.pause(); el.removeAttribute('src'); el.load(); });
       render();
@@ -307,7 +325,17 @@
     $('sndMaster').value = String(Math.round(S.master * 100));
     $('sndSync').checked = !!S.sync;
     const failed = ids.filter((id) => live[id] && live[id].failed);
-    $('sndStatus').textContent = failed.length ? `${T('تعذّر تحميل:')} ${I.list(failed.map(nameOf))}. ${T('تأكد من اتصال الإنترنت أو من وجود مجلد sounds بجانب الصفحة.')}`
+    const status = $('sndStatus');
+    // Copies of the page that can't reach the recordings (such as a preview
+    // with no sounds folder and no outside access) point to the full site.
+    if (failed.length && failed.some((id) => !isMusic(id)) && location.href.indexOf(SITE_URL) !== 0) {
+      const a = document.createElement('a');
+      a.href = SITE_URL + (I.isEn ? '?lang=en' : '');
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = T('افتح الموقع الكامل');
+      status.replaceChildren(`${T('الأصوات غير متاحة في هذه النسخة.')} `, a);
+    } else status.textContent = failed.length ? `${T('تعذّر تحميل:')} ${I.list(failed.map(nameOf))}. ${T('تأكد من اتصال الإنترنت أو من وجود مجلد sounds بجانب الصفحة.')}`
       : !ids.length ? T('اختر صوتاً أو مزيجاً جاهزاً')
       : playing ? ids.map(nameOf).join(' · ') + (loading ? ` — ${T('جارٍ التحميل…')}` : '')
       : S.sync ? `${ids.map(nameOf).join(' · ')} — ${T('يبدأ مع جلسة التركيز')}` : ids.map(nameOf).join(' · ');

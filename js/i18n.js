@@ -130,6 +130,8 @@
     'مطر ومدفأة': 'Rain & fireplace', 'شاطئ': 'Beach', 'غابة': 'Forest', 'مقهى ممطر': 'Rainy café', 'ليل هادئ': 'Quiet night',
     'تركيز عميق': 'Deep focus',
     'موسيقاي': 'My music',
+    'الأصوات غير متاحة في هذه النسخة.': 'Sounds aren’t available in this copy of the page.',
+    'افتح الموقع الكامل': 'Open the full site',
     'اختر مجلد الموسيقى': 'Choose music folder',
     'إضافة ملفات': 'Add files',
     'اسمح بالوصول لمجلد الموسيقى': 'Allow access to your music folder',
