@@ -118,9 +118,14 @@ jobs:
             sleep 25
             adb exec-out screencap -p > shots/1-start.png
             size=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1); w=${size%x*}; h=${size#*x}
-            adb shell input swipe $((w/2)) $((h*3/4)) $((w/2)) $((h/4)) 400
+            { adb shell wm size; adb shell wm density; } > shots/screen.txt
+            # Swipe up along the edge (away from the timer), then across the middle.
+            adb shell input swipe $((w/12)) $((h*4/5)) $((w/12)) $((h/5)) 600
             sleep 3
-            adb exec-out screencap -p > shots/2-scrolled.png
+            adb exec-out screencap -p > shots/2-scrolled-edge.png
+            adb shell input swipe $((w/2)) $((h*4/5)) $((w/2)) $((h/5)) 600
+            sleep 3
+            adb exec-out screencap -p > shots/3-scrolled-middle.png
             adb shell dumpsys alarm | grep -c muslimtodo > shots/alarms.txt || true
             adb shell dumpsys notification --noredact | grep -i -A3 "muslimtodo" | head -40 > shots/notifications.txt || true
             adb logcat -d -s Capacitor:* Capacitor/Console:* chromium:* AndroidRuntime:E > shots/logcat.txt || true
