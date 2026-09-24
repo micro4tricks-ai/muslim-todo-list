@@ -15,6 +15,19 @@
 The page opens in Arabic; the **English** button above the task list switches languages (and remembers the choice).
 Direct English link: `/en/` or `?lang=en`.
 
+## المزامنة بين الأجهزة (Supabase)
+
+زر **مزامنة** يسجّل الدخول بالبريد الإلكتروني (رابط دخول بدون كلمة مرور) ويزامن المهام والإعدادات بين أجهزتك.
+لتفعيلها مرة واحدة:
+
+1. أنشئ مشروعاً مجانياً على [supabase.com](https://supabase.com).
+2. **SQL Editor → New query**: الصق محتوى `supabase/schema.sql` واضغط **Run**.
+3. **Authentication → URL Configuration**: اجعل *Site URL* رابط الموقع، وأضف إلى *Redirect URLs* رابط الموقع و`http://localhost:8765/`.
+4. **Project Settings → API**: انسخ *Project URL* و*anon public key* إلى `js/config.js`.
+
+ما يُزامَن: المهام (مع المهام الفرعية والوقت)، المدينة وطريقة الحساب، المظهر، اختيارات الأصوات، اللغة.
+ما يبقى على كل جهاز: مؤقت التركيز، صورة الخلفية، مجلد الموسيقى.
+
 ## المحتويات
 
 | المسار | الوصف |
@@ -27,6 +40,10 @@ Direct English link: `/en/` or `?lang=en`.
 | `js/look.js` | ألوان المينا والإطار وخلفيات الصفحة |
 | `js/sounds.js` | مكتبة الأصوات |
 | `js/tasks.js` | المهام ومؤقت التركيز |
+| `js/config.js` | إعدادات مشروع Supabase |
+| `js/sync-core.js` | قواعد دمج البيانات بين الأجهزة |
+| `js/sync.js` | تسجيل الدخول والمزامنة |
+| `supabase/schema.sql` | جدول قاعدة البيانات وصلاحياته |
 | `sounds/` | تسجيلات الأصوات |
 
 ## المصادر والتراخيص

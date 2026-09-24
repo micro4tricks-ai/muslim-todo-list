@@ -50,7 +50,8 @@
       estimateMin: t.estimateMin || 0, subtasks: t.subtasks || [],
       completed: !!t.completed, createdAt: t.createdAt || Date.now(),
       completedAt: t.completedAt || (t.completed ? t.createdAt : null),
-      timeSpent: t.timeSpent || {}
+      timeSpent: t.timeSpent || {},
+      updatedAt: t.updatedAt || 0 // set by sync when the task changes
     };
   }
   function load() {
@@ -644,6 +645,17 @@
   // and drop a focus session that ended long ago.
   if (isTracking()) S.track.since = Date.now();
   if (F.running && Date.now() > F.endEpoch + 60000) setMode('focus', false);
+
+  // Used by sync.js to read the task list and to swap in a merged one.
+  window.noonTasks = {
+    get: () => S.tasks,
+    set(tasks) {
+      S.tasks = tasks.map(normalizeTask);
+      if (S.track.taskId !== null && !taskById(S.track.taskId)) clearCurrent();
+      if (editingId !== null && !taskById(editingId)) closeForm();
+      save(); render();
+    }
+  };
 
   render();
 })();

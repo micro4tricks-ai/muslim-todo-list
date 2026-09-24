@@ -159,6 +159,16 @@
   }
   .summary b { color: var(--ink); font-weight: 600; }
   .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sync-btn { display: inline-flex; align-items: center; gap: 7px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); flex: none; }
+  .sync-btn[data-state="ok"] .sync-dot { background: var(--done); }
+  .sync-btn[data-state="syncing"] .sync-dot { background: #D9A441; }
+  .sync-btn[data-state="error"] .sync-dot { background: var(--accent); }
+  .sync-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .sync-panel h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .sync-panel form { display: flex; flex-direction: column; gap: 12px; }
+  .sync-user { margin: 0; font-weight: 600; text-align: start; }
+  #syncMsg:empty { display: none; }
 
   button { font: inherit; cursor: pointer; }
   button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
@@ -571,10 +581,38 @@
         <p class="summary" id="summary"></p>
       </div>
       <div class="head-actions">
+        <button type="button" class="btn btn-quiet sync-btn" id="syncBtn" data-state="off" aria-controls="syncPanel">
+          <span class="sync-dot" aria-hidden="true"></span><span id="syncLabel">مزامنة</span>
+        </button>
         <button type="button" class="btn btn-quiet" id="langBtn">English</button>
         <button type="button" class="btn btn-primary" id="addBtn">إضافة مهمة</button>
       </div>
     </header>
+
+    <section class="sync-panel" id="syncPanel" aria-labelledby="syncTitle" hidden>
+      <div class="pp-head">
+        <h2 id="syncTitle">مزامنة بين أجهزتك</h2>
+        <button type="button" class="btn btn-quiet" id="syncClose">إغلاق</button>
+      </div>
+      <div id="syncOff" hidden><p class="hint" id="syncOffText"></p></div>
+      <form id="syncSignedOut" novalidate hidden>
+        <p class="hint">سجّل الدخول ببريدك الإلكتروني وسنرسل إليك رابط دخول، دون كلمة مرور. استخدم البريد نفسه على كل أجهزتك لتظهر المهام والإعدادات نفسها.</p>
+        <div class="field">
+          <label for="syncEmail">البريد الإلكتروني</label>
+          <input id="syncEmail" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" dir="ltr">
+        </div>
+        <div class="form-actions"><button type="submit" class="btn btn-primary" id="syncSend">أرسل رابط الدخول</button></div>
+      </form>
+      <div id="syncSignedIn" hidden>
+        <p class="sync-user" id="syncUser" dir="ltr"></p>
+        <p class="hint" id="syncState"></p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-quiet" id="syncNow">مزامنة الآن</button>
+          <button type="button" class="btn btn-quiet" id="syncOut">تسجيل الخروج</button>
+        </div>
+      </div>
+      <p class="hint" id="syncMsg" aria-live="polite"></p>
+    </section>
 
     <form class="task-form" id="taskForm" novalidate hidden>
       <h2 id="formTitle">إضافة مهمة</h2>
@@ -653,5 +691,9 @@
 <script src="js/look.js"></script>
 <script src="js/sounds.js"></script>
 <script src="js/tasks.js"></script>
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
+<script src="js/sync-core.js"></script>
+<script src="js/sync.js"></script>
 </body>
 </html>
