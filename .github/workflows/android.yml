@@ -60,8 +60,9 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease assembleDebug --no-daemon --stacktrace
           cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/muslim-todo-list.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/muslim-todo-list-debug.apk"
 
       - name: Check the signature
         run: |
@@ -73,6 +74,11 @@ jobs:
         with:
           name: muslim-todo-list-apk
           path: muslim-todo-list.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: muslim-todo-list-debug-apk
+          path: muslim-todo-list-debug.apk
 
       - name: Publish the release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -93,9 +99,16 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # The debug build is the same app with its WebView open to inspection.
       - uses: actions/download-artifact@v4
         with:
-          name: muslim-todo-list-apk
+          name: muslim-todo-list-debug-apk
 
       - name: Enable KVM
         run: |
@@ -111,24 +124,16 @@ jobs:
           disable-animations: true
           script: |
             mkdir -p shots
-            adb install -r muslim-todo-list.apk
+            adb install -r muslim-todo-list-debug.apk
             adb shell pm grant io.github.micro4tricks.muslimtodo android.permission.POST_NOTIFICATIONS || true
             adb logcat -c
             adb shell am start -n io.github.micro4tricks.muslimtodo/.MainActivity
-            sleep 25
+            sleep 20
             adb exec-out screencap -p > shots/1-start.png
-            size=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1); w=${size%x*}; h=${size#*x}
-            { adb shell wm size; adb shell wm density; } > shots/screen.txt
-            # Swipe up along the edge (away from the timer), then across the middle.
-            adb shell input swipe $((w/12)) $((h*4/5)) $((w/12)) $((h/5)) 600
-            sleep 3
-            adb exec-out screencap -p > shots/2-scrolled-edge.png
-            adb shell input swipe $((w/2)) $((h*4/5)) $((w/2)) $((h/5)) 600
-            sleep 3
-            adb exec-out screencap -p > shots/3-scrolled-middle.png
-            adb shell dumpsys alarm | grep -c muslimtodo > shots/alarms.txt || true
-            adb shell dumpsys notification --noredact | grep -i -A3 "muslimtodo" | head -40 > shots/notifications.txt || true
-            adb logcat -d -s Capacitor:* Capacitor/Console:* chromium:* AndroidRuntime:E > shots/logcat.txt || true
+            # The emulator runner runs each line on its own, so these stay on one line.
+            pid=$(adb shell pidof io.github.micro4tricks.muslimtodo | tr -dc '0-9'); echo "pid=$pid"; adb forward tcp:9333 localabstract:webview_devtools_remote_$pid && node app/scripts/smoke.mjs 9333 shots || true
+            adb exec-out screencap -p > shots/2-after-checks.png
+            adb logcat -d -s Capacitor:* Capacitor/Console:* AndroidRuntime:E > shots/logcat.txt || true
 
       - uses: actions/upload-artifact@v4
         if: always()
