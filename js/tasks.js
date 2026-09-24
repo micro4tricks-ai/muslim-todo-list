@@ -12,7 +12,7 @@
 
   const $ = (id) => document.getElementById(id);
   const list = $('list'), form = $('taskForm');
-  const fTitle = $('fTitle'), fDesc = $('fDesc'), fDone = $('fDone'), fEst = $('fEst'), fSubs = $('fSubs');
+  const fTitle = $('fTitle'), fDesc = $('fDesc'), fDone = $('fDone'), fEst = $('fEst'), fSubs = $('fSubs'), fSlot = $('fSlot');
   const eTitle = $('eTitle');
 
   // ---- formatting ----
@@ -51,6 +51,7 @@
       completed: !!t.completed, createdAt: t.createdAt || Date.now(),
       completedAt: t.completedAt || (t.completed ? t.createdAt : null),
       timeSpent: t.timeSpent || {},
+      slot: t.slot || '', // prayer-time slot: '', fajr, dhuhr, asr, maghrib or isha
       updatedAt: t.updatedAt || 0 // set by sync when the task changes
     };
   }
@@ -169,7 +170,13 @@
   }
   function focusFinish(counted) {
     if (F.mode === 'focus') {
-      if (counted) F.count += 1;
+      if (counted) {
+        F.count += 1;
+        const cur = taskById(S.track.taskId);
+        window.dispatchEvent(new CustomEvent('noon-focus-done', { detail: {
+          start: F.startEpoch, minutes: Math.round((F.endEpoch - F.startEpoch) / 60000),
+          taskId: cur ? cur.id : null, taskTitle: cur ? cur.title : '' } }));
+      }
       stopTracking();
       setMode(F.count > 0 && F.count % LONG_EVERY === 0 && counted ? 'long' : 'short', true);
     } else {
@@ -291,11 +298,49 @@
     if (!visible.length) {
       const msg = T(S.filter === 'done' ? 'لا توجد مهام مكتملة بعد.' : S.filter === 'open' && S.tasks.length ? 'أنجزت كل المهام. أحسنت!' : 'لا توجد مهام بعد. اضغط «إضافة مهمة» لإنشاء أول مهمة.');
       list.append(el('li', 'empty', msg));
-    } else {
+    } else if (S.filter === 'done') {
       for (const t of visible) list.append(renderTask(t));
+    } else {
+      renderGrouped(visible);
     }
     renderLive();
     window.dispatchEvent(new CustomEvent('noon-focus', { detail: { mode: F.mode, running: F.running } }));
+  }
+
+  // ---- prayer-time slots ----
+  const SLOTS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  const SLOT_LABEL = { '': 'في أي وقت', fajr: 'بعد الفجر', dhuhr: 'بعد الظهر', asr: 'بعد العصر', maghrib: 'بعد المغرب', isha: 'بعد العشاء' };
+  // The slot we're in now, and each slot's [start, end) in local hours.
+  function slotTimes() {
+    const snap = window.noonAstro && window.noonAstro.snapshot(Date.now());
+    if (!snap) return null;
+    const d = snap.today, ranges = {};
+    SLOTS.forEach((k, i) => { ranges[k] = [d[k], i < 4 ? d[SLOTS[i + 1]] : d.fajr + 24]; });
+    let current = 'isha';
+    for (const k of SLOTS) if (snap.nowH >= ranges[k][0] && snap.nowH < ranges[k][1]) current = k;
+    if (snap.nowH < d.fajr) current = 'isha';
+    return { ranges, current, fmt: snap.fmtHM };
+  }
+  function renderGrouped(visible) {
+    const times = slotTimes();
+    // Start from the current slot so what's next is on top.
+    const order = [''].concat(times ? SLOTS.slice(SLOTS.indexOf(times.current)).concat(SLOTS.slice(0, SLOTS.indexOf(times.current))) : SLOTS);
+    const anySlot = visible.some((t) => t.slot);
+    for (const key of order) {
+      const group = visible.filter((t) => (t.slot || '') === key);
+      if (!group.length) continue;
+      if (anySlot) {
+        const head = el('li', 'slot-head');
+        head.append(el('span', 'slot-name', T(SLOT_LABEL[key])));
+        if (key && times) {
+          const [a, b] = times.ranges[key];
+          head.append(el('span', 'slot-time', `${times.fmt(a)} – ${times.fmt(b)}`));
+          if (key === times.current) head.append(el('span', 'slot-now', T('الآن')));
+        }
+        list.append(head);
+      }
+      for (const t of group) list.append(renderTask(t));
+    }
   }
 
   function renderSummary() {
@@ -397,6 +442,7 @@
   // ---- form ----
   let editingId = null;
   function openForm(task) {
+    if (window.noonUI) window.noonUI.show('tasks');
     editingId = task ? task.id : null;
     $('formTitle').textContent = T(task ? 'تعديل المهمة' : 'إضافة مهمة');
     $('submitBtn').textContent = T(task ? 'حفظ التعديلات' : 'إضافة المهمة');
@@ -405,6 +451,7 @@
     fEst.value = task && task.estimateMin ? task.estimateMin : '';
     fSubs.value = task ? task.subtasks.map((s) => s.title).join('\n') : '';
     fDone.checked = task ? task.completed : false;
+    fSlot.value = task ? task.slot : '';
     showError('');
     form.hidden = false;
     fTitle.focus();
@@ -440,10 +487,10 @@
       return prev || { id: uid() + i, title: st, done: false };
     });
     if (existing) {
-      Object.assign(existing, { title, description: fDesc.value.trim(), estimateMin, subtasks });
+      Object.assign(existing, { title, description: fDesc.value.trim(), estimateMin, subtasks, slot: fSlot.value });
       if (existing.completed !== fDone.checked) setCompleted(existing, fDone.checked);
     } else {
-      const t = normalizeTask({ id: uid(), title, description: fDesc.value.trim(), estimateMin, subtasks, createdAt: Date.now() });
+      const t = normalizeTask({ id: uid(), title, description: fDesc.value.trim(), estimateMin, subtasks, slot: fSlot.value, createdAt: Date.now() });
       if (fDone.checked) setCompleted(t, true);
       S.tasks.push(t);
     }
@@ -534,14 +581,14 @@
   };
 
   $('focusToggle').addEventListener('click', toggleFocus);
-  $('focusSkip').addEventListener('click', () => { focusFinish(false); save(); render(); });
-  $('focusReset').addEventListener('click', () => {
+  function skipFocus() { focusFinish(false); save(); render(); }
+  function resetFocus() {
     if (F.running && F.mode === 'focus') stopTracking();
     F.running = false;
     F.remainingMs = modeMs(F.mode);
     save(); render();
-  });
-  $('focusPlus').addEventListener('click', () => {
+  }
+  function plusFive() {
     if (F.running) {
       F.endEpoch += 5 * 60000;
       if (F.endEpoch - Date.now() > 3600000) F.endEpoch = Date.now() + 3600000;
@@ -549,7 +596,37 @@
     } else {
       setDuration(Math.min(60, Math.round(F.remainingMs / 60000) + 5));
     }
-  });
+  }
+  $('focusSkip').addEventListener('click', skipFocus);
+  $('focusReset').addEventListener('click', resetFocus);
+  $('focusPlus').addEventListener('click', plusFive);
+
+  // Used by the full-screen focus mode and the prayer alerts.
+  window.noonFocusControl = {
+    toggle: toggleFocus,
+    pause() { if (F.running) { focusPause(); save(); render(); } },
+    skip: skipFocus,
+    reset: resetFocus,
+    plus5: plusFive,
+    setMode(mode) { if (mode === F.mode) return; if (F.running) focusPause(); setMode(mode, false); save(); render(); },
+    toggleSubtask(taskId, subId) {
+      const t = taskById(taskId);
+      const s = t && t.subtasks.find((x) => x.id === subId);
+      if (!s) return;
+      s.done = !s.done;
+      save(); render();
+    },
+    state() {
+      const total = F.running ? F.endEpoch - F.startEpoch : modeMs(F.mode);
+      const remaining = F.running ? Math.max(0, F.endEpoch - Date.now()) : F.remainingMs;
+      const cur = taskById(S.track.taskId);
+      return {
+        mode: F.mode, running: F.running, remaining, total, count: F.count, every: LONG_EVERY,
+        label: MODE_LABEL[F.mode],
+        task: cur ? { id: cur.id, title: cur.title, subtasks: cur.subtasks.map((x) => ({ id: x.id, title: x.title, done: x.done })) } : null
+      };
+    }
+  };
   document.querySelector('.modes').addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-mode]');
     if (!b || b.dataset.mode === F.mode) return;
@@ -624,6 +701,7 @@
   });
 
   // ---- tick ----
+  let lastSlot = null;
   function tick() {
     if (F.day !== dayKey()) { F.day = dayKey(); F.count = 0; }
     if (F.running && Date.now() >= F.endEpoch) {
@@ -634,6 +712,9 @@
       if (wasFocus) return;
     }
     commitTracking();
+    // Move the "now" label when the next prayer comes in.
+    const slotNow = (slotTimes() || {}).current;
+    if (slotNow !== lastSlot) { lastSlot = slotNow; render(); return; }
     renderLive();
     if (Date.now() - lastSave > 5000) save();
   }
@@ -649,6 +730,16 @@
   // Used by sync.js to read the task list and to swap in a merged one.
   window.noonTasks = {
     get: () => S.tasks,
+    add(title, extra) {
+      title = String(title || '').trim().slice(0, 255);
+      if (!title) return null;
+      let name = title, n = 2;
+      while (S.tasks.some((t) => t.title.toLowerCase() === name.toLowerCase())) name = `${title} (${n++})`;
+      const t = normalizeTask(Object.assign({ id: uid(), title: name, createdAt: Date.now() }, extra || {}));
+      S.tasks.push(t);
+      save(); render();
+      return t;
+    },
     set(tasks) {
       S.tasks = tasks.map(normalizeTask);
       if (S.track.taskId !== null && !taskById(S.track.taskId)) clearCurrent();

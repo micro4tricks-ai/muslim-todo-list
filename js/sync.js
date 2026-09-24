@@ -11,7 +11,12 @@
 
   const TASKS_KEY = 'noon-sweep-v2';
   // Per-device things (focus timer, photo background, music folder) stay local.
-  const SETTINGS_KEYS = ['noon-sweep-place', 'noon-sweep-look', 'noon-sweep-sounds-v2', 'noon-sweep-lang'];
+  // Settings read once at page load (applied by reloading) ...
+  const RELOAD_KEYS = ['noon-sweep-place', 'noon-sweep-look', 'noon-sweep-sounds-v2', 'noon-sweep-lang'];
+  // ... and views that refresh themselves live when another device changes them.
+  const LIVE_KEYS = ['noon-sweep-notes', 'noon-sweep-cards', 'noon-sweep-habits', 'noon-sweep-adhkar',
+    'noon-sweep-distractions', 'noon-sweep-focuslog', 'noon-sweep-prayer-alerts'];
+  const SETTINGS_KEYS = RELOAD_KEYS.concat(LIVE_KEYS);
   const META_KEY = 'noon-sweep-sync-meta';
   const RELOAD_FLAG = 'noon-sweep-sync-reloaded';
 
@@ -90,7 +95,11 @@
     // Settings: take newer values from other devices.
     let settingsChanged = false;
     for (const [k, s] of Object.entries(doc.settings)) {
-      if (s.ts > (meta.ts[k] || 0) && s.value !== get(k)) { setQuiet(k, s.value); settingsChanged = true; }
+      if (s.ts > (meta.ts[k] || 0) && s.value !== get(k)) {
+        setQuiet(k, s.value);
+        if (LIVE_KEYS.includes(k)) window.dispatchEvent(new CustomEvent('noon-storage', { detail: { key: k } }));
+        else settingsChanged = true;
+      }
       meta.ts[k] = Math.max(meta.ts[k] || 0, s.ts);
     }
     saveMeta();
