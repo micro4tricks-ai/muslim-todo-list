@@ -332,6 +332,12 @@
   .tick-major { stroke: var(--ink); stroke-width: 2; }
   .dial-arc { fill: none; stroke: var(--accent); stroke-width: 18; transition: stroke 0.3s; }
   .focus:not([data-mode="focus"]) .dial-arc { stroke: var(--done); }
+  .dial-grip { display: none; position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; touch-action: none; z-index: 2; }
+  @media (pointer: coarse) {
+    .dial { touch-action: pan-y; }
+    .dial-grip { display: block; }
+    .focus.is-running .dial-grip { display: none; }
+  }
   .dial-knob { fill: var(--paper); stroke: var(--accent); stroke-width: 3; cursor: grab; filter: drop-shadow(0 1px 2px rgba(30,34,42,0.35)); }
   .focus:not([data-mode="focus"]) .dial-knob { stroke: var(--done); }
   .focus.is-running .dial-knob { cursor: default; }
@@ -873,6 +879,7 @@
         <circle class="dial-knob" id="dialKnob" cx="120" cy="28" r="10" tabindex="0" role="slider"
                 aria-label="مدة الجلسة بالدقائق" aria-valuemin="1" aria-valuemax="60" aria-valuenow="25"></circle>
       </svg>
+      <span class="dial-grip" id="dialGrip" aria-hidden="true"></span>
       <button type="button" class="dial-center" id="focusToggle">
         <span class="focus-time" id="focusTime">25:00</span>
         <span class="dial-hint" id="dialHint">اضغط للبدء</span>

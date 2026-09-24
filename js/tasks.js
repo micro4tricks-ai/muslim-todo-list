@@ -364,7 +364,7 @@
 
   // ---- focus dial (a 60-minute "time timer": the arc is the time left) ----
   const DIAL_C = 120, DIAL_R = 92;
-  const focusEl = $('focus'), dial = $('dial'), dialArc = $('dialArc'), knob = $('dialKnob');
+  const focusEl = $('focus'), dial = $('dial'), dialArc = $('dialArc'), knob = $('dialKnob'), grip = $('dialGrip');
   const polar = (deg, r) => {
     const a = (deg - 90) * Math.PI / 180;
     return [DIAL_C + r * Math.cos(a), DIAL_C + r * Math.sin(a)];
@@ -410,6 +410,8 @@
     const [kx, ky] = polar(deg, DIAL_R);
     knob.setAttribute('cx', kx);
     knob.setAttribute('cy', ky);
+    grip.style.left = `${(kx / 240) * 100}%`;
+    grip.style.top = `${(ky / 240) * 100}%`;
     const mins = F.durations[F.mode];
     knob.setAttribute('aria-valuenow', String(mins));
     knob.setAttribute('aria-valuetext', `${ar(mins)} ${T('دقيقة')}`);
@@ -652,25 +654,42 @@
     if (m === 0) m = lastMin !== null && lastMin >= 30 ? 60 : 1;
     return m;
   }
-  dial.addEventListener('pointerdown', (ev) => {
+  // On touch screens a swipe across the dial scrolls the page: fingers drag the
+  // knob (through a larger invisible grip) and a tap on the ring sets the minutes.
+  let touchTap = false;
+  function startDrag(ev, target) {
     if (blockedWhileRunning()) return;
     dragging = true;
     lastMin = F.durations[F.mode];
-    dial.setPointerCapture(ev.pointerId);
+    target.setPointerCapture(ev.pointerId);
     dial.classList.add('dragging');
     const m = minutesAt(ev);
     lastMin = m;
     setDuration(m);
     ev.preventDefault();
+  }
+  dial.addEventListener('pointerdown', (ev) => {
+    touchTap = ev.pointerType === 'touch';
+    if (!touchTap) startDrag(ev, dial);
   });
-  dial.addEventListener('pointermove', (ev) => {
+  dial.addEventListener('click', (ev) => {
+    if (!touchTap || blockedWhileRunning()) return;
+    touchTap = false;
+    lastMin = null;
+    setDuration(minutesAt(ev));
+  });
+  grip.addEventListener('pointerdown', (ev) => startDrag(ev, grip));
+  const moveDrag = (ev) => {
     if (!dragging) return;
     const m = minutesAt(ev);
     if (m !== lastMin) { lastMin = m; setDuration(m); }
-  });
+  };
   const endDrag = () => { dragging = false; lastMin = null; dial.classList.remove('dragging'); };
-  dial.addEventListener('pointerup', endDrag);
-  dial.addEventListener('pointercancel', endDrag);
+  for (const t of [dial, grip]) {
+    t.addEventListener('pointermove', moveDrag);
+    t.addEventListener('pointerup', endDrag);
+    t.addEventListener('pointercancel', endDrag);
+  }
 
   $('dialWrap').addEventListener('wheel', (ev) => {
     ev.preventDefault();
