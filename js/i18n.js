@@ -414,6 +414,18 @@
     "اكتب الفكرة واضغط Enter": "Write the thought and press Enter",
     "أقسام الصفحة": "Page sections",
     "فكرة مشتتة؟ اكتبها واضغط Enter ثم أكمل": "A stray thought? Type it, press Enter and carry on",
+    // Installable app
+    "ثبّت التطبيق": "Install the app",
+    "أو اكتب كود الدخول المكتوب في الرسالة": "Or type the sign-in code from the email",
+    "دخول": "Sign in",
+    "اكتب الكود كاملاً كما في الرسالة.": "Type the whole code as it appears in the email.",
+    "جارٍ التحقق…": "Checking…",
+    "الكود غير صحيح أو انتهت صلاحيته.": "The code is wrong or has expired.",
+    "لم يُسمح للتطبيق بالإشعارات. يمكنك السماح بها من إعدادات التطبيق في الهاتف.": "The app isn’t allowed to send notifications. You can allow them in the phone’s app settings.",
+    "انتهت جلسة التركيز": "Focus session finished",
+    "انتهت الاستراحة": "Break finished",
+    "خذ استراحة قصيرة، ثم ابدأ الجلسة التالية.": "Take a short break, then start the next session.",
+    "جاهز لجلسة تركيز جديدة؟": "Ready for a new focus session?",
     // Language switch
     'English': 'العربية'
   };

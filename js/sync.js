@@ -41,6 +41,7 @@
   };
 
   // ---- UI ----
+  const SITE_URL = 'https://micro4tricks-ai.github.io/muslim-todo-list/';
   const btn = $('syncBtn'), panel = $('syncPanel');
   let state = 'off', lastSync = 0, user = null, client = null;
   const timeFmt = new Intl.DateTimeFormat(I.locale, { hour: 'numeric', minute: '2-digit' });
@@ -226,15 +227,34 @@
     if (!email) return;
     $('syncSend').disabled = true;
     renderUI(T('جارٍ الإرسال…'));
+    // The Android app has no web address of its own, so its link opens the website;
+    // the code in the same email signs the app in.
     const { error } = await client.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: location.origin + location.pathname }
+      options: { emailRedirectTo: window.noonNative ? SITE_URL : location.origin + location.pathname }
     });
     $('syncSend').disabled = false;
+    $('syncCodeRow').hidden = !!error;
     renderUI(error
       ? `${T('تعذّر إرسال الرابط:')} ${error.message}`
       : T('أرسلنا رابط الدخول إلى بريدك. افتحه على أي جهاز، وستُسجَّل دخولك تلقائياً.'));
+    if (!error) $('syncCode').focus();
   });
+  // Typing the code works where the link can't reach: the installed app on
+  // iPhone (links open in Safari) and the Android app.
+  async function verifyCode() {
+    const email = $('syncEmail').value.trim();
+    const token = $('syncCode').value.replace(/\D/g, '');
+    if (!email || token.length < 6) { renderUI(T('اكتب الكود كاملاً كما في الرسالة.')); return; }
+    $('syncVerify').disabled = true;
+    renderUI(T('جارٍ التحقق…'));
+    const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
+    $('syncVerify').disabled = false;
+    if (error) renderUI(`${T('الكود غير صحيح أو انتهت صلاحيته.')} ${error.message}`);
+    else { $('syncCode').value = ''; $('syncCodeRow').hidden = true; renderUI(''); }
+  }
+  $('syncVerify').addEventListener('click', verifyCode);
+  $('syncCode').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); verifyCode(); } });
   $('syncNow').addEventListener('click', () => syncNow());
   $('syncOut').addEventListener('click', async () => {
     await client.auth.signOut();

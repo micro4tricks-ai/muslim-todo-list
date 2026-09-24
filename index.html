@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Muslim To-Do List</title>
+<meta name="description" content="مهامك ومواقيت الصلاة والأذكار ومؤقت التركيز في مكان واحد.">
+<meta name="theme-color" content="#EFEFEC">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Muslim To-Do">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap">
@@ -715,6 +724,18 @@
     .fm, .fm *, .toast, .flip-inner { animation: none !important; transition: none !important; }
   }
 
+  .sync-code { display: flex; flex-direction: column; gap: 6px; }
+  .sync-code label { font-size: 13px; color: var(--ink-soft); }
+  .sync-code-row { display: flex; gap: 8px; }
+  .sync-code input { flex: 1; min-width: 0; font: inherit; font-size: 18px; letter-spacing: 0.2em; text-align: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
+  .install-btn svg { width: 15px; height: 15px; vertical-align: -3px; margin-inline-end: 4px; }
+  /* Installed app: keep the page clear of the status bar and the notch. */
+  .is-app body { padding-top: env(safe-area-inset-top, 0px); }
+  /* Touch screens have no keyboard shortcuts. */
+  @media (pointer: coarse) {
+    .shortcuts { display: none; }
+  }
+
   @media (max-width: 860px) {
     .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .card-form { grid-template-columns: minmax(0, 1fr); }
@@ -734,6 +755,30 @@
     .form-row { grid-template-columns: minmax(0, 1fr); }
     .pp-grid { grid-template-columns: minmax(0, 1fr); }
     .clock-pane { height: min(62vh, 460px); min-height: 320px; }
+  }
+  /* Phones: one column, the timer centred under the clock, a one-line sound bar. */
+  @media (max-width: 600px) {
+    .clock-pane { height: min(96vw, 400px); min-height: 300px; }
+    .focus { grid-template-columns: minmax(0, 1fr); grid-template-areas: "modes" "dial" "info"; justify-items: center; padding: 12px; }
+    .focus .dial-wrap { width: 168px; }
+    .focus-info { align-items: center; width: 100%; }
+    .focus-info .focus-task, .focus-info .focus-note, .focus-info .focus-label { text-align: center; }
+    .focus-info .focus-controls { justify-content: center; }
+    .focus-info .distract-form { width: 100%; }
+    .todo-pane { padding-inline: 16px; }
+    .todo-head h1 { font-size: 26px; }
+    .head-actions { width: 100%; }
+    .head-actions .btn { flex: 1 1 auto; }
+    .views { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+    .views button { padding: 8px 4px; }
+    .dock-bar { flex-wrap: nowrap; gap: 8px; padding: 6px 12px; }
+    .dock-now { order: 0; flex: 1 1 0; min-width: 0; flex-basis: auto; }
+    .dock-toggle[aria-expanded="false"] ~ label { display: none; }
+    .dock-toggle[aria-expanded="true"] ~ .dock-now { display: none; }
+    .dock-bar label[for="sndSync"] { display: none; }
+    .dock-toggle { font-size: 14px; white-space: nowrap; }
+    #sndPlay { min-width: 64px; }
+    .dock-body { max-height: 60vh; }
   }
   @media (prefers-reduced-motion: reduce) {
     * { scroll-behavior: auto !important; }
@@ -866,6 +911,7 @@
         <button type="button" class="btn btn-quiet sync-btn" id="syncBtn" data-state="off" aria-controls="syncPanel">
           <span class="sync-dot" aria-hidden="true"></span><span id="syncLabel">مزامنة</span>
         </button>
+        <button type="button" class="btn btn-quiet install-btn" id="installBtn" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13h10"/></svg>ثبّت التطبيق</button>
         <button type="button" class="btn btn-quiet" id="langBtn">English</button>
         <button type="button" class="btn btn-primary" id="addBtn">إضافة مهمة</button>
       </div>
@@ -884,6 +930,13 @@
           <input id="syncEmail" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" dir="ltr">
         </div>
         <div class="form-actions"><button type="submit" class="btn btn-primary" id="syncSend">أرسل رابط الدخول</button></div>
+        <div class="sync-code" id="syncCodeRow" hidden>
+          <label for="syncCode">أو اكتب كود الدخول المكتوب في الرسالة</label>
+          <div class="sync-code-row">
+            <input id="syncCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr" placeholder="123456">
+            <button type="button" class="btn btn-quiet" id="syncVerify">دخول</button>
+          </div>
+        </div>
       </form>
       <div id="syncSignedIn" hidden>
         <p class="sync-user" id="syncUser" dir="ltr"></p>
@@ -1010,12 +1063,14 @@
 <script src="js/adhkar.js"></script>
 <script src="js/habits.js"></script>
 <script src="js/focus-plus.js"></script>
+<script src="js/native.js"></script>
 <script src="js/prayer-alerts.js"></script>
 <script src="js/report.js"></script>
 <script src="js/focus-mode.js"></script>
 <script src="js/config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
+<script src="js/vendor/supabase.js"></script>
 <script src="js/sync-core.js"></script>
 <script src="js/sync.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ثبّت التطبيق · Muslim To-Do List</title>
+<meta name="description" content="ثبّت Muslim To-Do List على هاتفك أو جهازك اللوحي مجاناً.">
+<meta name="theme-color" content="#EFEFEC">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap">
+<style>
+  :root {
+    --ground: #EFEFEC; --paper: #FFFFFF; --surface: #F8F8F6;
+    --ink: #2A2E35; --ink-soft: #5B616A; --ink-faint: #8A9097; --line: #DCDDD8;
+    --accent: #C4492C; --accent-deep: #A93C22; --accent-wash: #F6E4DE; --done: #3F7D5A; --done-wash: #E1EDE5;
+    --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.7 var(--font); }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
+  header { display: flex; align-items: center; gap: 16px; }
+  header img { width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 6px 18px rgba(196, 73, 44, 0.3); flex: none; }
+  h1 { margin: 0; font-size: 26px; line-height: 1.3; }
+  .lead { margin: 4px 0 0; color: var(--ink-soft); }
+  .top { display: flex; gap: 8px; flex-wrap: wrap; }
+  a.btn, button.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer;
+    border-radius: 10px; padding: 10px 18px; border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+  }
+  a.btn:hover, button.btn:hover { border-color: var(--accent); }
+  .btn-primary { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
+  .btn-primary:hover { background: var(--accent-deep) !important; }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+  .tabs { display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .tabs button { flex: 1; font: inherit; font-weight: 600; font-size: 15px; border: none; background: none; color: var(--ink-soft); padding: 10px 8px; border-radius: 9px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 3px rgba(30, 34, 42, 0.12); }
+  section.card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  section.card h2 { margin: 0; font-size: 19px; }
+  section.card h3 { margin: 4px 0 0; font-size: 16px; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; color: var(--done); background: var(--done-wash); border-radius: 999px; padding: 2px 10px; margin-inline-start: 6px; vertical-align: 2px; }
+  ol { margin: 0; padding-inline-start: 22px; display: flex; flex-direction: column; gap: 6px; }
+  ol li::marker { color: var(--accent); font-weight: 700; }
+  .note { margin: 0; font-size: 14px; color: var(--ink-soft); background: var(--surface); border-radius: 10px; padding: 10px 14px; }
+  .note strong { color: var(--ink); }
+  .icon-inline { display: inline-block; width: 18px; height: 18px; vertical-align: -4px; color: #0A84FF; }
+  kbd { font: inherit; font-size: 14px; font-weight: 600; background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; }
+  footer { font-size: 14px; color: var(--ink-faint); text-align: center; }
+  footer a { color: var(--accent-deep); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icons/icon-192.png" alt="">
+    <div>
+      <h1 data-en="Install Muslim To-Do List">ثبّت Muslim To-Do List</h1>
+      <p class="lead" data-en="Free, with no ads and no subscriptions. Works offline, with your tasks, prayer times and adhkar in one place.">مجاني بالكامل، بلا إعلانات ولا اشتراكات. يعمل دون إنترنت، ومهامك ومواقيت الصلاة والأذكار في مكان واحد.</p>
+    </div>
+  </header>
+
+  <div class="top">
+    <a class="btn" href="./" id="openLink" data-en="Open the app in the browser">افتح التطبيق في المتصفح</a>
+    <a class="btn" href="?lang=en" id="langLink">English</a>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="نوع الجهاز" data-en-label="Device type">
+    <button type="button" role="tab" data-os="android" aria-selected="true" data-en="Android">أندرويد</button>
+    <button type="button" role="tab" data-os="ios" aria-selected="false" data-en="iPhone & iPad">آيفون وآيباد</button>
+    <button type="button" role="tab" data-os="desktop" aria-selected="false" data-en="Computer">الكمبيوتر</button>
+  </div>
+
+  <div data-panel="android">
+    <section class="card">
+      <h2><span data-en="Android app">تطبيق أندرويد</span> <span class="badge" data-en="Recommended">الأفضل</span></h2>
+      <p style="margin:0" data-en="A full app that shows the prayer alerts even when it’s closed, and a notice when your focus session ends.">تطبيق كامل يُظهر تنبيهات الصلاة حتى وهو مغلق، ويُنبّهك عند انتهاء جلسة التركيز.</p>
+      <div><a class="btn btn-primary" id="apkLink" href="https://github.com/micro4tricks-ai/muslim-todo-list/releases/latest/download/muslim-todo-list.apk">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 2v8m-3.5-3.5L8 10l3.5-3.5M3 13h10"/></svg>
+        <span data-en="Download the app (APK)">نزّل التطبيق (APK)</span></a></div>
+      <ol>
+        <li data-en="Tap the button above and wait for the download to finish.">اضغط الزر أعلاه وانتظر حتى يكتمل التنزيل.</li>
+        <li data-en="Open the downloaded file from the notification bar or the Downloads folder.">افتح الملف من شريط الإشعارات أو من مجلد التنزيلات.</li>
+        <li data-en="If the phone asks, allow “Install unknown apps” for the browser, then go back and tap Install.">إذا طلب الهاتف ذلك، اسمح بـ«تثبيت التطبيقات غير المعروفة» للمتصفح، ثم ارجع واضغط «تثبيت».</li>
+        <li data-en="Open the app and allow notifications so the prayer alerts reach you.">افتح التطبيق واسمح بالإشعارات لتصلك تنبيهات الصلاة.</li>
+      </ol>
+      <p class="note" data-en-html="&lt;strong&gt;Why the warning?&lt;/strong&gt; Android shows it for any app that doesn’t come from Google Play. The app is free and open source, and its full code is public on GitHub.">
+        <strong>لماذا يظهر تحذير؟</strong> يُظهره أندرويد لأي تطبيق لا يأتي من Google Play. التطبيق مجاني ومفتوح المصدر، وكوده كاملاً منشور على GitHub.</p>
+      <p class="note" data-en-html="&lt;strong&gt;Samsung, Xiaomi, Oppo and similar phones:&lt;/strong&gt; if an alert comes late, open the phone settings → Apps → Muslim To-Do List → Battery, and choose “Unrestricted”.">
+        <strong>هواتف سامسونج وشاومي وأوبو وأمثالها:</strong> إذا تأخر تنبيه، افتح إعدادات الهاتف ← التطبيقات ← Muslim To-Do List ← البطارية، واختر «غير مقيّد».</p>
+    </section>
+    <section class="card">
+      <h2 data-en="Or: install from Chrome">أو: ثبّته من متصفح Chrome</h2>
+      <ol>
+        <li data-en="Open the app link in Chrome.">افتح رابط التطبيق في Chrome.</li>
+        <li data-en-html="Tap the menu &lt;kbd&gt;⋮&lt;/kbd&gt; at the top, then “Install app” or “Add to Home screen”.">اضغط القائمة <kbd>⋮</kbd> في الأعلى، ثم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».</li>
+      </ol>
+      <p class="note" data-en="This way the alerts appear only while the app is open.">بهذه الطريقة تظهر التنبيهات فقط والتطبيق مفتوح.</p>
+    </section>
+  </div>
+
+  <div data-panel="ios" hidden>
+    <section class="card">
+      <h2 data-en="iPhone and iPad">آيفون وآيباد</h2>
+      <ol>
+        <li data-en="Open the app link in Safari (it has to be Safari).">افتح رابط التطبيق في متصفح Safari (لا بد أن يكون Safari).</li>
+        <li data-en-html="Tap the Share button &lt;svg class=&quot;icon-inline&quot; viewBox=&quot;0 0 16 16&quot; aria-hidden=&quot;true&quot;&gt;&lt;path fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.5&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; d=&quot;M8 1.5v9M5 4.5l3-3 3 3M4.5 7H3.5v7.5h9V7h-1&quot;/&gt;&lt;/svg&gt; at the bottom of the screen (at the top on iPad).">اضغط زر المشاركة <svg class="icon-inline" viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M8 1.5v9M5 4.5l3-3 3 3M4.5 7H3.5v7.5h9V7h-1"/></svg> أسفل الشاشة (أعلاها في الآيباد).</li>
+        <li data-en="Scroll down and choose “Add to Home Screen”, then “Add”.">انزل واختر «إضافة إلى الشاشة الرئيسية»، ثم «إضافة».</li>
+        <li data-en="Open the app from its new icon on the home screen.">افتح التطبيق من أيقونته الجديدة على الشاشة الرئيسية.</li>
+      </ol>
+      <p class="note" data-en-html="&lt;strong&gt;Sync on iPhone:&lt;/strong&gt; the sign-in link opens in Safari, not in the app. Type the code from the same email in the app instead.">
+        <strong>المزامنة على الآيفون:</strong> رابط الدخول يفتح في Safari لا في التطبيق، فاكتب في التطبيق الكود الموجود في الرسالة نفسها.</p>
+      <p class="note" data-en="On iPhone, the prayer alerts appear while the app is open.">على الآيفون تظهر تنبيهات الصلاة والتطبيق مفتوح.</p>
+    </section>
+  </div>
+
+  <div data-panel="desktop" hidden>
+    <section class="card">
+      <h2 data-en="Computer (Chrome or Edge)">الكمبيوتر (Chrome أو Edge)</h2>
+      <ol>
+        <li data-en="Open the app link.">افتح رابط التطبيق.</li>
+        <li data-en="Click the install icon at the end of the address bar, or the “Install the app” button above the task list.">اضغط أيقونة التثبيت في آخر شريط العنوان، أو زر «ثبّت التطبيق» أعلى قائمة المهام.</li>
+      </ol>
+      <p class="note" data-en="It opens in its own window and works offline.">يفتح في نافذة مستقلة ويعمل دون إنترنت.</p>
+    </section>
+  </div>
+
+  <footer>
+    <span data-en="Free and open source ·">مجاني ومفتوح المصدر ·</span>
+    <a href="https://github.com/micro4tricks-ai/muslim-todo-list" data-en="Code on GitHub">الكود على GitHub</a>
+  </footer>
+</main>
+<script>
+(() => {
+  'use strict';
+  let lang = new URLSearchParams(location.search).get('lang');
+  if (lang !== 'en' && lang !== 'ar') { try { lang = localStorage.getItem('noon-sweep-lang'); } catch (_) {} }
+  const en = lang === 'en';
+  if (en) {
+    document.documentElement.lang = 'en';
+    document.documentElement.dir = 'ltr';
+    document.title = 'Install the app · Muslim To-Do List';
+    document.querySelectorAll('[data-en]').forEach((n) => { n.textContent = n.dataset.en; });
+    document.querySelectorAll('[data-en-html]').forEach((n) => { n.innerHTML = n.dataset.enHtml; });
+    document.querySelectorAll('[data-en-label]').forEach((n) => n.setAttribute('aria-label', n.dataset.enLabel));
+    document.getElementById('openLink').href = './?lang=en';
+    const l = document.getElementById('langLink');
+    l.href = '?lang=ar'; l.textContent = 'العربية';
+  }
+  // Show the steps for this device first.
+  const ua = navigator.userAgent;
+  const os = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios'
+    : /Android/.test(ua) ? 'android' : 'desktop';
+  const tabs = [...document.querySelectorAll('[data-os]')];
+  const show = (id) => {
+    tabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.os === id)));
+    document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== id; });
+  };
+  tabs.forEach((b) => b.addEventListener('click', () => show(b.dataset.os)));
+  show(os);
+})();
+</script>
+</body>
+</html>

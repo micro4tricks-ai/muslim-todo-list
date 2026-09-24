@@ -1,0 +1,19 @@
+{
+  "appId": "io.github.micro4tricks.muslimtodo",
+  "appName": "Muslim To-Do List",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#EFEFEC"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notify",
+      "iconColor": "#C4492C"
+    },
+    "SystemBars": {
+      "insetsHandling": "native",
+      "initialViewportFitValueHint": "cover",
+      "style": "LIGHT"
+    }
+  }
+}

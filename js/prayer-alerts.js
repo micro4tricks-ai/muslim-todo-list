@@ -7,8 +7,10 @@
   const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
   const NAMES = { fajr: 'الفجر', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء' };
   const $ = (id) => document.getElementById(id);
-  let S = Object.assign({ enabled: true, notify: false, autoPause: true, before: 10 }, load(KEY, {}));
-  const save = () => { S.updatedAt = Date.now(); store(KEY, S); };
+  const native = () => window.noonNative;
+  // Inside the Android app the phone itself shows the alerts, so they are on by default.
+  let S = Object.assign({ enabled: true, notify: !!native(), autoPause: true, before: 10 }, load(KEY, {}));
+  const save = () => { S.updatedAt = Date.now(); store(KEY, S); if (native()) native().schedulePrayers(true); };
   // Remember what we've already announced today, per device.
   let fired = {};
   try { fired = JSON.parse(sessionStorage.getItem('noon-prayer-fired') || '{}'); } catch (_) {}
@@ -24,7 +26,12 @@
   ap.addEventListener('change', () => { S.autoPause = ap.checked; save(); });
   bf.addEventListener('change', () => { S.before = Number(bf.value) || 0; save(); });
   no.addEventListener('change', async () => {
-    if (no.checked && 'Notification' in window && Notification.permission !== 'granted') {
+    if (no.checked && native()) {
+      if (!(await native().permit(true))) {
+        no.checked = false;
+        $('paMsg').textContent = T('لم يُسمح للتطبيق بالإشعارات. يمكنك السماح بها من إعدادات التطبيق في الهاتف.');
+      }
+    } else if (no.checked && 'Notification' in window && Notification.permission !== 'granted') {
       let p = 'denied';
       try { p = await Notification.requestPermission(); } catch (_) {}
       if (p !== 'granted') {
@@ -34,10 +41,11 @@
     }
     S.notify = no.checked; save();
   });
-  if (!('Notification' in window)) { no.disabled = true; no.closest('label').hidden = true; }
+  if (!('Notification' in window) && !native()) { no.disabled = true; no.closest('label').hidden = true; }
 
   function notify(title, body) {
-    if (!S.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+    // The app books its alerts ahead of time (js/native.js).
+    if (native() || !S.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
     try { new Notification(title, { body, tag: 'noon-prayer', silent: false }); } catch (_) {}
   }
   let audioCtx = null;
@@ -95,6 +103,6 @@
   }
   setInterval(check, 15000);
   setTimeout(check, 3000);
-  onRemote(KEY, () => { S = Object.assign(S, load(KEY, {})); syncForm(); });
+  onRemote(KEY, () => { S = Object.assign(S, load(KEY, {})); syncForm(); if (native()) native().schedulePrayers(true); });
   syncForm();
 })();
