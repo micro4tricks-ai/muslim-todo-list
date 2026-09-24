@@ -1,0 +1,131 @@
+# Builds the Android app (APK) from the website files, signs it, and attaches it
+# to a GitHub release when a tag such as v1.0.0 is pushed.
+# Run it by hand from the Actions tab to get a test build without a release.
+name: Android app
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.name }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then name="${GITHUB_REF_NAME#v}"; else name="1.0.${GITHUB_RUN_NUMBER}-test"; fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "APP_VERSION_NAME=$name" >> "$GITHUB_ENV"
+          echo "APP_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      - name: Copy the site into the app
+        working-directory: app
+        run: |
+          npm ci
+          npm run copy-web
+          npx cap sync android
+
+      - name: Signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.p12"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+
+      - name: Build the APK
+        working-directory: app/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/muslim-todo-list.apk"
+
+      - name: Check the signature
+        run: |
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          "$apksigner" verify --print-certs "$GITHUB_WORKSPACE/muslim-todo-list.apk" | head -5
+          ls -l "$GITHUB_WORKSPACE/muslim-todo-list.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: muslim-todo-list-apk
+          path: muslim-todo-list.apk
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="تطبيق أندرويد مجاني — Free Android app.
+          طريقة التثبيت / How to install: https://micro4tricks-ai.github.io/muslim-todo-list/install.html"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" muslim-todo-list.apk --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" muslim-todo-list.apk --title "Muslim To-Do List $GITHUB_REF_NAME" --notes "$notes"
+          fi
+
+  # Installs the APK on an Android emulator, opens it, and saves screenshots
+  # and the app's console log, so a broken build shows up before anyone installs it.
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: muslim-todo-list-apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            mkdir -p shots
+            adb install -r muslim-todo-list.apk
+            adb shell pm grant io.github.micro4tricks.muslimtodo android.permission.POST_NOTIFICATIONS || true
+            adb logcat -c
+            adb shell am start -n io.github.micro4tricks.muslimtodo/.MainActivity
+            sleep 25
+            adb exec-out screencap -p > shots/1-start.png
+            adb shell input swipe 540 1800 540 600 400
+            sleep 3
+            adb exec-out screencap -p > shots/2-scrolled.png
+            adb shell dumpsys alarm | grep -c muslimtodo > shots/alarms.txt || true
+            adb shell dumpsys notification --noredact | grep -i -A3 "muslimtodo" | head -40 > shots/notifications.txt || true
+            adb logcat -d -s Capacitor:* Capacitor/Console:* chromium:* AndroidRuntime:E > shots/logcat.txt || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test
+          path: shots
