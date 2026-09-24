@@ -117,7 +117,8 @@ jobs:
             adb shell am start -n io.github.micro4tricks.muslimtodo/.MainActivity
             sleep 25
             adb exec-out screencap -p > shots/1-start.png
-            adb shell input swipe 540 1800 540 600 400
+            size=$(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1); w=${size%x*}; h=${size#*x}
+            adb shell input swipe $((w/2)) $((h*3/4)) $((w/2)) $((h/4)) 400
             sleep 3
             adb exec-out screencap -p > shots/2-scrolled.png
             adb shell dumpsys alarm | grep -c muslimtodo > shots/alarms.txt || true
