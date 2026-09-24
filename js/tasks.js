@@ -72,12 +72,12 @@
         const now = Date.now();
         s.tasks = [
           normalizeTask({
-            id: now - 2, title: T('مثال: ترتيب أولويات الأسبوع'), description: T('مهمة تجريبية، عدّلها أو احذفها.'),
+            id: 1, title: T('مثال: ترتيب أولويات الأسبوع'), description: T('مهمة تجريبية، عدّلها أو احذفها.'),
             estimateMin: 30, createdAt: now - 3600e3, timeSpent: { [dayKey()]: 12 * 60000 },
-            subtasks: [{ id: now - 5, title: T('مراجعة البريد'), done: true }, { id: now - 4, title: T('تحديد أهم ٣ مهام'), done: false }]
+            subtasks: [{ id: 11, title: T('مراجعة البريد'), done: true }, { id: 12, title: T('تحديد أهم ٣ مهام'), done: false }]
           }),
           normalizeTask({
-            id: now - 1, title: T('مثال: قراءة ٢٠ صفحة'), description: T('مهمة تجريبية مكتملة.'),
+            id: 2, title: T('مثال: قراءة ٢٠ صفحة'), description: T('مهمة تجريبية مكتملة.'),
             estimateMin: 25, completed: true, completedAt: now - 1800e3, createdAt: now - 7200e3,
             timeSpent: { [dayKey()]: 27 * 60000 }
           })

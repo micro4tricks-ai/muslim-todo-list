@@ -83,6 +83,7 @@
       applying++;
       try { window.noonTasks.set(JSON.parse(JSON.stringify(doc.tasks))); } finally { applying--; }
     }
+    rememberSignatures();
     meta.base = {};
     for (const t of doc.tasks) meta.base[t.id] = core.taskKey(t);
     meta.tombs = doc.tombs;
@@ -152,12 +153,19 @@
     pushDue = due;
     pushTimer = setTimeout(() => { pushTimer = null; syncNow(); }, delay);
   }
-  function onTasksSaved() {
+  const signatures = () => {
     const tasks = localTasks();
-    const full = JSON.stringify(tasks.map(core.taskKey));
-    const coreSig = JSON.stringify(tasks.map((t) => { const c = Object.assign({}, t); delete c.updatedAt; delete c.timeSpent; return c; }));
-    if (coreSig !== lastCore) { lastCore = coreSig; lastFull = full; schedule(1500); }
-    else if (full !== lastFull) { lastFull = full; schedule(60000); }
+    return {
+      full: JSON.stringify(tasks.map(core.taskKey)),
+      core: JSON.stringify(tasks.map((t) => { const c = Object.assign({}, t); delete c.updatedAt; delete c.timeSpent; return c; }))
+    };
+  };
+  // What's on screen after a sync, so the next save is compared against it.
+  function rememberSignatures() { const s = signatures(); lastCore = s.core; lastFull = s.full; }
+  function onTasksSaved() {
+    const s = signatures();
+    if (s.core !== lastCore) { lastCore = s.core; lastFull = s.full; schedule(1500); }
+    else if (s.full !== lastFull) { lastFull = s.full; schedule(60000); }
   }
 
   // Watch this page's own saves.
