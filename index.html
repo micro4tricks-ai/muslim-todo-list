@@ -323,7 +323,7 @@
   .modes button { border: none; background: none; padding: 4px 12px; border-radius: 6px; font-size: 13px; color: var(--ink-soft); }
   .modes button[aria-selected="true"] { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(30,34,42,0.12); }
   .dial-wrap { position: relative; width: min(150px, 38vw); max-width: 100%; aspect-ratio: 1; }
-  .dial { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; overflow: visible; }
+  .dial { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; overflow: visible; }
   .dial.dragging { cursor: grabbing; }
   .focus.is-running .dial { cursor: default; }
   .dial-face { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
@@ -332,12 +332,9 @@
   .tick-major { stroke: var(--ink); stroke-width: 2; }
   .dial-arc { fill: none; stroke: var(--accent); stroke-width: 18; transition: stroke 0.3s; }
   .focus:not([data-mode="focus"]) .dial-arc { stroke: var(--done); }
-  .dial-grip { display: none; position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; touch-action: none; z-index: 2; }
-  @media (pointer: coarse) {
-    .dial { touch-action: pan-y; }
-    .dial-grip { display: block; }
-    .focus.is-running .dial-grip { display: none; }
-  }
+  /* Fingers drag the knob through this larger grip; a swipe anywhere else on the dial scrolls the page. */
+  .dial-grip { position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; touch-action: none; z-index: 2; cursor: grab; }
+  .focus.is-running .dial-grip { display: none; }
   .dial-knob { fill: var(--paper); stroke: var(--accent); stroke-width: 3; cursor: grab; filter: drop-shadow(0 1px 2px rgba(30,34,42,0.35)); }
   .focus:not([data-mode="focus"]) .dial-knob { stroke: var(--done); }
   .focus.is-running .dial-knob { cursor: default; }
