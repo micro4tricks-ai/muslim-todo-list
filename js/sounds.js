@@ -159,6 +159,36 @@
   // file (where fetch is blocked) fall back to a looping <audio> element.
   let ac = null, master = null;
   const bufferCache = {};
+  const decode = (bytes) => new Promise((res, rej) => ac.decodeAudioData(bytes, res, rej));
+  // Phones and tablets: a whole recording decoded for gapless looping takes about
+  // 100 MB, enough for Android to close the app when a few play together. There
+  // only the first minute of each file is decoded, one file at a time, and its end
+  // is blended into its start so the loop stays seamless at a quarter of the memory.
+  const LITE = matchMedia('(pointer: coarse)').matches || !!window.Capacitor;
+  const LITE_BYTES = 1.2 * 1048576;
+  const BLEND_S = 2;
+  let decoding = Promise.resolve();
+  async function decodeLite(bytes) {
+    if (bytes.byteLength <= LITE_BYTES * 1.3) return decode(bytes);
+    let part;
+    try { part = await decode(bytes.slice(0, LITE_BYTES)); } catch (_) { return decode(bytes); }
+    return blendLoop(part);
+  }
+  function blendLoop(src) {
+    const fade = Math.min(Math.floor(BLEND_S * src.sampleRate), Math.floor(src.length / 4));
+    const len = src.length - fade;
+    const out = ac.createBuffer(src.numberOfChannels, len, src.sampleRate);
+    for (let c = 0; c < src.numberOfChannels; c++) {
+      const from = src.getChannelData(c), to = out.getChannelData(c);
+      to.set(from.subarray(0, len));
+      // The loop's last sample is followed by from[len], so the start fades from there.
+      for (let i = 0; i < fade; i++) {
+        const k = i / fade;
+        to[i] = from[i] * Math.sqrt(k) + from[len + i] * Math.sqrt(1 - k);
+      }
+    }
+    return out;
+  }
   function ensureAudio() {
     if (!ac) {
       try {
@@ -179,7 +209,12 @@
             const r = await fetch(url);
             if (!r.ok) throw new Error('HTTP ' + r.status);
             const bytes = await r.arrayBuffer();
-            const buf = await new Promise((res, rej) => ac.decodeAudioData(bytes, res, rej));
+            let buf;
+            if (LITE) {
+              const job = decoding.catch(() => {}).then(() => decodeLite(bytes));
+              decoding = job;
+              buf = await job;
+            } else buf = await decode(bytes);
             workingBase = base;
             return buf;
           } catch (e) { lastError = e; }
@@ -289,6 +324,7 @@
     const p = live[id];
     if (!p) return;
     delete live[id];
+    if (LITE) delete bufferCache[id]; // give the memory back on phones
     if (p.gain) {
       p.gain.gain.setTargetAtTime(0, ac.currentTime, 0.2);
       setTimeout(() => { try { if (p.node) p.node.stop(); } catch (_) {} p.gain.disconnect(); }, 900);
