@@ -694,7 +694,7 @@
   .fm-dots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); }
   .fm-dots i.on { background: #FF9A6B; box-shadow: 0 0 8px rgba(255, 154, 107, 0.8); }
   .fm[data-mode="short"] .fm-dots i.on, .fm[data-mode="long"] .fm-dots i.on { background: #8FE3B4; box-shadow: 0 0 8px rgba(143, 227, 180, 0.8); }
-  .fm-breath { position: absolute; width: 58%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(143, 227, 180, 0.28), rgba(143, 227, 180, 0.04) 70%); opacity: 0; }
+  .fm-breath { position: absolute; width: 58%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(143, 227, 180, 0.28), rgba(143, 227, 180, 0.04) 70%); opacity: 0; will-change: transform; }
   .fm[data-mode="short"] .fm-breath, .fm[data-mode="long"] .fm-breath { opacity: 1; animation: fm-breathe 10s ease-in-out infinite; }
   @keyframes fm-breathe { 0% { transform: scale(0.72); } 40% { transform: scale(1.06); } 100% { transform: scale(0.72); } }
   .fm-breath-text { position: relative; font-size: 13px; color: rgba(200, 245, 220, 0.9); min-height: 1.2em; }
@@ -743,6 +743,9 @@
     .dock { background: rgba(250, 250, 248, 0.98); }
     .fm { -webkit-backdrop-filter: none; backdrop-filter: none; background-color: rgba(12, 14, 20, 0.97); animation: none; }
     .fm[data-mode="short"], .fm[data-mode="long"] { background-color: rgba(10, 16, 16, 0.97); }
+    .fm-arc, .fm.is-running .fm-arc { animation: none; transition: none; }
+    /* Nothing behind focus mode needs painting while it covers the screen. */
+    body.fm-open .left-pane, body.fm-open .todo-pane { visibility: hidden; }
   }
   /* Touch screens have no keyboard shortcuts. */
   @media (pointer: coarse) {

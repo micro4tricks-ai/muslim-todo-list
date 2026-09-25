@@ -73,6 +73,8 @@
     ticks.append(ln);
   }
   const arc = svg.querySelector('.fm-arc'), head = svg.querySelector('.fm-head');
+  // Phones: the blurred glow is redrawn in software on every change, so it is left off.
+  if (matchMedia('(pointer: coarse)').matches || window.Capacitor) arc.removeAttribute('filter');
   const center = el('div', 'fm-center');
   const breath = el('div', 'fm-breath');
   const time = el('div', 'fm-time', '25:00');
@@ -116,7 +118,7 @@
   root.append(top, main, side);
 
   // ---- rendering ----
-  let lastSig = '', raf = 0, lastMode = null, wasRunning = false;
+  let lastSig = '', raf = 0, lastMode = null, wasRunning = false, lastDash = '';
   function renderStatic(st) {
     const sig = JSON.stringify([st.mode, st.running, st.count, st.task, I.lang]);
     if (sig === lastSig) return;
@@ -178,16 +180,28 @@
     }
   }
 
-  function frame() {
+  // Four updates a second: the time changes once a second and the ring glides
+  // between updates with its CSS transition.
+  let lastFrame = 0;
+  function frame(now) {
     if (root.hidden) return;
+    raf = requestAnimationFrame(frame);
+    if (now - lastFrame < 250) return;
+    lastFrame = now;
     const st = ctl().state();
     renderStatic(st);
     const p = st.total ? Math.min(1, st.remaining / st.total) : 0;
-    arc.setAttribute('stroke-dashoffset', String(C * (1 - p)));
-    const a = (-90 + 360 * p) * Math.PI / 180;
-    head.setAttribute('cx', 180 + R * Math.cos(a));
-    head.setAttribute('cy', 180 + R * Math.sin(a));
-    time.textContent = fmtTime(st.remaining);
+    // The ring moves a fraction of a pixel per frame: redraw it only when that shows.
+    const dash = (C * (1 - p)).toFixed(1);
+    if (dash !== lastDash) {
+      lastDash = dash;
+      arc.setAttribute('stroke-dashoffset', dash);
+      const a = (-90 + 360 * p) * Math.PI / 180;
+      head.setAttribute('cx', (180 + R * Math.cos(a)).toFixed(1));
+      head.setAttribute('cy', (180 + R * Math.sin(a)).toFixed(1));
+    }
+    const shown = fmtTime(st.remaining);
+    if (time.textContent !== shown) time.textContent = shown;
     // Breathing guide during breaks: 4 s in, 6 s out.
     if (st.mode !== 'focus') {
       const t = (Date.now() / 1000) % 10;
@@ -197,7 +211,6 @@
     if (lastMode && lastMode !== st.mode) { root.classList.remove('is-switch'); void root.offsetWidth; root.classList.add('is-switch'); }
     lastMode = st.mode;
     if (st.running !== wasRunning) { wasRunning = st.running; st.running ? lockScreen() : unlockScreen(); }
-    raf = requestAnimationFrame(frame);
   }
   function renderInfo() {
     now.textContent = clockFmt.format(new Date());
@@ -217,7 +230,7 @@
     lastFocus = document.activeElement;
     root.hidden = false;
     document.body.classList.add('fm-open');
-    lastSig = ''; lastMode = null;
+    lastSig = ''; lastMode = null; lastDash = ''; lastFrame = 0;
     renderInfo();
     infoTimer = setInterval(renderInfo, 15000);
     cancelAnimationFrame(raf);

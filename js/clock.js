@@ -757,7 +757,8 @@
   function loop(now) {
     if (!onScreen) { looping = false; return; }
     requestAnimationFrame(loop);
-    if (now - lastDraw < FRAME_MS) return;
+    // Hidden behind focus mode, or not due yet.
+    if (document.body.classList.contains('fm-open') || now - lastDraw < FRAME_MS) return;
     lastDraw = now;
     frame(now);
   }
