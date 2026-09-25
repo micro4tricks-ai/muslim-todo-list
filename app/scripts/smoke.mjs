@@ -107,6 +107,24 @@ await phase('app in background 20s, then back', async () => {
   adb(`shell am start -n ${pkg}/.MainActivity`); await sleep(3000);
 }, 6000);
 report.errors = errors;
+
+// ---- If Android stops the page's renderer, the app must reopen its screen, not close ----
+send('Page.crash').catch(() => {});
+await sleep(12000);
+let pagesAfter = [];
+try { pagesAfter = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).filter((t) => t.type === 'page'); } catch { /* none */ }
+let reopened = null;
+if (pagesAfter.length) {
+  const w2 = new WebSocket(pagesAfter[0].webSocketDebuggerUrl);
+  await new Promise((r) => w2.addEventListener('open', r));
+  reopened = await new Promise((r) => {
+    w2.addEventListener('message', (e) => { const m = JSON.parse(e.data); if (m.id === 1) r(m.result && m.result.result && m.result.result.value); });
+    w2.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression: `document.title + ' | tabs: ' + document.querySelectorAll('.views button').length`, returnByValue: true } }));
+    setTimeout(() => r('no answer'), 5000);
+  });
+  w2.close();
+}
+report.afterRendererCrash = { appRunning: alive(), page: reopened };
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
 ws.close();
