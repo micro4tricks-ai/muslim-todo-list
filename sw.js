@@ -53,6 +53,7 @@ self.addEventListener('fetch', (ev) => {
   if (isMedia(url)) { ev.respondWith(media(req)); return; }
   if (isFontCss(url)) { ev.respondWith(networkFirst(req, MEDIA)); return; }
   if (url.origin !== location.origin) return; // time servers, Supabase, CDNs: straight to the network
+  if (url.pathname.endsWith('.apk')) return; // the Android app download is never kept offline
   ev.respondWith(networkFirst(req, SHELL));
 });
 

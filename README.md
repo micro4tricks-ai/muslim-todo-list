@@ -11,7 +11,7 @@
 
 صفحة الخطوات لكل جهاز: [`install.html`](https://micro4tricks-ai.github.io/muslim-todo-list/install.html)
 
-- **أندرويد:** ملف APK من [آخر إصدار](https://github.com/micro4tricks-ai/muslim-todo-list/releases/latest) — تطبيق كامل تصل تنبيهات الصلاة فيه والتطبيق مغلق. أو «تثبيت التطبيق» من Chrome.
+- **أندرويد:** ملف APK من [الموقع مباشرة](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk) (ونسخه في [صفحة الإصدارات](https://github.com/micro4tricks-ai/muslim-todo-list/releases/latest)) — تطبيق كامل تصل تنبيهات الصلاة فيه والتطبيق مغلق. أو «تثبيت التطبيق» من Chrome.
 - **آيفون وآيباد:** من Safari ← مشاركة ← «إضافة إلى الشاشة الرئيسية».
 - **الكمبيوتر:** زر «ثبّت التطبيق» أعلى قائمة المهام، أو أيقونة التثبيت في شريط العنوان.
 
