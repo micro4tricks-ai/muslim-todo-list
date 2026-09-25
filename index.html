@@ -13,9 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Muslim To-Do">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -734,6 +732,16 @@
   .install-btn svg { width: 15px; height: 15px; vertical-align: -3px; margin-inline-end: 4px; }
   /* Installed app: keep the page clear of the status bar and the notch. */
   .is-app body { padding-top: env(safe-area-inset-top, 0px); }
+  /* Phones and tablets: frosted-glass blur is repainted on every scroll frame,
+     so the panels use a nearly solid background instead. */
+  @media (pointer: coarse), (max-width: 860px) {
+    .todo-pane, .card, .dock {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    .todo-pane, .card { background: rgba(248, 248, 246, 0.96); }
+    .dock { background: rgba(250, 250, 248, 0.98); }
+  }
   /* Touch screens have no keyboard shortcuts. */
   @media (pointer: coarse) {
     .shortcuts { display: none; }
@@ -1072,9 +1080,9 @@
 <script src="js/report.js"></script>
 <script src="js/focus-mode.js"></script>
 <script src="js/config.js"></script>
-<script src="js/vendor/supabase.js"></script>
-<script src="js/sync-core.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/app.js"></script>
+<script src="js/vendor/supabase.js" defer></script>
+<script src="js/sync-core.js" defer></script>
+<script src="js/sync.js" defer></script>
+<script src="js/app.js" defer></script>
 </body>
 </html>

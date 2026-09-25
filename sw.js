@@ -1,8 +1,8 @@
 // ---------- Offline support for the installed app (PWA) ----------
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
-// Sound recordings and fonts: saved the first time they play, then served from the device.
-const VERSION = 'v1';
+// Sound recordings: saved the first time they play, then served from the device.
+const VERSION = 'v2';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const FILES = [
@@ -11,7 +11,26 @@ const FILES = [
   'js/i18n.js', 'js/clock.js', 'js/astro.js', 'js/look.js', 'js/sounds.js', 'js/tasks.js', 'js/views.js',
   'js/notes.js', 'js/cards.js', 'js/adhkar-data.js', 'js/adhkar.js', 'js/habits.js', 'js/focus-plus.js',
   'js/prayer-alerts.js', 'js/report.js', 'js/focus-mode.js', 'js/config.js', 'js/vendor/supabase.js',
-  'js/sync-core.js', 'js/sync.js', 'js/app.js'
+  'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
+  'fonts/Amiri-400-arabic.woff2',
+  'fonts/Amiri-400-latin-ext.woff2',
+  'fonts/Amiri-400-latin.woff2',
+  'fonts/Amiri-700-arabic.woff2',
+  'fonts/Amiri-700-latin-ext.woff2',
+  'fonts/Amiri-700-latin.woff2',
+  'fonts/IBMPlexSansArabic-400-arabic.woff2',
+  'fonts/IBMPlexSansArabic-400-latin-ext.woff2',
+  'fonts/IBMPlexSansArabic-400-latin.woff2',
+  'fonts/IBMPlexSansArabic-500-arabic.woff2',
+  'fonts/IBMPlexSansArabic-500-latin-ext.woff2',
+  'fonts/IBMPlexSansArabic-500-latin.woff2',
+  'fonts/IBMPlexSansArabic-600-arabic.woff2',
+  'fonts/IBMPlexSansArabic-600-latin-ext.woff2',
+  'fonts/IBMPlexSansArabic-600-latin.woff2',
+  'fonts/IBMPlexSansArabic-700-arabic.woff2',
+  'fonts/IBMPlexSansArabic-700-latin-ext.woff2',
+  'fonts/IBMPlexSansArabic-700-latin.woff2',
+  'fonts/fonts.css'
 ];
 
 self.addEventListener('install', (ev) => {

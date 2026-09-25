@@ -30,6 +30,12 @@ await send('Page.enable');
 await send('Page.reload'); await sleep(8000);
 
 const report = {};
+report.timing = await js(`(() => { const n = performance.getEntriesByType('navigation')[0]; const f = performance.getEntriesByName('first-contentful-paint')[0];
+  return { firstPaintMs: f && Math.round(f.startTime), readyMs: Math.round(n.domContentLoadedEventEnd), loadMs: Math.round(n.loadEventEnd) }; })()`);
+await send('Performance.enable');
+const metric = async () => (await send('Performance.getMetrics')).metrics.find((m) => m.name === 'TaskDuration').value;
+const m0 = await metric(); await sleep(5000);
+report.busyWhileIdlePercent = Math.round((await metric() - m0) / 5 * 100);
 report.page = await js(`({
   ua: navigator.userAgent.replace(/^.*(Chrome\/[0-9.]+).*$/, '$1'),
   classes: document.documentElement.className, native: !!window.noonNative,

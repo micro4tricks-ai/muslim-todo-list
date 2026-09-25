@@ -731,8 +731,12 @@
   }
 
   // ---------- Loop ----------
+  // Phones and tablets: a mechanical-watch sweep (8 steps a second) and 2x pixels
+  // look the same to the eye and leave the processor free for scrolling.
+  const LITE = matchMedia('(pointer: coarse)').matches || !!window.Capacitor;
+  const FRAME_MS = LITE ? 125 : 0;
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 3);
+    DPR = Math.min(window.devicePixelRatio || 1, LITE ? 2 : 3);
     const box = pane.getBoundingClientRect();
     W = Math.max(1, box.width);
     H = Math.max(1, box.height);
@@ -746,6 +750,27 @@
     staticLayer = buildStatic();
     glassLayer = buildGlass();
     compKey = '';
+  }
+
+  // Draw only while the clock is on screen.
+  let onScreen = true, looping = false, lastDraw = 0;
+  function loop(now) {
+    if (!onScreen) { looping = false; return; }
+    requestAnimationFrame(loop);
+    if (now - lastDraw < FRAME_MS) return;
+    lastDraw = now;
+    frame(now);
+  }
+  function startLoop() {
+    if (looping || !onScreen) return;
+    looping = true;
+    requestAnimationFrame(loop);
+  }
+  if (window.IntersectionObserver) {
+    new IntersectionObserver((entries) => {
+      onScreen = entries[entries.length - 1].isIntersecting;
+      startLoop();
+    }).observe(pane);
   }
 
   function frame(now) {
@@ -767,7 +792,6 @@
     drawCap();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(glassLayer, 0, 0);
-    requestAnimationFrame(frame);
   }
 
   let resizeQueued = false;
@@ -782,5 +806,5 @@
   window.addEventListener('noon-look', () => { T = look(); queueResize(); });
 
   resize();
-  requestAnimationFrame(frame);
+  startLoop();
 })();
