@@ -134,6 +134,7 @@ jobs:
             pid=$(adb shell pidof io.github.micro4tricks.muslimtodo | tr -dc '0-9'); echo "pid=$pid"; adb forward tcp:9333 localabstract:webview_devtools_remote_$pid && node app/scripts/smoke.mjs 9333 shots || true
             adb exec-out screencap -p > shots/2-after-checks.png
             adb logcat -d -s Capacitor:* Capacitor/Console:* AndroidRuntime:E > shots/logcat.txt || true
+            adb logcat -d | grep -i -E "fatal|crash|render process|renderer|anr in|lowmemorykiller|killing.*muslimtodo|out of memory" | tail -80 > shots/crashes.txt || true
 
       - uses: actions/upload-artifact@v4
         if: always()

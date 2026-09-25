@@ -27,6 +27,9 @@ const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.
 const js = async (e) => { const r = await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true }); return r.result && r.result.value; };
 await send('Runtime.enable');
 await send('Page.enable');
+// Record every task that blocks the page for more than 50 ms.
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `window.__long = [];
+  try { new PerformanceObserver((l) => l.getEntries().forEach((e) => __long.push([Math.round(e.startTime), Math.round(e.duration)]))).observe({ type: 'longtask', buffered: true }); } catch (e) {}` });
 await send('Page.reload'); await sleep(8000);
 
 const report = {};
@@ -63,6 +66,46 @@ report.alerts = await js(`(async () => {
   const n = p.notifications || [];
   return { pending: n.length, exactAlarms: exact, first: n.slice(0, 3).map((x) => x.title + ' @ ' + new Date(x.schedule.at).toISOString()) };
 })()`);
+
+// ---- A few minutes of normal use, measuring memory, freezes and crashes ----
+const pkg = 'io.github.micro4tricks.muslimtodo';
+const memory = () => {
+  const lines = adb('shell dumpsys meminfo').split('\n').filter((l) => /K: .*(muslimtodo|webview|sandboxed_process)/i.test(l));
+  return lines.map((l) => l.trim().replace(/\s*\(pid.*$/, '').replace(/org\.chromium\S*/, '')).slice(0, 4);
+};
+const alive = () => { try { return adb(`shell pidof ${pkg}`).trim() !== ''; } catch { return false; } };
+const lag = async () => { const t0 = Date.now(); await js('1'); return Date.now() - t0; };
+const gesture = (e) => send('Runtime.evaluate', { expression: e, userGesture: true, awaitPromise: true, returnByValue: true });
+let seen = await js('__long.length');
+report.phases = [];
+async function phase(name, run, waitMs) {
+  let error = null;
+  try { await run(); } catch (e) { error = String(e); }
+  const lags = [];
+  for (let t = 0; t < waitMs; t += 2000) { await sleep(2000); lags.push(await Promise.race([lag(), sleep(10000).then(() => 10000)])); }
+  const all = (await Promise.race([js('__long'), sleep(10000).then(() => null)])) || [];
+  const fresh = all.slice(seen); seen = all.length;
+  report.phases.push({ name, error, appRunning: alive(), worstResponseMs: Math.max(0, ...lags),
+    freezes: fresh.length, longestFreezeMs: Math.max(0, ...fresh.map((x) => x[1])), memory: memory() });
+  console.log(JSON.stringify(report.phases.at(-1)));
+}
+await phase('idle', async () => {}, 8000);
+await phase('switch every tab', async () => {
+  for (const v of ['notes', 'cards', 'habits', 'adhkar', 'report', 'tasks']) { await gesture(`document.querySelector('.views [data-view="${v}"]').click()`); await sleep(1200); }
+}, 4000);
+await phase('open adhkar list', async () => {
+  await gesture(`document.querySelector('.views [data-view="adhkar"]').click()`); await sleep(500);
+  await gesture(`document.querySelector('.adhkar-cat').click()`); await sleep(500);
+  await js('scrollTo(0, document.documentElement.scrollHeight); true');
+}, 6000);
+await phase('play mix: rain + fire', async () => { await js('scrollTo(0, 0); true'); await gesture(`document.getElementById('dockToggle').click(); document.querySelector('.preset').click()`); }, 30000);
+await phase('play mix: 3 sounds', async () => { await gesture(`document.querySelectorAll('.preset')[2].click()`); }, 30000);
+await phase('focus mode with sound', async () => { await gesture(`window.noonFocusMode.open()`); }, 15000);
+await phase('close focus mode, stop sound', async () => { await gesture(`window.noonFocusMode.close(); document.getElementById('sndPlay').click()`); }, 8000);
+await phase('app in background 20s, then back', async () => {
+  adb('shell input keyevent HOME'); await sleep(20000);
+  adb(`shell am start -n ${pkg}/.MainActivity`); await sleep(3000);
+}, 6000);
 report.errors = errors;
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
