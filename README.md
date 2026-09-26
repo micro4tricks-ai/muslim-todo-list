@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🕌 Muslim To-Do List
+<img src="docs/logo.svg" width="96" height="96" alt="Muslim To-Do List logo">
+
+# Muslim To-Do List
 
 **Plan your day around the prayers — tasks, focus timer, habits, adhkar and focus sounds, in Arabic and English.**
 
