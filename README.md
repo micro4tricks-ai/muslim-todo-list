@@ -1,4 +1,22 @@
-# Muslim To-Do List
+<div align="center">
+
+# 🕌 Muslim To-Do List
+
+**Plan your day around the prayers — tasks, focus timer, habits, adhkar and focus sounds, in Arabic and English.**
+
+[![Open the app](https://img.shields.io/badge/Open%20the%20app-→-c4502b?style=for-the-badge)](https://micro4tricks-ai.github.io/muslim-todo-list/)
+&nbsp;
+[![Android APK](https://img.shields.io/github/v/release/micro4tricks-ai/muslim-todo-list?style=for-the-badge&logo=android&logoColor=white&label=Android%20APK&color=3DDC84)](https://github.com/micro4tricks-ai/muslim-todo-list/releases/latest)
+&nbsp;
+![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
+&nbsp;
+![Supabase sync](https://img.shields.io/badge/Sync-Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)
+
+<a href="https://micro4tricks-ai.github.io/muslim-todo-list/"><img src="docs/screenshot.png" alt="Muslim To-Do List: prayer-times clock, focus timer and tasks" width="860"></a>
+
+**English:** a watch-face clock with prayer times, moon phase and the Hijri date; tasks split around the prayers; a Pomodoro focus mode; sticky notes, review cards, habits and adhkar; and a library of focus sounds. Works offline and syncs between devices. Open [the English version](https://micro4tricks-ai.github.io/muslim-todo-list/en/).
+
+</div>
 
 ساعة عقارب مع مواقيت الصلاة، وطور القمر، والشروق والغروب، والتاريخ الهجري والميلادي، ومؤقت تركيز، وقائمة مهام، ومكتبة أصوات للتركيز.
 
