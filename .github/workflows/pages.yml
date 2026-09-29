@@ -33,7 +33,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir _site
-          cp -r index.html install.html manifest.webmanifest sw.js .nojekyll README.md en icons fonts js sounds _site/
+          cp -r index.html install.html manifest.webmanifest sw.js .nojekyll README.md en icons fonts js sounds quran _site/
           gh release download --repo "$GITHUB_REPOSITORY" --pattern muslim-todo-list.apk --dir _site || echo "No release yet"
           ls -la _site
 
