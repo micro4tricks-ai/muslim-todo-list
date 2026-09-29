@@ -266,8 +266,15 @@
     const opt = (o) => Object.assign({ timeZone: place.tz }, o);
     let hijri = '', hijriFull = '';
     try {
-      hijri = new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'long' })).format(epoch);
-      hijriFull = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(epoch);
+      // The user may shift the Hijri date to match the moon sighting where they live (set in the calendar).
+      let adj = 0;
+      try { adj = Number((JSON.parse(localStorage.getItem('noon-sweep-sunnah')) || {}).adj) || 0; } catch (_) {}
+      const hEpoch = epoch + adj * 864e5;
+      hijri = new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'long' })).format(hEpoch);
+      hijriFull = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(hEpoch);
+      // The weekday stays today's.
+      const wd = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long' }));
+      if (adj) hijriFull = hijriFull.replace(wd.format(hEpoch), wd.format(epoch));
     } catch (_) {}
 
     const val = {

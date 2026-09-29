@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Muslim To-Do List",
   "short_name": "Muslim To-Do",
-  "description": "مهامك ومواقيت الصلاة والأذكار ومؤقت التركيز في مكان واحد.",
+  "description": "مهامك ومواقيت الصلاة والمصحف الشريف والأذكار وتقويم الصيام ومؤقت التركيز في مكان واحد.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -18,6 +18,8 @@
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "المصحف", "url": "./?view=quran", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "التقويم والصيام", "url": "./?view=calendar", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "الأذكار", "url": "./?view=adhkar", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "وضع التركيز", "url": "./?focus=1", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]

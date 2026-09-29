@@ -151,6 +151,14 @@
     const h = S.habits.find((x) => x.link === ev.detail.period);
     if (h && !done(h, dayKey())) { set(h, dayKey(), 1); render(); }
   });
+  // Pages read in the Mushaf feed the Quran wird; a fast marked in the calendar ticks the fasting habit.
+  window.addEventListener('noon-habit', (ev) => {
+    const h = S.habits.find((x) => x.id === ev.detail.id);
+    if (!h) return;
+    const day = dayKey();
+    const v = h.type === 'count' ? Math.max(val(h, day), ev.detail.value) : (ev.detail.value ? 1 : 0);
+    if (v !== val(h, day)) { set(h, day, v); render(); }
+  });
   setInterval(() => { if (root.dataset.day !== dayKey()) { root.dataset.day = dayKey(); render(); } }, 60000);
   root.dataset.day = dayKey();
   onRemote(KEY, () => { S = load(KEY, S); render(); });

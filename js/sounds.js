@@ -505,6 +505,8 @@
     const want = f.running && f.mode === 'focus';
     if (want !== playing) setPlaying(want);
   });
+  // A Quran recitation is listened to on its own: the sounds fall quiet when it starts.
+  window.addEventListener('noon-recitation', () => { if (playing) setPlaying(false); });
   // Browsers only start audio after a tap; resume on the first one.
   document.addEventListener('pointerdown', () => { if (ac && ac.state === 'suspended') ac.resume(); });
 

@@ -2,9 +2,10 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
+const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
 const FILES = [
   './', 'index.html', 'install.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png',
@@ -12,6 +13,8 @@ const FILES = [
   'js/notes.js', 'js/cards.js', 'js/adhkar-data.js', 'js/adhkar.js', 'js/habits.js', 'js/focus-plus.js',
   'js/prayer-alerts.js', 'js/report.js', 'js/focus-mode.js', 'js/config.js', 'js/vendor/supabase.js',
   'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
+  'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
+  'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',
   'fonts/Amiri-400-latin-ext.woff2',
   'fonts/Amiri-400-latin.woff2',
@@ -38,12 +41,12 @@ self.addEventListener('install', (ev) => {
 });
 self.addEventListener('activate', (ev) => {
   ev.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k !== SHELL && k !== MEDIA) await caches.delete(k);
+    for (const k of await caches.keys()) if (k !== SHELL && k !== MEDIA && k !== QURAN) await caches.delete(k);
     await self.clients.claim();
   })());
 });
 
-const isMedia = (url) => /\.(mp3|wav|ogg|m4a)$/i.test(url.pathname) || url.hostname === 'fonts.gstatic.com';
+const isMedia = (url) => (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname) && url.hostname !== 'cdn.islamic.network') || url.hostname === 'fonts.gstatic.com';
 const isFontCss = (url) => url.hostname === 'fonts.googleapis.com';
 
 self.addEventListener('fetch', (ev) => {
@@ -54,9 +57,18 @@ self.addEventListener('fetch', (ev) => {
   if (isFontCss(url)) { ev.respondWith(networkFirst(req, MEDIA)); return; }
   if (url.origin !== location.origin) return; // time servers, Supabase, CDNs: straight to the network
   if (url.pathname.endsWith('.apk')) return; // the Android app download is never kept offline
+  if (/\/quran\/[a-z]+\.json$/.test(url.pathname)) { ev.respondWith(cacheFirst(req, QURAN)); return; }
   ev.respondWith(networkFirst(req, SHELL));
 });
 
+async function cacheFirst(req, cacheName) {
+  const cache = await caches.open(cacheName);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (res.ok) cache.put(req, res.clone());
+  return res;
+}
 async function networkFirst(req, cacheName) {
   const cache = await caches.open(cacheName);
   try {

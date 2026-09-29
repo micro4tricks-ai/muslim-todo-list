@@ -77,7 +77,18 @@
     const n = Math.max(0, Math.min(tabs.length - 1, Number.isFinite(dir) ? (i + dir + tabs.length) % tabs.length : (dir < 0 ? 0 : tabs.length - 1)));
     show(tabs[n].dataset.view, true);
   });
+  // Open a section and bring it on screen (from shortcuts, reminders and the quick bar).
+  function go(view) {
+    show(view);
+    const nav = document.querySelector('.views');
+    if (nav) nav.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-go]');
+    if (b && !b.closest('.qr')) go(b.dataset.go);
+  });
   window.noonUI.show = show;
+  window.noonUI.go = go;
   window.noonUI.currentView = () => current;
   show(current);
 })();

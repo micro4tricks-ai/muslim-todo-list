@@ -55,6 +55,9 @@ It runs in any browser, installs as an app on phones, tablets and desktops, work
 | | Feature | Details |
 |:-:|---|---|
 | 🕰️ | **Prayer clock** | Watch-face clock with the next prayer and a countdown, sunrise/sunset, moon phase, Hijri + Gregorian date. 32 countries and 12 calculation methods (Egyptian Survey, Umm al-Qura, Dubai…). Custom dial, frame and background colours. |
+| 📖 | **The Holy Quran** | The full Mushaf in the Uthmani script (Hafs, Tanzil text) with the Sahih International English translation, verse-by-verse recitation from 7 reciters, Tafsir al-Muyassar, bookmarks, search (Arabic, English, `2:255` or a page number), "continue reading", a daily wird counted in pages, completion tracking, and light / sepia / night pages. Works offline once opened. |
+| 📅 | **Hijri calendar and Sunnah reminders** | Umm al-Qura month view with a day shift for local moon sighting; reminders the evening before Monday and Thursday fasts, the White Days (13–15), Arafah, Tasu‘a and Ashura, six of Shawwal, Ramadan and its last ten nights, and the ten days of Dhul-Hijjah; no-fasting days (the two Eids, Tashreeq) are marked. Each one shows its hadith with the reference and grading. Friday (Surat al-Kahf) and morning/evening adhkar reminders too. |
+| 🧭 | **Qibla** | Direction and distance to the Kaaba from your place, with a live compass on phones. |
 | ✅ | **Tasks** | Subtasks, estimated time, time tracking, and the day split by prayer (after Fajr, after Dhuhr…). Keyboard shortcuts. |
 | 🎯 | **Focus** | Pomodoro timer with a draggable dial, full-screen focus mode, a "distracting thought" box, useful breaks (dhikr, movement, water, breathing) and prayer alerts. |
 | 🗒️ | **Sticky notes** | Coloured notes you drag to arrange and pin; turn any note into a task. |
@@ -64,8 +67,8 @@ It runs in any browser, installs as an app on phones, tablets and desktops, work
 | 📊 | **Report** | Daily and weekly focus minutes, your best time to focus, and streaks. |
 | 🎧 | **Focus sounds** | 32 recordings (rain, nature, places, noise, binaural…) that you mix, plus your own music folder from the device. |
 | 🌐 | **Arabic ⇄ English** | Full RTL/LTR switch, remembered per device. Direct English link: `/en/` or `?lang=en`. |
-| 🔄 | **Sync** | Passwordless email sign-in; tasks and settings sync across devices through Supabase. |
-| 📱 | **Installable** | PWA on every platform, plus a free Android app with prayer notifications that arrive even when the app is closed. |
+| 🔄 | **Sync** | Email and password sign-in; tasks and settings sync across devices through Supabase. |
+| 📱 | **Installable** | PWA on every platform, plus a free Android app with prayer, fasting and season notifications that arrive even when the app is closed. |
 
 ## Screenshots
 
@@ -96,10 +99,10 @@ After the first visit the app works offline (`sw.js`), and every sound you have 
 | Clock | Canvas 2D, with a lighter path on touch devices for smooth phone performance |
 | Prayer times | Own implementation of the [PrayTimes.org](http://praytimes.org) algorithm |
 | Offline / install | Service worker (`sw.js`) + Web App Manifest |
-| Sync | [Supabase](https://supabase.com) (Postgres with row-level security, email magic-link auth) |
+| Sync | [Supabase](https://supabase.com) (Postgres with row-level security, email and password auth) |
 | Android | [Capacitor](https://capacitorjs.com) 8 with native local notifications |
 | CI/CD | GitHub Actions: signed APK on every `v*` tag, emulator smoke test, GitHub Pages deploy |
-| Data tools | Python script that builds the adhkar data from its sources |
+| Data tools | Python scripts that build the adhkar, Mushaf and hadith data from their sources, so no religious text is typed by hand |
 
 ## Run locally
 
@@ -113,7 +116,7 @@ On Windows you can also double-click `تشغيل.bat`, which starts a small loca
 
 ## Sync between devices (Supabase)
 
-The **Sync** button signs in by email (a sign-in link, no password) and syncs your tasks and settings across devices. To set it up once on your own Supabase project:
+The **Sync** button signs in with an email and password (with a sign-in link as a fallback) and syncs your tasks and settings across devices. To set it up once on your own Supabase project:
 
 1. Create a free project on [supabase.com](https://supabase.com).
 2. **SQL Editor → New query:** paste `supabase/schema.sql` and press **Run**.
@@ -153,17 +156,22 @@ The signing key lives in the repository secrets, and its original copy is kept o
 | `js/focus-mode.js` | Full-screen focus mode |
 | `js/prayer-alerts.js` | Prayer alerts |
 | `js/report.js` | The report |
+| `js/quran.js`, `js/quran-meta.js`, `quran/` | The Mushaf reader and its texts |
+| `js/sunnah.js`, `js/sunnah-data.js` | Hijri calendar, fasting and season reminders, and their evidence |
+| `js/qibla.js` | Qibla direction and compass |
 | `js/config.js` | Supabase project settings |
 | `js/sync-core.js` | Rules for merging data between devices |
 | `js/sync.js` | Sign-in and sync |
 | `js/app.js` | Install button and home-screen shortcuts |
-| `js/native.js` | Prayer and focus notifications inside the Android app |
+| `js/native.js` | Prayer, focus and Sunnah notifications inside the Android app |
 | `js/vendor/supabase.js` | Supabase client (local copy, MIT license) |
 | `supabase/schema.sql` | Database table and its access rules |
 | `sounds/` | Sound recordings |
 | `manifest.webmanifest`, `icons/` | Installable-app metadata and icons |
 | `sw.js` | Offline support |
 | `tools/build_adhkar.py` | Builds the adhkar data from its sources |
+| `tools/build_quran.py` | Builds the Mushaf data from api.alquran.cloud (Tanzil) |
+| `tools/build_sunnah.py` | Cuts the hadith evidence out of the hadith collections |
 | `app/` | Android app project (Capacitor); it takes the site files as they are |
 | `.github/workflows/android.yml` | Builds, signs, publishes and tests the APK |
 | `docs/` | Logo, screenshots and social preview |

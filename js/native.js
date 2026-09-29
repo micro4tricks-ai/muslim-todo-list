@@ -13,13 +13,20 @@
   const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
   const NAMES = { fajr: 'الفجر', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء' };
   const DAYS = 7;
-  const PRAYER_IDS = [1000, 2000], FOCUS_ID = 2000;
+  const PRAYER_IDS = [1000, 2000], FOCUS_ID = 2000, SUNNAH_IDS = [3000, 4000];
+  const SUNNAH_DAYS = 21;
   const quiet = (p) => Promise.resolve(p).catch(() => {});
 
   const channels = Promise.all([
     quiet(LN.createChannel({ id: 'prayer', name: T('تنبيهات الصلاة'), importance: 5, visibility: 1, vibration: true })),
-    quiet(LN.createChannel({ id: 'focus', name: T('مؤقت التركيز'), importance: 4, visibility: 1, vibration: true }))
+    quiet(LN.createChannel({ id: 'focus', name: T('مؤقت التركيز'), importance: 4, visibility: 1, vibration: true })),
+    quiet(LN.createChannel({ id: 'sunnah', name: T('الصيام والمواسم والأذكار'), importance: 4, visibility: 1, vibration: true }))
   ]);
+  // Tapping a reminder opens its section.
+  quiet(LN.addListener('localNotificationActionPerformed', (a) => {
+    const view = a && a.notification && a.notification.extra && a.notification.extra.view;
+    if (view && window.noonUI.go) setTimeout(() => window.noonUI.go(view), 300);
+  }));
 
   async function permit(ask) {
     try {
@@ -79,6 +86,32 @@
     } finally { busy = false; }
   }
 
+  // ---- fasts, seasons, Friday, adhkar and wird (js/sunnah.js decides what and when) ----
+  let sunnahSig = null, sunnahBusy = false;
+  async function scheduleSunnah(force) {
+    if (sunnahBusy || !window.noonSunnah) return;
+    sunnahBusy = true;
+    try {
+      const now = Date.now();
+      const list = window.noonSunnah.plan(now, SUNNAH_DAYS).filter((r) => r.at > now + 5000)
+        .slice(0, SUNNAH_IDS[1] - SUNNAH_IDS[0])
+        .map((r, k) => ({ id: SUNNAH_IDS[0] + k, channelId: 'sunnah', title: r.title, body: r.body,
+          largeBody: r.body, extra: { view: r.view || 'calendar' }, schedule: { at: new Date(r.at), allowWhileIdle: true } }));
+      const sig = list.map((n) => n.schedule.at.getTime() + n.title).join('|');
+      if (sig === sunnahSig && !force) return;
+      if (list.length && !(await permit(false))) return;
+      await channels;
+      const pending = await LN.getPending();
+      const old = (pending.notifications || []).filter((n) => n.id >= SUNNAH_IDS[0] && n.id < SUNNAH_IDS[1]).map((n) => ({ id: n.id }));
+      if (old.length) await LN.cancel({ notifications: old });
+      if (list.length) await LN.schedule({ notifications: list });
+      sunnahSig = sig;
+    } catch (_) {
+      sunnahSig = null;
+    } finally { sunnahBusy = false; }
+  }
+  window.addEventListener('noon-sunnah', () => scheduleSunnah(true));
+
   // ---- focus: a notice when the running session ends ----
   let focusSig = '';
   window.addEventListener('noon-focus', () => {
@@ -112,9 +145,12 @@
       await permit(true);
     }
     schedulePrayers(true);
+    // js/sunnah.js loads after this file.
+    setTimeout(() => scheduleSunnah(true), 1500);
   })();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) schedulePrayers(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { schedulePrayers(); scheduleSunnah(); } });
   setInterval(() => schedulePrayers(), 60000);
+  setInterval(() => scheduleSunnah(), 15 * 60000);
 
-  window.noonNative = { permit, schedulePrayers };
+  window.noonNative = { permit, schedulePrayers, scheduleSunnah };
 })();

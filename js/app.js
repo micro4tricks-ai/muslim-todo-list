@@ -29,6 +29,10 @@
     });
   }
 
+  // The language button in the quick bar under the clock.
+  const quickLang = $('quickLang');
+  if (quickLang) quickLang.addEventListener('click', () => I.setLang(I.isEn ? 'ar' : 'en'));
+
   // Home-screen shortcuts: ?view=adhkar opens a section, ?focus=1 opens focus mode.
   const p = new URLSearchParams(location.search);
   const view = p.get('view');
