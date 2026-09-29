@@ -3,7 +3,7 @@
   'use strict';
   const { T, I, el, button, load, store, dayKey, addDays, uid, onRemote } = window.noonUI;
   const KEY = 'noon-sweep-habits';
-  const root = document.getElementById('view-habits');
+  const root = document.getElementById('habitsList');
   const DEFAULTS = [
     { id: 'adhkar-am', name: 'أذكار الصباح', type: 'check', link: 'am' },
     { id: 'adhkar-pm', name: 'أذكار المساء', type: 'check', link: 'pm' },

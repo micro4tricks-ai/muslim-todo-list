@@ -109,6 +109,10 @@ await phase('Library: Sahih al-Bukhari, first book', async () => {
   await gesture("document.querySelector('.lib-sec').click()"); await sleep(4000);
   await js('scrollTo(0, document.documentElement.scrollHeight); true');
 }, 6000);
+await phase('Tools and my prayers', async () => {
+  await gesture("window.noonLibrary.open('tool', 'zakat')"); await sleep(800);
+  await gesture("window.noonUI.go('habits')"); await sleep(800);
+}, 4000);
 await phase('play mix: rain + fire', async () => { await js('scrollTo(0, 0); true'); await gesture(`document.getElementById('dockToggle').click(); document.querySelector('.preset').click()`); }, 30000);
 await phase('play mix: 3 sounds', async () => { await gesture(`document.querySelectorAll('.preset')[2].click()`); }, 30000);
 await phase('focus mode with sound', async () => { await gesture(`window.noonFocusMode.open()`); }, 15000);

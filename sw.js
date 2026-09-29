@@ -2,7 +2,7 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v4';
+const VERSION = 'v5';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
@@ -16,6 +16,7 @@ const FILES = [
   'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
   'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js',
+  'js/extras-data.js', 'js/tools.js', 'js/prayers.js',
   'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',
   'fonts/Amiri-400-latin-ext.woff2',
@@ -51,8 +52,9 @@ self.addEventListener('activate', (ev) => {
 const isMedia = (url) => (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname) && url.hostname !== 'cdn.islamic.network') || url.hostname === 'fonts.gstatic.com';
 const isFontCss = (url) => url.hostname === 'fonts.googleapis.com';
 // Hadith books and tafsirs never change once published.
-const isLibrary = (url) => (url.hostname === 'cdn.jsdelivr.net' && /\/gh\/(fawazahmed0\/hadith-api|spa5k\/tafsir_api)@/.test(url.pathname))
-  || (url.hostname === 'api.alquran.cloud' && url.pathname.startsWith('/v1/ayah/'));
+const isLibrary = (url) => (url.hostname === 'cdn.jsdelivr.net' && /\/gh\/(fawazahmed0\/hadith-api|spa5k\/tafsir_api|AhmedBaset\/hadith-json)@/.test(url.pathname))
+  || (url.hostname === 'api.alquran.cloud' && /^\/v1\/(ayah|surah)\//.test(url.pathname))
+  || (url.hostname === 'api.quran.com' && url.pathname.startsWith('/api/v4/verses/'));
 
 self.addEventListener('fetch', (ev) => {
   const req = ev.request;

@@ -35,6 +35,19 @@
     ['jalalayn', 'تفسير الجلالين', 'Tafsir al-Jalalayn', 'alq', 'ar.jalalayn'],
     ['en-ibnkathir', 'ابن كثير المختصر (بالإنجليزية)', 'Ibn Kathir, abridged (English)', 'cdn', 'en-tafisr-ibn-kathir']
   ];
+  // Translations: English is kept with the app; the others are read per surah from alquran.cloud.
+  const TRANS = [
+    ['en', 'English — Sahih International'], ['ur.jalandhry', 'اردو — جالندھری'], ['id.indonesian', 'Bahasa Indonesia'],
+    ['fr.hamidullah', 'Français — Hamidullah'], ['tr.diyanet', 'Türkçe — Diyanet'], ['ms.basmeih', 'Bahasa Melayu — Basmeih'],
+    ['bn.bengali', 'বাংলা — Muhiuddin Khan'], ['es.cortes', 'Español — Cortés'], ['de.aburida', 'Deutsch — Abu Rida'], ['ru.kuliev', 'Русский — Кулиев']
+  ];
+  const transCache = {};
+  const transLang = () => (TRANS.some((t) => t[0] === S.transLang) ? S.transLang : 'en');
+  function transText(s, i) {
+    if (transLang() === 'en') return txt.en ? txt.en[i] : '';
+    const c = transCache[`${transLang()}:${s}`];
+    return c ? c[i - starts[s]] : '';
+  }
   // Tajweed colours: [code, Arabic name, English name]
   const TAJWEED = [
     ['h', 'همزة وصل ولام وحروف لا تُنطق', 'Hamzat al-wasl, silent letters'], ['n', 'مدّ طبيعي (حركتان)', 'Natural madd (2)'],
@@ -52,6 +65,14 @@
     tajweed: false, repeat: 1, gap: 0, rate: 1, hide: false, tafsir: I.isEn ? 'en-ibnkathir' : 'muyassar'
   });
   let S = Object.assign(blank(), load(KEY, {}));
+  // Today's goal: fixed, or worked out from a completion date (pages left ÷ days left).
+  function goal() {
+    if (!S.planEnd) return S.goal;
+    const [y, m, d] = S.planEnd.split('-').map(Number);
+    const days = Math.max(1, Math.round((new Date(y, m - 1, d) - new Date(new Date().toDateString())) / 864e5) + 1);
+    const left = PAGES - S.khatma.pages.length + S.today.pages.length; // today's pages still count toward today
+    return Math.max(1, Math.ceil(left / days));
+  }
   const fresh = () => { if (!S.today || S.today.day !== dayKey()) S.today = { day: dayKey(), pages: [] }; };
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); };
   fresh();
@@ -124,7 +145,7 @@
     (S.log = S.log || {})[S.today.day] = S.today.pages.length; // pages per day, for the report
     save();
     window.dispatchEvent(new CustomEvent('noon-habit', { detail: { id: 'quran', value: S.today.pages.length } }));
-    if (S.today.pages.length === S.goal) toast(T('أتممت وردك اليومي من القرآن. بارك الله فيك.'));
+    if (S.today.pages.length === goal()) toast(T('أتممت وردك اليومي من القرآن. بارك الله فيك.'));
     if (!root.hidden) renderIndex();
   }
   function setLast(i) {
@@ -149,6 +170,21 @@
     root.append(head);
 
     // Continue + today's wird.
+    // The verse of the day (same choice as the morning reminder in js/sunnah.js).
+    const VS = window.NOON_EXTRAS && window.NOON_EXTRAS.verses;
+    const now = new Date();
+    const V = VS && VS[Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 864e5) % VS.length];
+    if (V) {
+      const vd = el('div', 'daily-card');
+      const t = el('p', 'daily-text is-quran', V.ar); t.lang = 'ar'; t.dir = 'rtl';
+      vd.append(el('span', 'q-kicker', T('آية اليوم')), t);
+      if (I.isEn || S.trans) { const e = el('p', 'daily-en', V.en); e.dir = 'ltr'; vd.append(e); }
+      const acts = el('div', 'hadith-acts');
+      acts.append(el('span', 'hint', I.isEn ? V.refEn : V.refAr), button('link-btn', T('افتح في المصحف'), () => open(V.i)),
+        button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('آية اليوم'), title: I.isEn ? V.refEn : V.refAr, body: V.ar, quran: true })));
+      vd.append(acts);
+      root.append(vd);
+    }
     const top = el('div', 'q-top');
     const cont = el('div', 'q-card q-continue');
     if (S.last) {
@@ -162,16 +198,24 @@
     }
     const wird = el('div', 'q-card q-wird');
     const done = S.today.pages.length;
-    const bar = el('div', 'q-bar'); const fill = el('span'); fill.style.width = `${Math.min(100, (done / S.goal) * 100)}%`; bar.append(fill);
-    const goal = el('select', 'q-goal');
-    goal.setAttribute('aria-label', T('الورد اليومي'));
+    const g = goal();
+    const bar = el('div', 'q-bar'); const fill = el('span'); fill.style.width = `${Math.min(100, (done / g) * 100)}%`; bar.append(fill);
+    const goalSel = el('select', 'q-goal');
+    goalSel.setAttribute('aria-label', T('الورد اليومي'));
     [[1, '١ صفحة'], [2, '٢ صفحتان'], [4, '٤ صفحات'], [5, '٥ صفحات'], [10, '١٠ صفحات'], [20, '٢٠ صفحة (جزء)'], [40, '٤٠ صفحة (جزءان)']]
-      .forEach(([v, label]) => goal.append(new Option(T(label), String(v))));
-    goal.value = String(S.goal);
-    goal.addEventListener('change', () => { S.goal = Number(goal.value) || 5; save(); renderIndex(); });
+      .forEach(([v, label]) => goalSel.append(new Option(T(label), String(v))));
+    goalSel.value = String(S.goal);
+    goalSel.addEventListener('change', () => { S.goal = Number(goalSel.value) || 5; save(); renderIndex(); });
+    // A completion plan: finish the Mushaf by a chosen date.
+    const plan = el('label', 'q-plan');
+    const endIn = el('input'); endIn.type = 'date'; endIn.value = S.planEnd || '';
+    endIn.min = dayKey();
+    endIn.addEventListener('change', () => { S.planEnd = endIn.value || null; save(); renderIndex(); });
+    plan.append(el('span', '', T('أختم بحلول')), endIn);
+    if (S.planEnd) plan.append(button('link-btn', T('إلغاء الخطة'), (ev) => { ev.preventDefault(); S.planEnd = null; save(); renderIndex(); }));
     const kh = S.khatma.pages.length;
     wird.append(el('span', 'q-kicker', T('ورد اليوم')),
-      el('b', 'q-big', `${I.num(done)} / ${I.num(S.goal)} ${T('صفحات')}`), bar, goal,
+      el('b', 'q-big', `${I.num(done)} / ${I.num(g)} ${T('صفحات')}`), bar, S.planEnd ? el('span') : goalSel, plan,
       el('span', 'q-meta', `${T('الختمة الحالية')}: ${I.num(kh)} / ${I.num(PAGES)}${S.khatma.count ? ` · ${T('ختمات مكتملة')}: ${I.num(S.khatma.count)}` : ''}`));
     top.append(cont, wird);
     root.append(top);
@@ -215,7 +259,7 @@
 
     const segs = el('div', 'filter q-tabs');
     segs.setAttribute('role', 'group');
-    [['surahs', 'السور'], ['juz', 'الأجزاء'], ['marks', 'العلامات']].forEach(([k, label]) => {
+    [['surahs', 'السور'], ['juz', 'الأجزاء'], ['marks', 'العلامات'], ['kids', 'للأطفال']].forEach(([k, label]) => {
       const b = button('', T(label), () => { tab = k; query = ''; found = null; renderIndex(); });
       b.setAttribute('aria-pressed', String(tab === k && !found));
       segs.append(b);
@@ -244,6 +288,31 @@
           el('span', `q-surah-side${I.isEn ? ' is-ar' : ''}`, I.isEn ? surahNameAr(k) : `${T('صفحة')} ${I.num(pageOf(starts[k]))}`));
         list.append(b);
       });
+    } else if (tab === 'kids') {
+      // Juz 'Amma for children: the short surahs first, listen and repeat, and up to three stars each.
+      S.kids = S.kids || {};
+      const done = Object.values(S.kids).reduce((a, n) => a + n, 0);
+      list.append(el('p', 'kids-intro', `${T('استمع للشيخ الحصري المعلّم وردّد وراءه، وكل ما تحفظ سورة خد نجمة. نجومك:')} ${'★'.repeat(Math.min(done, 40))} ${I.num(done)}`));
+      for (let k = 113; k >= 77; k--) {
+        const stars = S.kids[k + 1] || 0;
+        const row = el('div', `kids-row${stars >= 3 ? ' is-done' : ''}`);
+        const name = el('div', 'kids-name');
+        const a = el('b', '', surahNameAr(k)); a.lang = 'ar';
+        name.append(a, el('small', '', `${I.isEn ? M.surahs[k][1] + ' · ' : ''}${I.num(M.surahs[k][4])} ${T('آية')}`));
+        const st = el('span', 'kids-stars', '★'.repeat(stars) + '☆'.repeat(3 - stars));
+        st.setAttribute('aria-label', `${I.num(stars)} / ${I.num(3)}`);
+        row.append(name, st,
+          button('btn btn-primary', T('استمع وردّد'), () => {
+            Object.assign(S, { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 });
+            save();
+            open(starts[k]).then(() => play(starts[k]));
+          }),
+          button('btn btn-quiet', T('حفظتُها ⭐'), () => {
+            S.kids[k + 1] = Math.min(3, stars + 1); save(); renderList();
+            if (S.kids[k + 1] === 3) toast(T('ما شاء الله! أتممت حفظ السورة بثلاث نجوم.'));
+          }));
+        list.append(row);
+      }
     } else if (tab === 'juz') {
       list.classList.add('is-grid');
       M.juz.forEach((i, k) => {
@@ -328,7 +397,14 @@
     const sizeRow = el('label', 'qr-row'); sizeRow.append(el('span', '', T('حجم الخط')), size);
     const trans = el('input'); trans.type = 'checkbox'; trans.checked = S.trans;
     trans.addEventListener('change', () => { S.trans = trans.checked; save(); renderSurah(cur, firstVisible(), true); });
-    const transRow = el('label', 'qr-row qr-check'); transRow.append(trans, el('span', '', T('الترجمة الإنجليزية (Sahih International)')));
+    const transRow = el('div', 'qr-row qr-check');
+    const tLab = el('label', 'qr-row'); tLab.append(trans, el('span', '', T('الترجمة')));
+    const tSel = el('select');
+    tSel.setAttribute('aria-label', T('لغة الترجمة'));
+    TRANS.forEach(([v, n]) => tSel.append(new Option(n, v)));
+    tSel.value = transLang();
+    tSel.addEventListener('change', () => { S.transLang = tSel.value; S.trans = true; trans.checked = true; save(); renderSurah(cur, firstVisible(), true); });
+    transRow.append(tLab, tSel);
     const rec = el('select');
     rec.setAttribute('aria-label', T('القارئ'));
     RECITERS.forEach((r) => rec.append(new Option(I.isEn ? r[3] : r[2], r[0])));
@@ -413,14 +489,22 @@
       data('tajweed').then(() => renderSurah(s, at, keep)).catch(() => { S.tajweed = false; renderSurah(s, at, keep); });
       return;
     }
-    if (S.trans && !txt.en) {
+    const tl = transLang();
+    if (S.trans && tl !== 'en' && !transCache[`${tl}:${s}`]) {
+      fetch(`https://api.alquran.cloud/v1/surah/${s + 1}/${tl}`).then((r) => r.json()).then((j) => {
+        transCache[`${tl}:${s}`] = j.data.ayahs.map((a) => a.text);
+        renderSurah(s, at, keep);
+      }).catch(() => { toast(T('الترجمات غير الإنجليزية تحتاج اتصالاً بالإنترنت.')); S.transLang = 'en'; renderSurah(s, at, keep); });
+      return;
+    }
+    if (S.trans && tl === 'en' && !txt.en) {
       data('en').then(() => renderSurah(s, at, keep)).catch(() => { S.trans = false; R.trans.checked = false; renderSurah(s, at, keep); });
       return;
     }
     cur = s;
     sel = -1;
     R.sheet.hidden = true;
-    const texts = txt.uthmani, en = txt.en;
+    const texts = txt.uthmani;
     const first = starts[s], count = M.surahs[s][4];
     const frag = document.createDocumentFragment();
     const head = el('div', 'qr-head');
@@ -456,8 +540,8 @@
         a.append(verse(i), ' ', n);
         if (sajda.has(i)) a.append(el('span', 'ay-sajda', '۩'));
         const e = el('p', 'ay-en');
-        e.dir = 'ltr'; e.lang = 'en';
-        e.append(el('b', '', `${s + 1}:${i - first + 1} `), en ? en[i] : '');
+        e.dir = 'auto'; e.lang = transLang().split('.')[0];
+        e.append(el('b', '', `${s + 1}:${i - first + 1} `), transText(s, i));
         blk.append(a, e);
         if (isMarked(i)) blk.classList.add('is-mark');
         flow.append(blk);
@@ -566,6 +650,7 @@
         unselect();
       }),
       button('qr-act', T('التفسير'), () => tafsirOf(i)),
+      button('qr-act', T('كلمة بكلمة'), () => wordByWord(i)),
       button('qr-act', T('نسخ'), () => copy(share)),
       button('qr-act', T('مشاركة'), async () => {
         if (navigator.share) { try { await navigator.share({ text: share }); } catch (_) {} } else copy(share);
@@ -593,6 +678,34 @@
   }
   async function copy(text) {
     try { await navigator.clipboard.writeText(text); toast(T('نُسخت الآية.')); } catch (_) { toast(T('تعذّر النسخ.')); }
+  }
+  // Word by word, from Quran.com: meaning, transliteration, and the word's own recitation on tap.
+  let wordAudio = null;
+  async function wordByWord(i) {
+    R.sheet.classList.add('is-tall');
+    R.tafsir.hidden = false;
+    R.tafsir.replaceChildren(el('p', 'hint', T('جارٍ تحميل معاني الكلمات…')));
+    const lang = I.isEn ? 'en' : (['ur', 'id', 'tr', 'bn'].includes(transLang().split('.')[0]) ? transLang().split('.')[0] : 'en');
+    try {
+      const r = await fetch(`https://api.quran.com/api/v4/verses/by_key/${surahOf(i) + 1}:${ayahOf(i)}?words=true&word_fields=text_uthmani&language=${lang}`);
+      const j = await r.json();
+      if (sel !== i) return;
+      const grid = el('div', 'wbw');
+      j.verse.words.filter((w) => w.char_type_name === 'word').forEach((w) => {
+        const b = button('wbw-word', '', () => {
+          if (!w.audio_url) return;
+          wordAudio = wordAudio || new Audio();
+          wordAudio.src = `https://audio.qurancdn.com/${w.audio_url}`;
+          wordAudio.play().catch(() => {});
+        });
+        const a = el('b', '', w.text_uthmani || w.text); a.lang = 'ar';
+        b.append(a, el('span', 'wbw-tr', (w.transliteration && w.transliteration.text) || ''), el('span', 'wbw-mean', (w.translation && w.translation.text) || ''));
+        grid.append(b);
+      });
+      R.tafsir.replaceChildren(el('b', '', T('كلمة بكلمة')), el('p', 'hint', T('اضغط الكلمة لتسمع نطقها. المعاني من Quran.com.')), grid);
+    } catch (_) {
+      R.tafsir.replaceChildren(el('p', 'hint', T('معاني الكلمات تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.')));
+    }
   }
   async function tafsirText(t, i) {
     if (t[3] === 'alq') {
@@ -733,6 +846,6 @@
   onRemote(KEY, () => { S = Object.assign(blank(), load(KEY, {})); fresh(); if (!root.hidden) renderIndex(); });
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'quran') renderIndex(); });
   setInterval(() => { if (S.today.day !== dayKey()) { fresh(); if (!root.hidden) renderIndex(); } }, 60000);
-  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: S.goal }), pagesOn: (day) => ((S.log || {})[day] || 0) };
+  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), pagesOn: (day) => ((S.log || {})[day] || 0) };
   renderIndex();
 })();

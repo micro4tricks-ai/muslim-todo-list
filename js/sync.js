@@ -16,7 +16,7 @@
   // ... and views that refresh themselves live when another device changes them.
   const LIVE_KEYS = ['noon-sweep-notes', 'noon-sweep-cards', 'noon-sweep-habits', 'noon-sweep-adhkar',
     'noon-sweep-distractions', 'noon-sweep-focuslog', 'noon-sweep-prayer-alerts', 'noon-sweep-quran', 'noon-sweep-sunnah',
-    'noon-sweep-library', 'noon-sweep-card-look'];
+    'noon-sweep-library', 'noon-sweep-card-look', 'noon-sweep-prayers', 'noon-sweep-zakat'];
   const SETTINGS_KEYS = RELOAD_KEYS.concat(LIVE_KEYS);
   const META_KEY = 'noon-sweep-sync-meta';
   const RELOAD_FLAG = 'noon-sweep-sync-reloaded';

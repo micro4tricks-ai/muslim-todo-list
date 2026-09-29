@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Muslim To-Do">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=1.2.0">
+<link rel="stylesheet" href="fonts/fonts.css?v=1.3.0">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -1112,6 +1112,123 @@
   .qr-tafsir-text p { margin: 0 0 10px; font-family: "Amiri", serif; font-size: 19px; line-height: 1.95; }
   .qr-tafsir-text:lang(en) p { font-family: var(--font); font-size: 15px; line-height: 1.7; }
 
+  /* ---- Daily cards, tools ---- */
+  .daily-card { display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); border-inline-start: 4px solid #C9A45C; }
+  .daily-text { margin: 0; font-family: "Amiri", serif; font-size: 20px; line-height: 1.9; }
+  .daily-text.is-quran { font-family: "Amiri Quran", "Amiri", serif; font-size: 23px; line-height: 2.2; }
+  .daily-en { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .lib-h { margin: 6px 0 0; font-size: 15px; color: var(--ink-soft); }
+  .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+  .tool-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-size: 13px; font-weight: 600; text-align: center; transition: transform 0.12s; }
+  .tool-btn:hover { transform: translateY(-2px); }
+  .tool-icon { font-size: 22px; line-height: 1; color: var(--accent); }
+  .zk { display: flex; flex-direction: column; gap: 12px; }
+  .zk-group { display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper); margin: 0; }
+  .zk-group legend { font-weight: 700; padding: 0 6px; }
+  .zk-group .field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 200px; font-size: 13px; color: var(--ink-soft); }
+  .zk-group input, .zk-group select, .conv-row input, .conv-row select { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+  .zk-group small { font-size: 11.5px; }
+  .zk-result { padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px dashed var(--line); }
+  .zk-result p { margin: 0 0 4px; }
+  .zk-due { font-size: 22px; font-weight: 700; color: var(--done); }
+  .zk-none { font-weight: 600; color: var(--ink-soft); }
+  .zk-fitr { flex-basis: 100%; margin: 0; font-weight: 700; }
+  .names-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .name-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 8px 12px; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); text-align: center; }
+  .name-card small { position: absolute; top: 6px; inset-inline-start: 8px; font-size: 11px; color: var(--ink-faint); }
+  .name-card b { font-family: "Amiri", serif; font-size: 26px; line-height: 1.6; color: #6B5320; }
+  html[data-mode="dark"] .name-card b { color: #D8B46A; }
+  .name-tr { font-size: 12px; color: var(--ink-soft); }
+  .name-en { font-size: 12px; color: var(--ink-faint); }
+  .conv-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .conv-row input { width: 90px; }
+  .conv-out { flex-basis: 100%; margin: 6px 0 0; font-size: 18px; font-weight: 700; }
+  .q-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+  .q-plan input { font: inherit; font-size: 13px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+  .wbw { display: flex; flex-wrap: wrap; gap: 6px; direction: rtl; }
+  .wbw-word { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--qline); background: transparent; color: var(--qink); min-width: 70px; }
+  .wbw-word b { font-family: "Amiri Quran", "Amiri", serif; font-size: 24px; line-height: 1.9; font-weight: 400; }
+  .wbw-tr { font-size: 11.5px; color: var(--qsoft); direction: ltr; }
+  .wbw-mean { font-size: 12.5px; direction: ltr; }
+
+  .kids-intro { margin: 0 0 6px; padding: 12px 14px; border-radius: 14px; background: #FFF6D8; color: #5A4516; font-weight: 600; line-height: 1.8; }
+  html[data-mode="dark"] .kids-intro { background: #2B2415; color: #F0DDAE; }
+  .kids-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); }
+  .kids-row.is-done { border-color: #E9C46A; background: #FFFBEA; }
+  html[data-mode="dark"] .kids-row.is-done { background: #2B2415; }
+  .kids-name { flex: 1; min-width: 120px; display: flex; flex-direction: column; }
+  .kids-name b { font-family: "Amiri", serif; font-size: 22px; line-height: 1.5; }
+  .kids-name small { font-size: 12px; color: var(--ink-faint); }
+  .kids-stars { font-size: 20px; color: #E0A800; letter-spacing: 2px; }
+
+  /* ---- My prayers ---- */
+  .pr-box { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); margin-bottom: 18px; }
+  .pr-list { display: flex; flex-direction: column; gap: 6px; }
+  .pr-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface); flex-wrap: wrap; }
+  .pr-row.is-jamaah { background: var(--done-wash); }
+  .pr-row.is-missed { background: var(--accent-wash); }
+  .pr-name { display: flex; align-items: baseline; gap: 8px; min-width: 90px; }
+  .pr-name small { color: var(--ink-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .pr-states { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pr-state { border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; }
+  .pr-state[aria-pressed="true"].is-jamaah { background: #1F5A40; color: #fff; border-color: #1F5A40; }
+  .pr-state[aria-pressed="true"].is-ontime { background: var(--done); color: #fff; border-color: var(--done); }
+  .pr-state[aria-pressed="true"].is-late { background: #D9A441; color: #2A1D00; border-color: #D9A441; }
+  .pr-state[aria-pressed="true"].is-missed { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pr-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .pr-day { display: flex; flex-direction: column; align-items: center; padding: 6px 0; border-radius: 10px; background: color-mix(in srgb, var(--done) calc(var(--p) * 70%), var(--surface)); font-size: 12px; }
+  .pr-day b { font-size: 15px; }
+  .pr-day.is-today { outline: 2px solid var(--accent); }
+  .pr-qada summary, .pr-why summary { cursor: pointer; font-weight: 700; }
+  .pr-qada-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin: 10px 0; }
+  .pr-q { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; border-radius: 12px; background: var(--surface); }
+  .pr-q-n { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pr-q .btn { font-size: 12px; padding: 4px 10px; }
+  .view-inner { display: flex; flex-direction: column; gap: 18px; }
+
+  /* ---- Ramadan ---- */
+  .rm-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; color: #F5F1E6; background: radial-gradient(ellipse at 90% 0%, rgba(233, 196, 106, 0.4), transparent 55%), linear-gradient(135deg, #2A1E4A, #173D4A); }
+  .rm-card h3 { margin: 0; font-size: 20px; font-family: "Amiri", var(--font); }
+  .rm-card .hint, .rm-card cite { color: rgba(245, 241, 230, 0.8); }
+  .rm-card .cal-hadith-ar { color: #F5F1E6; }
+  .rm-card .btn-quiet { color: #F5F1E6; border-color: rgba(255, 255, 255, 0.35); }
+  .rm-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .rm-time { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 14px; background: rgba(255, 255, 255, 0.1); }
+  .rm-time b { font-size: 24px; font-variant-numeric: tabular-nums; }
+  .rm-time span, .rm-cd { font-size: 12px; opacity: 0.85; }
+  .rm-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+  .rm-day { border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.06); color: #F5F1E6; border-radius: 8px; padding: 6px 0; font-size: 12.5px; font-weight: 700; }
+  .rm-day.is-fast { background: #8FE3B4; color: #0F2A1E; border-color: #8FE3B4; }
+  .rm-day.is-excused { background: #F2A28E; color: #4A140A; border-color: #F2A28E; }
+  .rm-day.is-today { outline: 2px solid #E9C46A; }
+  .rm-imsak { max-height: 50vh; overflow: auto; width: 100%; }
+  .rm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rm-table th, .rm-table td { padding: 5px 6px; border-bottom: 1px solid rgba(128, 128, 128, 0.25); text-align: center; }
+  @media (max-width: 600px) { .rm-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+  /* ---- Dark mode (the whole page) and text size ---- */
+  .todo-pane { zoom: var(--ui-scale, 1); }
+  html[data-mode="dark"] {
+    --ground: #121417; --surface: #1B1E23; --paper: #23272D; --ink: #E8E6E1; --ink-soft: #B3B6BC; --ink-faint: #8A8F97;
+    --line: #353A42; --accent: #E0694C; --accent-deep: #C9553A; --accent-wash: #3A231D; --accent-ink: #FFFFFF;
+    --done: #5DB685; --done-wash: #1D3226; --glass: rgba(22, 24, 28, 0.9); color-scheme: dark;
+  }
+  html[data-mode="dark"] .todo-pane, html[data-mode="dark"] .card { background: rgba(22, 24, 28, 0.94); border-color: #2A2E35; }
+  html[data-mode="dark"] .dock { background: rgba(24, 26, 31, 0.98); border-color: #2A2E35; }
+  html[data-mode="dark"] .place-chip, html[data-mode="dark"] .quick button { background: rgba(35, 39, 45, 0.92); color: var(--ink); border-color: var(--line); }
+  html[data-mode="dark"] .sunnah-strip { background: linear-gradient(90deg, #2B2415, #33291A); color: #F0DDAE; border-color: #4A3C20; }
+  html[data-mode="dark"] .strip-date { border-color: #5A4A28; }
+  html[data-mode="dark"] .q-mode.is-on, html[data-mode="dark"] .salah-intro, html[data-mode="dark"] .deck[data-look="mushaf"] { background: #2B2415; color: #F0DDAE; border-color: #6B5320; }
+  html[data-mode="dark"] .q-num, html[data-mode="dark"] .hadith-num, html[data-mode="dark"] .lib-hit b, html[data-mode="dark"] .q-result b { color: #D8B46A; }
+  html[data-mode="dark"] .q-surah-side.is-ar { color: #D8B46A; }
+  html[data-mode="dark"] .grade.is-good { color: #9FE0B8; background: #1D3226; border-color: #2E5A3E; }
+  html[data-mode="dark"] .grade.is-weak { color: #F2A28E; background: #3A1F18; border-color: #6A3222; }
+  html[data-mode="dark"] .deck[data-look="emerald"] { background: linear-gradient(160deg, #1D3226, #16271D); }
+  html[data-mode="dark"] .deck[data-look="sky"], html[data-mode="dark"] .deck[data-look="rose"] { background: var(--paper); }
+  html[data-mode="dark"] input, html[data-mode="dark"] select, html[data-mode="dark"] textarea { color-scheme: dark; }
+  html[data-mode="dark"] .note { color: #1F2328; }
+
   /* ---- Library ---- */
   .lib-salah { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: start; padding: 18px; border-radius: 18px; border: none; color: #F5F1E6;
     background: radial-gradient(ellipse at 90% 0%, rgba(233, 196, 106, 0.35), transparent 55%), linear-gradient(135deg, #3B2A14, #6B4A12); }
@@ -1226,6 +1343,14 @@
     <div class="pp-head">
       <h2 id="lookTitle">المظهر</h2>
       <button type="button" class="btn btn-quiet" id="lookClose">تم</button>
+    </div>
+    <div class="look-section">
+      <h3>وضع الألوان</h3>
+      <div class="sw-row" id="lookModes"></div>
+    </div>
+    <div class="look-section">
+      <h3>حجم الخط</h3>
+      <div class="sw-row" id="lookSizes"></div>
     </div>
     <div class="look-section">
       <h3>لون المينا</h3>
@@ -1432,7 +1557,7 @@
     <div class="view" id="view-calendar" data-view="calendar" hidden></div>
     <div class="view" id="view-notes" data-view="notes" hidden></div>
     <div class="view" id="view-cards" data-view="cards" hidden></div>
-    <div class="view" id="view-habits" data-view="habits" hidden></div>
+    <div class="view" id="view-habits" data-view="habits" hidden><div id="prayerLog"></div><div class="view-inner" id="habitsList"></div></div>
     <div class="view" id="view-adhkar" data-view="adhkar" hidden></div>
     <div class="view" id="view-report" data-view="report" hidden></div>
 
@@ -1468,36 +1593,39 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=1.2.0"></script>
-<script src="js/clock.js?v=1.2.0"></script>
-<script src="js/astro.js?v=1.2.0"></script>
-<script src="js/look.js?v=1.2.0"></script>
-<script src="js/sounds.js?v=1.2.0"></script>
-<script src="js/tasks.js?v=1.2.0"></script>
-<script src="js/views.js?v=1.2.0"></script>
-<script src="js/remind-card.js?v=1.2.0"></script>
-<script src="js/notes.js?v=1.2.0"></script>
-<script src="js/cards.js?v=1.2.0"></script>
-<script src="js/adhkar-data.js?v=1.2.0"></script>
-<script src="js/adhkar.js?v=1.2.0"></script>
-<script src="js/habits.js?v=1.2.0"></script>
-<script src="js/focus-plus.js?v=1.2.0"></script>
-<script src="js/native.js?v=1.2.0"></script>
-<script src="js/prayer-alerts.js?v=1.2.0"></script>
-<script src="js/quran-meta.js?v=1.2.0"></script>
-<script src="js/quran.js?v=1.2.0"></script>
-<script src="js/sunnah-data.js?v=1.2.0"></script>
-<script src="js/sunnah.js?v=1.2.0"></script>
-<script src="js/qibla.js?v=1.2.0"></script>
-<script src="js/library-meta.js?v=1.2.0"></script>
-<script src="js/salah-data.js?v=1.2.0"></script>
-<script src="js/library.js?v=1.2.0"></script>
-<script src="js/report.js?v=1.2.0"></script>
-<script src="js/focus-mode.js?v=1.2.0"></script>
-<script src="js/config.js?v=1.2.0"></script>
-<script src="js/vendor/supabase.js?v=1.2.0" defer></script>
-<script src="js/sync-core.js?v=1.2.0" defer></script>
-<script src="js/sync.js?v=1.2.0" defer></script>
-<script src="js/app.js?v=1.2.0" defer></script>
+<script src="js/i18n.js?v=1.3.0"></script>
+<script src="js/clock.js?v=1.3.0"></script>
+<script src="js/astro.js?v=1.3.0"></script>
+<script src="js/look.js?v=1.3.0"></script>
+<script src="js/sounds.js?v=1.3.0"></script>
+<script src="js/tasks.js?v=1.3.0"></script>
+<script src="js/views.js?v=1.3.0"></script>
+<script src="js/remind-card.js?v=1.3.0"></script>
+<script src="js/notes.js?v=1.3.0"></script>
+<script src="js/cards.js?v=1.3.0"></script>
+<script src="js/adhkar-data.js?v=1.3.0"></script>
+<script src="js/adhkar.js?v=1.3.0"></script>
+<script src="js/habits.js?v=1.3.0"></script>
+<script src="js/prayers.js?v=1.3.0"></script>
+<script src="js/focus-plus.js?v=1.3.0"></script>
+<script src="js/native.js?v=1.3.0"></script>
+<script src="js/prayer-alerts.js?v=1.3.0"></script>
+<script src="js/extras-data.js?v=1.3.0"></script>
+<script src="js/quran-meta.js?v=1.3.0"></script>
+<script src="js/quran.js?v=1.3.0"></script>
+<script src="js/sunnah-data.js?v=1.3.0"></script>
+<script src="js/sunnah.js?v=1.3.0"></script>
+<script src="js/qibla.js?v=1.3.0"></script>
+<script src="js/library-meta.js?v=1.3.0"></script>
+<script src="js/salah-data.js?v=1.3.0"></script>
+<script src="js/tools.js?v=1.3.0"></script>
+<script src="js/library.js?v=1.3.0"></script>
+<script src="js/report.js?v=1.3.0"></script>
+<script src="js/focus-mode.js?v=1.3.0"></script>
+<script src="js/config.js?v=1.3.0"></script>
+<script src="js/vendor/supabase.js?v=1.3.0" defer></script>
+<script src="js/sync-core.js?v=1.3.0" defer></script>
+<script src="js/sync.js?v=1.3.0" defer></script>
+<script src="js/app.js?v=1.3.0" defer></script>
 </body>
 </html>

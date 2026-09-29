@@ -50,7 +50,7 @@
     ['black', 'أسود مطفي', 'linear-gradient(135deg, #6C727A, #1D2025 55%, #4B5057)']
   ];
 
-  let L = { bg: 'mist', dial: 'ceramic', metal: 'steel' };
+  let L = { bg: 'mist', dial: 'ceramic', metal: 'steel', mode: 'auto', scale: 1 };
   try { Object.assign(L, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
   let customImage = null;
   try { customImage = localStorage.getItem(IMG_KEY); } catch (_) {}
@@ -58,6 +58,20 @@
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(L)); } catch (_) {}
   }
+
+  // Colour mode: light, dark, or following the device; and the size of the text.
+  const DARK_BGS = ['night', 'aurora', 'girih', 'charcoal', 'forest', 'wood'];
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => L.mode === 'dark' || (L.mode === 'auto' && darkQuery.matches);
+  function applyMode() {
+    const dark = isDark();
+    document.documentElement.dataset.mode = dark ? 'dark' : 'light';
+    document.documentElement.style.setProperty('--ui-scale', String(L.scale || 1));
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = dark ? '#121417' : '#EFEFEC';
+    applyBackground();
+  }
+  darkQuery.addEventListener('change', () => { if (L.mode === 'auto') applyMode(); });
 
   function applyBackground() {
     const b = document.body.style;
@@ -68,7 +82,9 @@
       b.backgroundColor = '#333';
       return;
     }
-    const bg = BGS.find((x) => x.id === L.bg) || BGS[0];
+    let bg = BGS.find((x) => x.id === L.bg) || BGS[0];
+    // A light background under dark panels looks wrong; dark mode swaps it for charcoal.
+    if (isDark() && !DARK_BGS.includes(bg.id)) bg = BGS.find((x) => x.id === 'charcoal');
     b.backgroundImage = bg.css;
     b.backgroundSize = bg.size || 'auto';
     b.backgroundPosition = '';
@@ -99,6 +115,26 @@
     return b;
   }
   function renderPanel() {
+    const modes = $('lookModes');
+    if (modes) {
+      modes.replaceChildren(...[['auto', 'تلقائي (حسب الجهاز)'], ['light', 'فاتح'], ['dark', 'داكن']].map(([id, label]) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'chip'; b.textContent = T(label);
+        b.setAttribute('aria-pressed', String(L.mode === id));
+        b.addEventListener('click', () => { L.mode = id; save(); applyMode(); renderPanel(); });
+        return b;
+      }));
+    }
+    const sizes = $('lookSizes');
+    if (sizes) {
+      sizes.replaceChildren(...[[0.9, 'صغير'], [1, 'عادي'], [1.12, 'كبير'], [1.25, 'أكبر']].map(([v, label]) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'chip'; b.textContent = T(label);
+        b.setAttribute('aria-pressed', String((L.scale || 1) === v));
+        b.addEventListener('click', () => { L.scale = v; save(); applyMode(); renderPanel(); });
+        return b;
+      }));
+    }
     $('lookDials').replaceChildren(...DIAL_OPTS.map(([id, label, col]) =>
       swatch(label, L.dial === id, { background: `radial-gradient(circle at 35% 30%, #ffffff55, transparent 60%), ${col}` },
         () => { L.dial = id; save(); announce(); renderPanel(); }, 'sw sw-round')));
@@ -157,6 +193,6 @@
     img.src = url;
   });
 
-  applyBackground();
+  applyMode();
   announce();
 })();

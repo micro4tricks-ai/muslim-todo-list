@@ -43,7 +43,21 @@
     }
     return cache.get(url);
   }
+  // Books from hadith-json come as one file, split here by chapter.
+  const AB = 'https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/';
+  async function abBook(b) {
+    const d = await get(`${AB}${b.path}.json`);
+    if (!d._rows) {
+      d._rows = d.hadiths.map((h) => ({
+        hadithnumber: h.idInBook, arabicnumber: h.idInBook, chapter: String(h.chapterId), ar: tidy(h.arabic),
+        en: [h.english && h.english.narrator, h.english && h.english.text].filter(Boolean).join(' ').trim(), grades: []
+      }));
+    }
+    return d._rows;
+  }
   async function section(bid, sec) {
+    const book = bookOf(bid);
+    if (book && book.src === 'ab') return (await abBook(book)).filter((h) => h.chapter === String(sec));
     const [a, e] = await Promise.all([get(`${API}ara-${bid}/sections/${sec}.min.json`), get(`${API}eng-${bid}/sections/${sec}.min.json`).catch(() => null)]);
     const en = new Map(((e && e.hadiths) || []).map((h) => [h.hadithnumber, h]));
     return a.hadiths.map((h) => {
@@ -66,6 +80,7 @@
     if (screen.name === 'section') return renderSection();
     if (screen.name === 'salah') return renderSalah();
     if (screen.name === 'marks') return renderMarks();
+    if (screen.name === 'tool' && window.noonTools) return window.noonTools.render(screen.tool, root, back('المكتبة', { name: 'home' }));
     renderHome();
   }
   const go = (s) => { screen = s; render(); root.scrollIntoView({ block: 'start' }); };
@@ -79,8 +94,33 @@
     salah.append(el('span', 'lib-salah-kicker', T('من التكبير إلى التسليم')), el('b', '', T('صفة صلاة النبي ﷺ')),
       el('span', '', `${I.num(SALAH.steps.length)} ${T('خطوة، كل خطوة بدليلها من الصحاح — على ترتيب كتاب الشيخ الألباني')}`));
     root.append(salah);
-    const grid = el('div', 'lib-grid');
-    LIB.books.forEach((b) => {
+    // Hadith of the day: an-Nawawi's forty, one a day.
+    const X = window.NOON_EXTRAS;
+    if (X && X.forty.length) {
+      const h = X.forty[Math.floor(Date.now() / 864e5) % X.forty.length];
+      const card = el('div', 'daily-card');
+      const t = el('p', 'daily-text', matn(tidy(h.ar)).slice(0, 420)); t.lang = 'ar'; t.dir = 'rtl';
+      card.append(el('span', 'q-kicker', T('حديث اليوم')), t);
+      if (S.en || I.isEn) { const e = el('p', 'daily-en', h.en.slice(0, 380)); e.dir = 'ltr'; card.append(e); }
+      const ref = `${T('الأربعون النووية')} ${I.num(h.n)}`;
+      card.append(el('span', 'hint', ref), button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('حديث اليوم'), title: ref, body: matn(tidy(h.ar)) })));
+      root.append(card);
+    }
+    // Tools.
+    if (window.noonTools) {
+      root.append(el('h3', 'lib-h', T('أدوات')));
+      const tools = el('div', 'tool-grid');
+      window.noonTools.list().forEach(([k, icon, ar, en]) => {
+        const b = button('tool-btn', '', () => go({ name: 'tool', tool: k }));
+        b.append(el('span', 'tool-icon', icon), el('span', '', I.isEn ? en : ar));
+        tools.append(b);
+      });
+      root.append(tools);
+    }
+    root.append(el('h3', 'lib-h', T('الكتب الستة وموطأ مالك')));
+    let grid = el('div', 'lib-grid');
+    LIB.books.forEach((b, k) => {
+      if (b.src === 'ab' && !LIB.books[k - 1].src) { root.append(grid, el('h3', 'lib-h', T('كتب أخرى'))); grid = el('div', 'lib-grid'); }
       const c = button('lib-book', '', () => go({ name: 'book', book: b.id }));
       c.dataset.book = b.id;
       c.append(el('b', '', bookName(b)), el('span', '', I.isEn ? b.authorEn : b.authorAr),
@@ -88,6 +128,7 @@
       grid.append(c);
     });
     root.append(grid);
+    root.append(el('p', 'hint', T('الأربعون النووية ورياض الصالحين وبلوغ المرام والأدب المفرد والشمائل والمشكاة من مشروع hadith-json المفتوح، بنصّها كما هو (وفيه تخريج المصنّف)، ومن غير أحكام إضافية.')));
     if (S.marks.length) root.append(button('btn btn-quiet', `${T('الأحاديث المحفوظة')} (${I.num(S.marks.length)})`, () => go({ name: 'marks' })));
     root.append(el('p', 'credit', T('النصوص والأحكام من مشروع hadith-api المفتوح (github.com/fawazahmed0/hadith-api)، وعناوين الكتب بالعربية من hadith-json. الترجمة الإنجليزية كما في sunnah.com. يُحمَّل كل باب عند فتحه أول مرة، ثم يبقى للقراءة دون إنترنت.')));
   }
@@ -117,7 +158,8 @@
       out.replaceChildren(el('p', 'hint', T('جارٍ تحميل الكتاب للبحث (مرة واحدة)…')));
       try {
         if (!searchIndex || searchIndex.book !== b.id) {
-          const j = await get(`${API}ara-${b.id}1.min.json`);
+          const j = b.src === 'ab' ? { hadiths: (await abBook(b)).map((h) => ({ hadithnumber: h.hadithnumber, arabicnumber: h.arabicnumber, text: h.ar })) }
+            : await get(`${API}ara-${b.id}1.min.json`);
           searchIndex = { book: b.id, list: j.hadiths.map((h) => [h.hadithnumber, h.arabicnumber, norm(h.text), tidy(h.text)]) };
         }
         const needle = norm(v);
@@ -166,7 +208,7 @@
     en.addEventListener('change', () => { S.en = en.checked; save(); render(); });
     enBox.append(en, ' ', T('إظهار الترجمة الإنجليزية'));
     bar.append(enBox);
-    if (b.id !== 'bukhari' && b.id !== 'muslim') {
+    if (b.id !== 'bukhari' && b.id !== 'muslim' && b.src !== 'ab') {
       const okBox = el('label', 'check'); const ok = el('input'); ok.type = 'checkbox'; ok.checked = S.onlyAccepted;
       ok.addEventListener('change', () => { S.onlyAccepted = ok.checked; save(); render(); });
       okBox.append(ok, ' ', T('الصحيح والحسن فقط (بحكم الألباني)'));
@@ -291,6 +333,6 @@
 
   onRemote(KEY, () => { S = Object.assign(S, load(KEY, {})); if (!root.hidden && screen.name === 'marks') render(); });
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'library' && !root.childNodes.length) render(); });
-  window.noonLibrary = { open: (name) => { window.noonUI.go('library'); go({ name: name || 'home' }); } };
+  window.noonLibrary = { open: (name, tool) => { window.noonUI.go('library'); go({ name: name || 'home', tool }); } };
   render();
 })();

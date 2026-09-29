@@ -127,6 +127,7 @@
           const acts = [];
           if (withAdhan) acts.push({ label: T('إيقاف الأذان'), primary: true, run: stopAdhan });
           if (running && !S.autoPause && ctl) acts.push({ label: T('إيقاف مؤقت للصلاة'), run: () => ctl.pause() });
+          if (window.noonPrayers) acts.push({ label: T('صلّيتها'), run: () => { window.noonPrayers.mark(k, 'ontime'); toast(T('سُجّلت في «صلواتي». تقبّل الله.')); } });
           window.noonCard.show({ kicker: T('حيّ على الصلاة'), title: `${T('حان وقت صلاة')} ${name}`, body: [msg, note].filter(Boolean).join(' '), actions: acts, onClose: stopAdhan });
         } else {
           toast(note ? `${msg} ${note}` : msg,

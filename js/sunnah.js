@@ -11,7 +11,8 @@
   const KEY = 'noon-sweep-sunnah';
   const root = $('view-calendar');
   const native = () => window.noonNative;
-  const defaults = () => ({ adj: 0, time: '21:00', fast: true, white: true, seasons: true, friday: true, adhkar: false, wird: false, wirdTime: '20:00', notify: !!native() });
+  const defaults = () => ({ adj: 0, time: '21:00', fast: true, white: true, seasons: true, friday: true, adhkar: false, wird: false, wirdTime: '20:00',
+    suhoor: true, daily: false, notify: !!native(), ramadan: {} });
   let S = Object.assign(defaults(), load(KEY, {}));
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); window.dispatchEvent(new CustomEvent('noon-sunnah')); };
 
@@ -147,6 +148,14 @@
       }
       const cards = window.noonCards && window.noonCards.plan(dayKey(day));
       if (cards) out.push({ key: `cards-${dayKey(day)}`, at: at(day, hm(cards.time)), title: T('مراجعة كروت الحفظ'), body: `${T('لديك كروت للمراجعة اليوم:')} ${I.num(cards.due)}`, view: 'cards' });
+      if (S.suhoor && hijri(next).m === 9) {
+        const nt = times(next);
+        if (nt && Number.isFinite(nt.fajr)) out.push({ key: `suhoor-${dayKey(next)}`, at: at(nt.mid, nt.fajr - 0.75), title: T('وقت السحور'), body: T('بقي نحو ٤٥ دقيقة على الفجر. تسحّروا فإن في السحور بركة.'), view: 'calendar' });
+      }
+      if (S.daily && window.NOON_EXTRAS) {
+        const v = verseOfDay(day);
+        out.push({ key: `daily-${dayKey(day)}`, at: at(day, 7.5), title: T('آية اليوم'), body: I.isEn ? v.en : v.ar, hadith: I.isEn ? v.en : v.ar, ref: I.isEn ? v.refEn : v.refAr, quran: !I.isEn, view: 'quran' });
+      }
       if (S.wird) out.push({ key: `wird-${dayKey(day)}`, at: at(day, hm(S.wirdTime)), title: T('وردك من القرآن'), body: T('خصّص دقائق لوردك اليومي من المصحف.'), view: 'quran' });
     }
     return out.filter((x) => x.at > from - 30 * 60000).sort((a, b) => a.at - b.at);
@@ -175,7 +184,12 @@
   function showCard(r) {
     const open = r.view ? [{ label: T('افتح'), primary: true, run: () => window.noonUI.go(r.view) }] : [];
     if (!window.noonCard) { toast(`${r.title}. ${r.body}`, r.view ? { label: T('افتح'), run: () => window.noonUI.go(r.view) } : null); return; }
-    window.noonCard.show({ title: r.title, body: r.hadith || r.body, ref: r.hadith ? [r.note, r.ref].filter(Boolean).join(' · ') : '', actions: open });
+    window.noonCard.show({ title: r.title, body: r.hadith || r.body, ref: r.hadith ? [r.note, r.ref].filter(Boolean).join(' · ') : '', quran: r.quran, actions: open });
+  }
+  // The verse of the day: one of the chosen verses in js/extras-data.js, the same all day.
+  function verseOfDay(day) {
+    const V = window.NOON_EXTRAS.verses;
+    return V[Math.floor(midnight(day) / 864e5) % V.length];
   }
   // The phone app opens the card of the reminder that was tapped.
   window.addEventListener('noon-reminder-tap', (ev) => {
@@ -221,6 +235,8 @@
     root.append(card);
 
     // Big occasions ahead.
+    const rm = ramadanCard(today);
+    if (rm) root.append(rm);
     root.append(countdowns(today));
 
     // Month grid.
@@ -229,6 +245,121 @@
     root.append(settings());
     root.append(el('p', 'credit', T('الأحاديث من صحيح البخاري ومسلم والسنن (بترقيم محمد فؤاد عبد الباقي وأحكام الألباني)، منقولة من مجموعات الحديث المفتوحة (github.com/fawazahmed0/hadith-api). التاريخ حسب تقويم أم القرى، وقد يختلف يوماً عن رؤية الهلال في بلدك؛ عدّله من الإعدادات.')));
   }
+  // ---- Ramadan: suhoor and iftar times, the fasts of the month, the timetable ----
+  function ramadanStart(today) {
+    const h = hijri(today);
+    if (h.m === 9) return plusDays(today, 1 - h.d);
+    for (let n = 1; n < 400; n++) { const d = plusDays(today, n), x = hijri(d); if (x.m === 9 && x.d === 1) return d; }
+    return null;
+  }
+  function ramadanDays(start) {
+    const out = [];
+    for (let n = 0; n < 30; n++) { const d = plusDays(start, n); if (hijri(d).m !== 9) break; out.push(d); }
+    return out;
+  }
+  let tick = 0;
+  function ramadanCard(today) {
+    const h = hijri(today);
+    const soon = h.m === 8 && h.d >= 15;
+    if (h.m !== 9 && !soon) return null;
+    const box = el('section', 'rm-card');
+    box.append(el('h3', '', h.m === 9 ? `${T('رمضان')} · ${T('اليوم')} ${I.num(h.d)}` : T('رمضان على الأبواب')));
+    const tt = times(today);
+    if (h.m === 9 && tt) {
+      const row = el('div', 'rm-times');
+      const cell = (label, hrs) => { const c = el('div', 'rm-time'); const cd = el('small', 'rm-cd'); cd.dataset.at = String(at(tt.mid, hrs)); c.append(el('span', '', T(label)), el('b', '', window.noonAstro.snapshot(Date.now()).fmtHM(hrs)), cd); return c; };
+      row.append(cell('الإمساك (الفجر)', tt.fajr), cell('الإفطار (المغرب)', tt.maghrib));
+      box.append(row);
+      clearInterval(tick);
+      const upd = () => box.querySelectorAll('.rm-cd').forEach((c) => {
+        const ms = Number(c.dataset.at) - Date.now();
+        c.textContent = ms > 0 ? `${T('بعد')} ${I.dur(Math.floor(ms / 3600e3), Math.floor((ms % 3600e3) / 60000))}` : T('مضى');
+      });
+      upd(); tick = setInterval(() => { if (!box.isConnected) clearInterval(tick); else upd(); }, 30000);
+    }
+    const X = window.NOON_EXTRAS && window.NOON_EXTRAS.texts;
+    const quote = (id) => { const t = X && X[id]; if (!t) return el('span'); const q = el('blockquote', 'cal-hadith'); const a = el('p', 'cal-hadith-ar', t.ar); a.lang = 'ar'; a.dir = 'rtl'; q.append(a, el('cite', '', I.isEn ? `${t.en} — ${t.refEn}` : t.refAr)); return q; };
+    if (h.m === 9) {
+      box.append(el('p', 'hint', T('دعاء الإفطار:')), quote('iftar'));
+      if (h.d >= 20) box.append(el('p', 'hint', T('في العشر الأواخر:')), quote('qadr'), el('p', 'hint', T('وأخرج زكاة الفطر قبل صلاة العيد.')));
+      // Fasts of the month: tap a day to mark it fasted, or missed with an excuse (to make up).
+      const start = ramadanStart(today), days = ramadanDays(start);
+      const y = String(hijri(start).y);
+      const log = (S.ramadan[y] = S.ramadan[y] || {});
+      const grid = el('div', 'rm-grid');
+      days.forEach((d, k) => {
+        const v = log[k + 1];
+        const b = button(`rm-day${v ? ` is-${v}` : ''}${d === today ? ' is-today' : ''}`, I.num(k + 1), () => {
+          log[k + 1] = !v ? 'fast' : v === 'fast' ? 'excused' : undefined;
+          save(); render();
+        });
+        b.title = T(!v ? 'اضغط: صمتُ' : v === 'fast' ? 'صمتُ' : 'أفطرتُ بعذر (للقضاء)');
+        grid.append(b);
+      });
+      const fasted = Object.values(log).filter((v) => v === 'fast').length, owed = Object.values(log).filter((v) => v === 'excused').length;
+      box.append(el('p', 'hint', `${T('صيام الشهر')}: ${I.num(fasted)} ${T('يوماً')}${owed ? ` · ${T('للقضاء')}: ${I.num(owed)}` : ''} ${T('(اضغط اليوم مرة لصمتُ، ومرتين لأفطرتُ بعذر)')}`), grid);
+    }
+    const acts = el('div', 'salah-links');
+    acts.append(button('btn btn-quiet', T('إمساكية رمضان'), () => imsakiya(today)));
+    if (window.noonLibrary) acts.append(button('btn btn-quiet', T('حاسبة زكاة الفطر'), () => window.noonLibrary.open('tool', 'zakat')));
+    box.append(acts);
+    return box;
+  }
+  function imsakiya(today) {
+    const start = ramadanStart(today);
+    if (!start) return;
+    const days = ramadanDays(start);
+    const A = window.noonAstro, snap = A.snapshot(Date.now());
+    const rows = days.map((d, k) => { const t = times(d); return [I.num(k + 1), new Date(d).toLocaleDateString(I.locale, { weekday: 'short', day: 'numeric', month: 'short' }), t ? snap.fmtHM(t.fajr) : '', t ? snap.fmtHM(t.maghrib) : '']; });
+    const title = `${T('إمساكية رمضان')} ${I.num(hijri(start).y)} · ${snap.place.name}`;
+    const tbl = el('table', 'rm-table');
+    const hr = el('tr'); [T('اليوم'), T('التاريخ'), T('الإمساك'), T('الإفطار')].forEach((x) => hr.append(el('th', '', x)));
+    tbl.append(hr);
+    rows.forEach((r) => { const tr = el('tr'); r.forEach((x) => tr.append(el('td', '', x))); tbl.append(tr); });
+    const wrap = el('div', 'rm-imsak');
+    wrap.append(tbl);
+    if (window.noonCard) {
+      window.noonCard.show({ kicker: T('رمضان كريم'), title, body: '', actions: [] });
+      const card = document.querySelector('.rc-card');
+      if (card) { card.querySelector('.rc-acts').remove(); card.append(wrap, button('btn btn-primary', T('مشاركة كصورة'), () => shareTable(title, rows))); }
+    }
+  }
+  // The timetable as an image, drawn on a canvas.
+  async function shareTable(title, rows) {
+    const W = 1080, rowH = 44, H = 260 + rows.length * rowH + 120;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const c = cv.getContext('2d');
+    const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#14213D'); g.addColorStop(1, '#0B1426');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.strokeStyle = '#D4AF37'; c.lineWidth = 5; c.strokeRect(30, 30, W - 60, H - 60);
+    c.textAlign = 'center'; c.direction = I.isEn ? 'ltr' : 'rtl';
+    c.fillStyle = '#F2D58A'; c.font = '700 48px "IBM Plex Sans Arabic", sans-serif'; c.fillText(title, W / 2, 130);
+    const cols = I.isEn ? [150, 420, 700, 930] : [930, 660, 380, 150];
+    c.font = '600 30px "IBM Plex Sans Arabic", sans-serif'; c.fillStyle = 'rgba(247,241,225,0.7)';
+    [T('اليوم'), T('التاريخ'), T('الإمساك'), T('الإفطار')].forEach((x, k) => c.fillText(x, cols[k], 210));
+    c.font = '500 30px "IBM Plex Sans Arabic", sans-serif';
+    rows.forEach((r, i) => {
+      const y = 260 + i * rowH;
+      if (i % 2) { c.fillStyle = 'rgba(255,255,255,0.05)'; c.fillRect(50, y - 30, W - 100, rowH); }
+      c.fillStyle = '#F7F1E1';
+      r.forEach((x, k) => c.fillText(x, cols[k], y));
+    });
+    c.fillStyle = '#D4AF37'; c.font = '600 24px "IBM Plex Sans Arabic", sans-serif'; c.fillText('Muslim To-Do List', W / 2, H - 60);
+    const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+    const name = 'imsakiya.png';
+    const C = window.Capacitor, P = C && C.isNativePlatform && C.isNativePlatform() && C.Plugins;
+    try {
+      if (P && P.Filesystem && P.Share) {
+        const f = await P.Filesystem.writeFile({ path: name, data: cv.toDataURL('image/png').split(',')[1], directory: 'CACHE' });
+        await P.Share.share({ title, files: [f.uri] });
+        return;
+      }
+      const file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title }); return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove();
+    } catch (_) { /* cancelled */ }
+  }
+
   function tag(id, when) {
     const t = el('button', `cal-tag is-${kind(id)}`);
     t.type = 'button';
@@ -355,7 +486,9 @@
       check('seasons', 'تذكير بالمواسم: رمضان، العشر الأواخر، عشر ذي الحجة، عرفة، العيدين، عاشوراء، الست من شوّال'),
       check('friday', 'تذكير يوم الجمعة بسورة الكهف والصلاة على النبي ﷺ'),
       check('adhkar', 'تذكير بأذكار الصباح (بعد الفجر) والمساء (بعد العصر)'),
-      check('wird', 'تذكير يومي بورد القرآن'));
+      check('wird', 'تذكير يومي بورد القرآن'),
+      check('suhoor', 'في رمضان: تذكير بالسحور قبل الفجر بـ٤٥ دقيقة'),
+      check('daily', 'آية اليوم كل صباح'));
     box.append(grid);
     const f1 = el('label', 'field'); f1.append(el('span', '', T('وقت تذكير الصيام (مساء اليوم السابق)')), timeSel('time', 17, 23.5));
     const f2 = el('label', 'field'); f2.append(el('span', '', T('وقت تذكير الورد')), timeSel('wirdTime', 5, 23.5));
@@ -424,7 +557,7 @@
     if (lastDay !== dayKey()) { lastDay = dayKey(); shown = null; picked = null; strip(); if (!root.hidden) render(); }
   }, 30000);
   setTimeout(check, 4000);
-  window.noonSunnah = { plan, eventsOn, hijri, settings: () => S };
+  window.noonSunnah = { plan, eventsOn, hijri, settings: () => S, verseOfDay: (t) => verseOfDay(t || Date.now()) };
   render();
   strip();
 })();

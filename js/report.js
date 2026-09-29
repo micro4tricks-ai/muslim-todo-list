@@ -91,6 +91,10 @@
     days.forEach((d) => habits.forEach((h) => { if (habitDone(h.id, d.key)) hDone++; }));
     const hRate = habits.length ? Math.round((hDone / (habits.length * n)) * 100) : 0;
     const fasts = days.filter((d) => habitDone('fasting', d.key)).length;
+    const P = window.noonPrayers;
+    const onTime = P ? days.reduce((a, d) => a + P.score(d.key).onTime, 0) : 0;
+    const jamaah = P ? days.reduce((a, d) => a + P.score(d.key).jamaah, 0) : 0;
+    const rak = P ? days.reduce((a, d) => a + P.score(d.key).rak, 0) : 0;
     let streak = 0, d = today;
     if (!minutesOn(d)) d = addDays(d, -1);
     while (minutesOn(d) > 0) { streak++; d = addDays(d, -1); }
@@ -100,6 +104,7 @@
       tile(T('مهام أنجزتها'), I.num(tasks), n > 1 ? `${T('المتوسط')} ${I.num(Math.round((tasks / n) * 10) / 10)} ${T('يومياً')}` : T('اليوم')),
       tile(T('العادات'), `${I.num(hRate)}${I.isEn ? '%' : '٪'}`, T('نسبة الإنجاز')),
       tile(T('صفحات القرآن'), I.num(pages), n > 1 ? `${T('المتوسط')} ${I.num(Math.round((pages / n) * 10) / 10)} ${T('يومياً')}` : T('اليوم')),
+      tile(T('الصلوات في وقتها'), `${I.num(onTime)} / ${I.num(5 * n)}`, `${T('منها جماعة')} ${I.num(jamaah)} · ${T('الرواتب')} ${I.num(rak)} ${T('ركعة')}`),
       tile(T('أيام الصيام'), I.num(fasts), T('صيام تطوع')),
       tile(T('أيام تركيز متتالية'), I.num(streak), streak ? T('استمر!') : T('ابدأ جلسة اليوم')));
     root.append(tiles);
