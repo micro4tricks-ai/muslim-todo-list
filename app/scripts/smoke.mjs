@@ -91,7 +91,7 @@ async function phase(name, run, waitMs) {
 }
 await phase('idle', async () => {}, 8000);
 await phase('switch every tab', async () => {
-  for (const v of ['quran', 'calendar', 'notes', 'cards', 'habits', 'adhkar', 'report', 'tasks']) { await gesture(`document.querySelector('.views [data-view="${v}"]').click()`); await sleep(1200); }
+  for (const v of ['quran', 'library', 'calendar', 'notes', 'cards', 'habits', 'adhkar', 'report', 'tasks']) { await gesture(`document.querySelector('.views [data-view="${v}"]').click()`); await sleep(1200); }
 }, 4000);
 await phase('open adhkar list', async () => {
   await gesture(`document.querySelector('.views [data-view="adhkar"]').click()`); await sleep(500);
@@ -103,6 +103,12 @@ await phase('Mushaf: al-Baqarah, scroll through', async () => {
   for (let k = 0; k < 6; k++) { await js("document.querySelector('.qr-body').scrollBy(0, 2500); true"); await sleep(700); }
 }, 8000);
 await phase('Mushaf: close', async () => { await js("history.back(); true"); }, 4000);
+await phase('Library: Sahih al-Bukhari, first book', async () => {
+  await gesture("window.noonLibrary.open('home')"); await sleep(500);
+  await gesture("document.querySelector('.lib-book').click()"); await sleep(500);
+  await gesture("document.querySelector('.lib-sec').click()"); await sleep(4000);
+  await js('scrollTo(0, document.documentElement.scrollHeight); true');
+}, 6000);
 await phase('play mix: rain + fire', async () => { await js('scrollTo(0, 0); true'); await gesture(`document.getElementById('dockToggle').click(); document.querySelector('.preset').click()`); }, 30000);
 await phase('play mix: 3 sounds', async () => { await gesture(`document.querySelectorAll('.preset')[2].click()`); }, 30000);
 await phase('focus mode with sound', async () => { await gesture(`window.noonFocusMode.open()`); }, 15000);

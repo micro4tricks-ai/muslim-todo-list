@@ -115,6 +115,10 @@
     const t = TX[INFO[id][3][0]];
     return t ? (I.isEn ? t.en : t.ar) : '';
   }
+  function refOf(id) {
+    const t = TX[INFO[id][3][0]];
+    return t ? (I.isEn ? t.refEn : t.refAr) : '';
+  }
   // Everything due from `from` (ms) over `days` days, as { key, at, title, body }.
   function plan(from, days) {
     const out = [];
@@ -128,18 +132,21 @@
         out.push({
           key: `eve-${dayKey(next)}`, at: at(day, hm(S.time)),
           title: `${T('غداً')}: ${tomorrow.map(title).join(I.isEn ? ' · ' : ' · ')}`,
-          body: fast ? `${T('انوِ الصيام من الليل ولا تنسَ السحور.')} ${brief(tomorrow[0])}` : brief(tomorrow[0])
+          body: fast ? `${T('انوِ الصيام من الليل ولا تنسَ السحور.')} ${brief(tomorrow[0])}` : brief(tomorrow[0]),
+          hadith: brief(tomorrow[0]), ref: refOf(tomorrow[0]), note: fast ? T('انوِ الصيام من الليل ولا تنسَ السحور.') : '', view: 'calendar'
         });
       }
       const tt = (S.friday || S.adhkar) ? times(day) : null;
       if (S.friday && new Date(day).getDay() === 5) {
         const sun = tt && Number.isFinite(tt.sunrise) ? at(tt.mid, tt.sunrise + 1.5) : at(day, 8);
-        out.push({ key: `fri-${dayKey(day)}`, at: sun, title: title('friday'), body: brief('friday'), view: 'calendar' });
+        out.push({ key: `fri-${dayKey(day)}`, at: sun, title: title('friday'), body: brief('friday'), hadith: brief('friday'), ref: refOf('friday'), view: 'calendar' });
       }
       if (S.adhkar && tt) {
         if (Number.isFinite(tt.fajr)) out.push({ key: `am-${dayKey(day)}`, at: at(tt.mid, tt.fajr + 0.4), title: T('أذكار الصباح'), body: T('حان وقت أذكار الصباح. اضغط لفتحها.'), view: 'adhkar' });
         if (Number.isFinite(tt.asr)) out.push({ key: `pm-${dayKey(day)}`, at: at(tt.mid, tt.asr + 0.4), title: T('أذكار المساء'), body: T('حان وقت أذكار المساء. اضغط لفتحها.'), view: 'adhkar' });
       }
+      const cards = window.noonCards && window.noonCards.plan(dayKey(day));
+      if (cards) out.push({ key: `cards-${dayKey(day)}`, at: at(day, hm(cards.time)), title: T('مراجعة كروت الحفظ'), body: `${T('لديك كروت للمراجعة اليوم:')} ${I.num(cards.due)}`, view: 'cards' });
       if (S.wird) out.push({ key: `wird-${dayKey(day)}`, at: at(day, hm(S.wirdTime)), title: T('وردك من القرآن'), body: T('خصّص دقائق لوردك اليومي من المصحف.'), view: 'quran' });
     }
     return out.filter((x) => x.at > from - 30 * 60000).sort((a, b) => a.at - b.at);
@@ -154,7 +161,7 @@
       if (r.at > now || now - r.at > 30 * 60000 || fired[r.key]) continue;
       fired[r.key] = now;
       if (r.key.startsWith('wird-') && window.noonQuran) { const p = window.noonQuran.progress(); if (p.today >= p.goal) continue; }
-      toast(`${r.title}. ${r.body}`, r.view ? { label: T('افتح'), run: () => window.noonUI.go(r.view) } : null);
+      showCard(r);
       if (!native() && S.notify && 'Notification' in window && Notification.permission === 'granted') {
         try { new Notification(r.title, { body: r.body, tag: r.key }); } catch (_) {}
       }
@@ -163,6 +170,18 @@
     for (const k of Object.keys(fired)) if (now - fired[k] > 2 * 864e5) delete fired[k];
     try { localStorage.setItem('noon-sunnah-fired', JSON.stringify(fired)); } catch (_) {}
   }
+
+  // A reminder as a designed card (js/remind-card.js), or a plain notice without it.
+  function showCard(r) {
+    const open = r.view ? [{ label: T('افتح'), primary: true, run: () => window.noonUI.go(r.view) }] : [];
+    if (!window.noonCard) { toast(`${r.title}. ${r.body}`, r.view ? { label: T('افتح'), run: () => window.noonUI.go(r.view) } : null); return; }
+    window.noonCard.show({ title: r.title, body: r.hadith || r.body, ref: r.hadith ? [r.note, r.ref].filter(Boolean).join(' · ') : '', actions: open });
+  }
+  // The phone app opens the card of the reminder that was tapped.
+  window.addEventListener('noon-reminder-tap', (ev) => {
+    const r = plan(Date.now() - 2 * 864e5, 3).find((x) => x.key === ev.detail.key);
+    if (r) showCard(r); else if (ev.detail.view) window.noonUI.go(ev.detail.view);
+  });
 
   // ================= the view =================
   let shown = null; // first day of the Hijri month on screen
@@ -347,6 +366,21 @@
     const f3 = el('label', 'field'); f3.append(el('span', '', T('تعديل التاريخ الهجري')), adj);
     const fields = el('div', 'cal-set-fields'); fields.append(f1, f2, f3);
     box.append(fields);
+    if (window.noonCard) {
+      const looks = el('div', 'rc-looks');
+      looks.append(el('span', 'hint', T('شكل كروت التذكير')));
+      window.noonCard.themes.forEach(([k, ar, en]) => {
+        const b = button(`rc-look`, I.isEn ? en : ar, () => {
+          window.noonCard.setTheme(k);
+          looks.querySelectorAll('.rc-look').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+          window.noonCard.show({ title: title('monday'), body: brief('monday'), ref: refOf('monday'), kicker: T('معاينة') });
+        });
+        b.dataset.theme = k;
+        b.setAttribute('aria-pressed', String(window.noonCard.theme() === k));
+        looks.append(b);
+      });
+      box.append(looks);
+    }
     if (!native() && 'Notification' in window) {
       const c = el('input'); c.type = 'checkbox'; c.checked = S.notify && Notification.permission === 'granted';
       c.addEventListener('change', async () => {

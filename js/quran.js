@@ -17,13 +17,39 @@
     ['ar.abdulbasitmurattal', 64, 'عبد الباسط عبد الصمد', 'Abdul Basit Abdus Samad'],
     ['ar.abdurrahmaansudais', 192, 'عبد الرحمن السديس', 'Abdurrahman As-Sudais'],
     ['ar.mahermuaiqly', 128, 'ماهر المعيقلي', 'Maher Al-Muaiqly'],
-    ['ar.hudhaify', 128, 'علي الحذيفي', 'Ali Al-Hudhaify']
+    ['ar.hudhaify', 128, 'علي الحذيفي', 'Ali Al-Hudhaify'],
+    ['ar.husarymujawwad', 128, 'الحصري (مجوّد)', 'Al-Husary (mujawwad)'],
+    // The teaching recitation: slow and clear, for those learning to read (everyayah.com).
+    ['muallim', 0, 'الحصري المعلّم (للتعليم)', 'Al-Husary, teaching recitation',
+      (i) => `https://everyayah.com/data/Husary_Muallim_128kbps/${String(surahOf(i) + 1).padStart(3, '0')}${String(ayahOf(i)).padStart(3, '0')}.mp3`]
+  ];
+  // Tafsirs: the recognised ones, fetched per verse (alquran.cloud, or spa5k/tafsir_api on jsDelivr).
+  const TAFSIRS = [
+    ['muyassar', 'التفسير الميسّر (مجمع الملك فهد)', 'Al-Muyassar (King Fahd Complex)', 'alq', 'ar.muyassar'],
+    ['saddi', 'تفسير السعدي', 'Tafsir as-Sa‘di', 'cdn', 'ar-tafseer-al-saddi'],
+    ['ibnkathir', 'تفسير ابن كثير', 'Tafsir Ibn Kathir', 'cdn', 'ar-tafsir-ibn-kathir'],
+    ['tabari', 'تفسير الطبري', 'Tafsir at-Tabari', 'cdn', 'ar-tafsir-al-tabari'],
+    ['qurtubi', 'تفسير القرطبي', 'Tafsir al-Qurtubi', 'alq', 'ar.qurtubi'],
+    ['baghawi', 'تفسير البغوي', 'Tafsir al-Baghawi', 'cdn', 'ar-tafsir-al-baghawi'],
+    ['wasit', 'التفسير الوسيط (طنطاوي)', 'Al-Wasit (Tantawi)', 'cdn', 'ar-tafsir-al-wasit'],
+    ['jalalayn', 'تفسير الجلالين', 'Tafsir al-Jalalayn', 'alq', 'ar.jalalayn'],
+    ['en-ibnkathir', 'ابن كثير المختصر (بالإنجليزية)', 'Ibn Kathir, abridged (English)', 'cdn', 'en-tafisr-ibn-kathir']
+  ];
+  // Tajweed colours: [code, Arabic name, English name]
+  const TAJWEED = [
+    ['h', 'همزة وصل ولام وحروف لا تُنطق', 'Hamzat al-wasl, silent letters'], ['n', 'مدّ طبيعي (حركتان)', 'Natural madd (2)'],
+    ['p', 'مدّ جائز (٢، ٤، ٦)', 'Permissible madd (2, 4, 6)'], ['o', 'مدّ واجب (٤–٥)', 'Obligatory madd (4–5)'],
+    ['m', 'مدّ لازم (٦ حركات)', 'Necessary madd (6)'], ['q', 'قلقلة', 'Qalqalah'], ['g', 'غنّة', 'Ghunnah'],
+    ['f', 'إخفاء', 'Ikhfa'], ['c', 'إخفاء شفوي', 'Ikhfa shafawi'], ['i', 'إقلاب', 'Iqlab'],
+    ['a', 'إدغام بغنّة', 'Idgham with ghunnah'], ['u', 'إدغام بلا غنّة', 'Idgham without ghunnah'],
+    ['w', 'إدغام شفوي', 'Idgham shafawi'], ['d', 'إدغام متجانسين أو متقاربين', 'Idgham (similar letters)']
   ];
 
   // ---- saved state ----
   const blank = () => ({
     last: null, marks: [], goal: 5, today: { day: dayKey(), pages: [] },
-    khatma: { pages: [], count: 0 }, font: 30, trans: I.isEn, reciter: 'ar.alafasy', theme: 'paper'
+    khatma: { pages: [], count: 0 }, font: 30, trans: I.isEn, reciter: 'ar.alafasy', theme: 'paper',
+    tajweed: false, repeat: 1, gap: 0, rate: 1, hide: false, tafsir: I.isEn ? 'en-ibnkathir' : 'muyassar'
   });
   let S = Object.assign(blank(), load(KEY, {}));
   const fresh = () => { if (!S.today || S.today.day !== dayKey()) S.today = { day: dayKey(), pages: [] }; };
@@ -95,6 +121,7 @@
       }
     }
     if (!changed) return;
+    (S.log = S.log || {})[S.today.day] = S.today.pages.length; // pages per day, for the report
     save();
     window.dispatchEvent(new CustomEvent('noon-habit', { detail: { id: 'quran', value: S.today.pages.length } }));
     if (S.today.pages.length === S.goal) toast(T('أتممت وردك اليومي من القرآن. بارك الله فيك.'));
@@ -148,6 +175,24 @@
       el('span', 'q-meta', `${T('الختمة الحالية')}: ${I.num(kh)} / ${I.num(PAGES)}${S.khatma.count ? ` · ${T('ختمات مكتملة')}: ${I.num(S.khatma.count)}` : ''}`));
     top.append(cont, wird);
     root.append(top);
+
+    // Ways to read: the tajweed Mushaf, the teaching Mushaf, and testing what you memorised.
+    const modes = el('div', 'q-modes');
+    const mode = (on, name, note, run) => {
+      const b = button(`q-mode${on ? ' is-on' : ''}`, '', run);
+      b.setAttribute('aria-pressed', String(on));
+      b.append(el('b', '', T(name)), el('span', '', T(note)));
+      modes.append(b);
+    };
+    mode(S.tajweed, 'مصحف التجويد', 'أحكام التجويد ملوّنة في النص', () => { S.tajweed = !S.tajweed; save(); renderIndex(); });
+    mode(S.reciter === 'muallim', 'المصحف المعلّم', 'الحصري المعلّم، تكرار الآية ٣ مرات ومهلة لترديدها', () => {
+      const on = S.reciter !== 'muallim';
+      Object.assign(S, on ? { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 } : { reciter: 'ar.alafasy', repeat: 1, gap: 0 });
+      save(); renderIndex();
+      if (on) toast(T('فعّلنا المصحف المعلّم. افتح أي سورة واضغط ▶ واستمع ثم ردّد بعد القارئ.'));
+    });
+    mode(S.hide, 'التسميع والحفظ', 'تُخفى الآيات فتسمّع حفظك، واضغط الآية لتظهر', () => { S.hide = !S.hide; save(); renderIndex(); });
+    root.append(modes);
 
     // Search.
     const form = el('form', 'q-search');
@@ -297,7 +342,31 @@
       b.setAttribute('aria-pressed', String(S.theme === k));
       themes.append(b);
     });
-    settings.append(sizeRow, transRow, recRow, themes);
+    const tj = el('input'); tj.type = 'checkbox'; tj.checked = S.tajweed;
+    const legend = el('div', 'qr-legend');
+    legend.hidden = !S.tajweed;
+    TAJWEED.forEach(([k, a, e]) => { const x = el('span', `tj-${k}`); x.append(el('i'), I.isEn ? e : a); legend.append(x); });
+    tj.addEventListener('change', () => { S.tajweed = tj.checked; legend.hidden = !S.tajweed; save(); renderSurah(cur, firstVisible(), true); });
+    const tjRow = el('label', 'qr-row qr-check'); tjRow.append(tj, el('span', '', T('مصحف التجويد (ألوان الأحكام)')));
+    const hide = el('input'); hide.type = 'checkbox'; hide.checked = S.hide;
+    hide.addEventListener('change', () => { S.hide = hide.checked; save(); R.page.classList.toggle('is-hide', S.hide); R.page.querySelectorAll('.is-shown').forEach((n) => n.classList.remove('is-shown')); });
+    const hideRow = el('label', 'qr-row qr-check'); hideRow.append(hide, el('span', '', T('التسميع: إخفاء الآيات حتى تضغط عليها')));
+    const pick = (label, key, opts, after) => {
+      const sel = el('select');
+      sel.setAttribute('aria-label', T(label));
+      opts.forEach(([v, t]) => sel.append(new Option(T(t), String(v))));
+      sel.value = String(S[key]);
+      sel.addEventListener('change', () => { S[key] = Number(sel.value); save(); if (after) after(); });
+      const row = el('label', 'qr-row'); row.append(el('span', '', T(label)), sel);
+      return row;
+    };
+    const learn = el('div', 'qr-learn');
+    learn.append(el('b', '', T('التعلّم والحفظ')),
+      pick('تكرار كل آية', 'repeat', [[1, 'مرة واحدة'], [2, 'مرتان'], [3, '٣ مرات'], [5, '٥ مرات'], [10, '١٠ مرات']]),
+      pick('مهلة للترديد بعد الآية', 'gap', [[0, 'بدون'], [0.5, 'نصف مدة الآية'], [1, 'مثل مدة الآية'], [1.5, 'مرة ونصف']]),
+      pick('سرعة التلاوة', 'rate', [[0.75, 'أبطأ'], [1, 'عادية'], [1.25, 'أسرع']], () => { audio.playbackRate = S.rate; }),
+      hideRow);
+    settings.append(sizeRow, transRow, tjRow, legend, recRow, themes, learn);
 
     const body = el('div', 'qr-body');
     body.tabIndex = -1;
@@ -324,6 +393,8 @@
 
     body.addEventListener('click', (ev) => {
       const a = ev.target.closest('[data-i]');
+      // In memorisation mode the first tap only reveals the verse.
+      if (a && S.hide && !a.classList.contains('is-shown')) { a.classList.add('is-shown'); return; }
       if (a) select(Number(a.dataset.i));
       const nav = ev.target.closest('[data-go]');
       if (nav) renderSurah(Number(nav.dataset.go), null);
@@ -338,6 +409,10 @@
   // at: the verse to show; keep: put it at the top without a flash (after a layout change).
   function renderSurah(s, at, keep) {
     // The translation needs its file the first time it is switched on.
+    if (S.tajweed && !txt.tajweed) {
+      data('tajweed').then(() => renderSurah(s, at, keep)).catch(() => { S.tajweed = false; renderSurah(s, at, keep); });
+      return;
+    }
     if (S.trans && !txt.en) {
       data('en').then(() => renderSurah(s, at, keep)).catch(() => { S.trans = false; R.trans.checked = false; renderSurah(s, at, keep); });
       return;
@@ -378,7 +453,7 @@
         blk.dataset.i = String(i);
         const a = el('p', 'ay-ar');
         a.lang = 'ar'; a.dir = 'rtl';
-        a.append(texts[i] + ' ', n);
+        a.append(verse(i), ' ', n);
         if (sajda.has(i)) a.append(el('span', 'ay-sajda', '۩'));
         const e = el('p', 'ay-en');
         e.dir = 'ltr'; e.lang = 'en';
@@ -389,7 +464,7 @@
       } else {
         const a = el('span', 'ay');
         a.dataset.i = String(i);
-        a.append(texts[i] + ' ', n);
+        a.append(verse(i), ' ', n);
         if (sajda.has(i)) a.append(el('span', 'ay-sajda', '۩'));
         if (isMarked(i)) a.classList.add('is-mark');
         flow.append(a, ' ');
@@ -401,6 +476,7 @@
     if (s < 113) { const b = button('btn btn-primary', `${T('السورة التالية')}: ${surahName(s + 1)}`); b.dataset.go = String(s + 1); nav.append(b); }
     frag.append(nav);
     R.page.replaceChildren(frag);
+    R.page.classList.toggle('is-hide', !!S.hide);
     R.tName.textContent = I.isEn ? `${M.surahs[s][1]}` : surahName(s);
     observe();
     if (at !== null && at !== undefined && at > first) {
@@ -410,6 +486,20 @@
     } else R.body.scrollTop = 0;
     updateMeta(at !== null && at !== undefined ? at : first);
     if (playing >= 0) highlight(playing);
+  }
+  // A verse's text: plain, or with its tajweed rules coloured ([code[letters] or [code:id[letters]).
+  function verse(i) {
+    if (!S.tajweed || !txt.tajweed) return txt.uthmani[i];
+    const f = document.createDocumentFragment(), t = txt.tajweed[i];
+    const re = /\[([a-z])(?::\d+)?\[([^\]]*)\]/g;
+    let last = 0, m;
+    while ((m = re.exec(t))) {
+      if (m.index > last) f.append(t.slice(last, m.index));
+      f.append(el('span', `tj-${m[1]}`, m[2]));
+      last = re.lastIndex;
+    }
+    if (last < t.length) f.append(t.slice(last));
+    return f;
   }
   function foot(p) {
     const f = el('div', 'qr-pg-foot');
@@ -464,6 +554,7 @@
     R.sheetTitle.textContent = refText(i);
     R.tafsir.hidden = true;
     R.tafsir.replaceChildren();
+    R.sheet.classList.remove('is-tall');
     const texts = txt.uthmani;
     const share = `${texts[i]} ﴿${surahNameAr(surahOf(i))} ${ar(ayahOf(i))}﴾`;
     R.acts.replaceChildren(
@@ -474,12 +565,23 @@
         toast(T(isMarked(i) ? 'حُفظت العلامة.' : 'أُزيلت العلامة.'));
         unselect();
       }),
-      button('qr-act', T('التفسير الميسّر'), () => tafsirOf(i)),
+      button('qr-act', T('التفسير'), () => tafsirOf(i)),
       button('qr-act', T('نسخ'), () => copy(share)),
       button('qr-act', T('مشاركة'), async () => {
         if (navigator.share) { try { await navigator.share({ text: share }); } catch (_) {} } else copy(share);
       }),
-      button('qr-act', T('توقّفت هنا'), () => { setLast(i); toast(T('حُفظ موضع القراءة.')); unselect(); })
+      button('qr-act', T('توقّفت هنا'), () => { setLast(i); toast(T('حُفظ موضع القراءة.')); unselect(); }),
+      button('qr-act', T('أضف لكروت الحفظ'), () => {
+        if (!window.noonCards) return;
+        // Front: the verse before it (or where the surah starts); back: the verse to recall.
+        const s0 = surahOf(i);
+        const front = i > starts[s0] ? `${T('ما الآية التالية؟')}\n${texts[i - 1]}` : `${T('أول سورة')} ${surahNameAr(s0)}`;
+        const ok = window.noonCards.add(T('حفظ القرآن'), front, `${texts[i]} ﴿${ar(ayahOf(i))}﴾`);
+        toast(T(ok ? 'أُضيفت الآية إلى مجموعة «حفظ القرآن» في الكروت.' : 'هذه الآية موجودة في كروت الحفظ.'));
+      }),
+      button('qr-act', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({
+        kicker: T('القرآن الكريم'), title: refText(i), body: texts[i], quran: true, ref: `﴿${surahNameAr(surahOf(i))} ${ar(ayahOf(i))}﴾`
+      }))
     );
     R.sheet.hidden = false;
   }
@@ -487,23 +589,46 @@
     const old = R.page.querySelector('.is-sel');
     if (old) old.classList.remove('is-sel');
     sel = -1;
-    if (!keepSheet) R.sheet.hidden = true;
+    if (!keepSheet) { R.sheet.hidden = true; R.sheet.classList.remove('is-tall'); }
   }
   async function copy(text) {
     try { await navigator.clipboard.writeText(text); toast(T('نُسخت الآية.')); } catch (_) { toast(T('تعذّر النسخ.')); }
   }
+  async function tafsirText(t, i) {
+    if (t[3] === 'alq') {
+      const j = await (await fetch(`https://api.alquran.cloud/v1/ayah/${i + 1}/${t[4]}`)).json();
+      return j.data.text;
+    }
+    const r = await fetch(`https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/${t[4]}/${surahOf(i) + 1}/${ayahOf(i)}.json`);
+    if (!r.ok) throw new Error(r.status);
+    return (await r.json()).text || '';
+  }
   async function tafsirOf(i) {
+    R.sheet.classList.add('is-tall');
     R.tafsir.hidden = false;
-    R.tafsir.replaceChildren(el('p', 'hint', T('جارٍ تحميل التفسير…')));
+    const t = TAFSIRS.find((x) => x[0] === S.tafsir) || TAFSIRS[0];
+    const pickT = el('select');
+    pickT.setAttribute('aria-label', T('اختر التفسير'));
+    TAFSIRS.forEach((x) => pickT.append(new Option(I.isEn ? x[2] : x[1], x[0])));
+    pickT.value = t[0];
+    pickT.addEventListener('change', () => { S.tafsir = pickT.value; save(); tafsirOf(i); });
+    R.tafsir.replaceChildren(pickT, el('p', 'hint', T('جارٍ تحميل التفسير…')));
     try {
-      const r = await fetch(`https://api.alquran.cloud/v1/ayah/${i + 1}/ar.muyassar`);
-      const j = await r.json();
+      // Some tafsirs explain a group of verses once, under its first verse.
+      let k = i, text = await tafsirText(t, k);
+      const s0 = starts[surahOf(i)];
+      while (!text.trim() && k > s0 && i - k < 12) { k--; text = await tafsirText(t, k); }
       if (sel !== i) return;
-      const p = el('p', 'qr-tafsir-text', j.data.text);
-      p.lang = 'ar'; p.dir = 'rtl';
-      R.tafsir.replaceChildren(el('b', '', T('التفسير الميسّر')), p, el('span', 'hint', T('المصدر: مجمع الملك فهد، عبر api.alquran.cloud')));
+      const p = el('div', 'qr-tafsir-text');
+      p.lang = t[0].startsWith('en') ? 'en' : 'ar';
+      p.dir = t[0].startsWith('en') ? 'ltr' : 'rtl';
+      text.split(/\n+/).filter((x) => x.trim()).forEach((para) => p.append(el('p', '', para.trim())));
+      const parts = [pickT];
+      if (k !== i) parts.push(el('p', 'hint', `${T('تفسير هذه الآية مع ما قبلها، من الآية')} ${I.num(ayahOf(k))}`));
+      parts.push(p, el('span', 'hint', t[3] === 'alq' ? T('المصدر: api.alquran.cloud') : T('المصدر: spa5k/tafsir_api عبر jsDelivr')));
+      R.tafsir.replaceChildren(...parts);
     } catch (_) {
-      R.tafsir.replaceChildren(el('p', 'hint', T('التفسير يحتاج اتصالاً بالإنترنت. حاول مرة أخرى.')));
+      R.tafsir.replaceChildren(pickT, el('p', 'hint', T('التفسير يحتاج اتصالاً بالإنترنت. حاول مرة أخرى.')));
     }
   }
 
@@ -514,10 +639,14 @@
   const nextAudio = new Audio();
   nextAudio.preload = 'auto';
   const reciter = () => RECITERS.find((r) => r[0] === S.reciter) || RECITERS[0];
-  const src = (i) => `https://cdn.islamic.network/quran/audio/${reciter()[1]}/${reciter()[0]}/${i + 1}.mp3`;
-  function play(i) {
+  const src = (i) => (reciter()[4] ? reciter()[4](i) : `https://cdn.islamic.network/quran/audio/${reciter()[1]}/${reciter()[0]}/${i + 1}.mp3`);
+  let left = 0, gapTimer = 0; // repeats still to play; the pause before the next one
+  function play(i, again) {
+    clearTimeout(gapTimer);
+    if (!again) left = Math.max(1, S.repeat || 1);
     playing = i;
     audio.src = src(i);
+    audio.playbackRate = S.rate || 1;
     audio.play().then(() => window.dispatchEvent(new CustomEvent('noon-recitation'))).catch(() => {
       toast(T('تعذّر تشغيل التلاوة. التلاوة تحتاج اتصالاً بالإنترنت.'));
       stopped();
@@ -539,12 +668,17 @@
     }
     setPlayIcon(true);
   }
-  function pause() { audio.pause(); setPlayIcon(false); }
+  function pause() { clearTimeout(gapTimer); audio.pause(); setPlayIcon(false); }
   function stopped() { playing = -1; setPlayIcon(false); if (R) R.page.querySelectorAll('.is-play').forEach((n) => n.classList.remove('is-play')); }
   audio.addEventListener('ended', () => {
     const s = surahOf(playing), end = starts[s] + M.surahs[s][4];
-    if (playing + 1 < end) play(playing + 1);
-    else stopped();
+    const wait = (S.gap || 0) * (audio.duration || 0) * 1000 / (S.rate || 1);
+    const next = () => {
+      if (--left > 0) play(playing, true);
+      else if (playing + 1 < end) play(playing + 1);
+      else stopped();
+    };
+    if (wait > 0) gapTimer = setTimeout(next, wait); else next();
   });
   function highlight(i, scroll) {
     if (!R) return;
@@ -599,6 +733,6 @@
   onRemote(KEY, () => { S = Object.assign(blank(), load(KEY, {})); fresh(); if (!root.hidden) renderIndex(); });
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'quran') renderIndex(); });
   setInterval(() => { if (S.today.day !== dayKey()) { fresh(); if (!root.hidden) renderIndex(); } }, 60000);
-  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: S.goal }) };
+  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: S.goal }), pagesOn: (day) => ((S.log || {})[day] || 0) };
   renderIndex();
 })();

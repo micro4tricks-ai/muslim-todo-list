@@ -9,7 +9,12 @@
   const $ = (id) => document.getElementById(id);
   const native = () => window.noonNative;
   // Inside the Android app the phone itself shows the alerts, so they are on by default.
-  let S = Object.assign({ enabled: true, notify: !!native(), autoPause: true, before: 10 }, load(KEY, {}));
+  let S = Object.assign({ enabled: true, notify: !!native(), autoPause: true, before: 10, sound: 'madinah' }, load(KEY, {}));
+  // The sound when a prayer is due: a short chime or a full adhan (sounds/adhan, see CREDITS.md there).
+  const SOUNDS = [
+    ['madinah', 'أذان من المسجد النبوي'], ['fakhri', 'أذان بصوت صباح فخري'], ['beautiful', 'أذان هادئ'],
+    ['azeez', 'أذان بصوت عاقب عزيز'], ['chime', 'نغمة قصيرة فقط']
+  ];
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); if (native()) native().schedulePrayers(true); };
   // Remember what we've already announced today, per device.
   let fired = {};
@@ -17,11 +22,14 @@
   const mark = (id) => { fired[id] = 1; try { sessionStorage.setItem('noon-prayer-fired', JSON.stringify(fired)); } catch (_) {} };
 
   // ---- settings (in the location & prayer times panel) ----
-  const en = $('paEnabled'), no = $('paNotify'), ap = $('paPause'), bf = $('paBefore');
+  const en = $('paEnabled'), no = $('paNotify'), ap = $('paPause'), bf = $('paBefore'), snd = $('paSound'), pre = $('paPreview');
+  SOUNDS.forEach(([v, label]) => snd.append(new Option(T(label), v)));
   function syncForm() {
     en.checked = S.enabled; no.checked = S.notify; ap.checked = S.autoPause; bf.value = String(S.before);
-    [no, ap, bf].forEach((x) => { x.disabled = !S.enabled; });
+    snd.value = SOUNDS.some((x) => x[0] === S.sound) ? S.sound : 'madinah';
+    [no, ap, bf, snd].forEach((x) => { x.disabled = !S.enabled; });
   }
+  snd.addEventListener('change', () => { S.sound = snd.value; save(); if (!adhan.paused) preview(); });
   en.addEventListener('change', () => { S.enabled = en.checked; save(); syncForm(); });
   ap.addEventListener('change', () => { S.autoPause = ap.checked; save(); });
   bf.addEventListener('change', () => { S.before = Number(bf.value) || 0; save(); });
@@ -48,6 +56,25 @@
     if (native() || !S.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
     try { new Notification(title, { body, tag: 'noon-prayer', silent: false }); } catch (_) {}
   }
+  // ---- the adhan ----
+  const adhan = new Audio();
+  adhan.preload = 'none';
+  function playAdhan(name) {
+    if (name === 'chime') { chime(); return false; }
+    adhan.src = `sounds/adhan/adhan_${name}.mp3`;
+    adhan.currentTime = 0;
+    adhan.play().catch(() => chime());
+    window.dispatchEvent(new CustomEvent('noon-recitation')); // the focus sounds fall quiet
+    return true;
+  }
+  function stopAdhan() { adhan.pause(); pre.textContent = T('استماع'); pre.setAttribute('aria-pressed', 'false'); }
+  adhan.addEventListener('ended', stopAdhan);
+  function preview() {
+    if (!adhan.paused) { stopAdhan(); return; }
+    if (playAdhan(snd.value)) { pre.textContent = T('إيقاف'); pre.setAttribute('aria-pressed', 'true'); }
+  }
+  pre.addEventListener('click', preview);
+
   let audioCtx = null;
   function chime() {
     try {
@@ -92,10 +119,19 @@
         const ctl = window.noonFocusControl;
         const running = ctl && ctl.state().running && ctl.state().mode === 'focus';
         if (running && S.autoPause) ctl.pause();
-        chime();
+        // In the phone app the notification itself carries the adhan, so the page stays quiet.
+        const withAdhan = native() ? false : playAdhan(S.sound);
         const msg = `${T('حان الآن وقت صلاة')} ${name} (${snap.fmtHM(at)}).`;
-        toast(running && S.autoPause ? `${msg} ${T('أوقفنا جلسة التركيز مؤقتاً، أكملها بعد الصلاة.')}` : msg,
-          running && !S.autoPause && ctl ? { label: T('إيقاف مؤقت للصلاة'), run: () => ctl.pause(), sticky: true } : null);
+        const note = running && S.autoPause ? T('أوقفنا جلسة التركيز مؤقتاً، أكملها بعد الصلاة.') : '';
+        if (window.noonCard) {
+          const acts = [];
+          if (withAdhan) acts.push({ label: T('إيقاف الأذان'), primary: true, run: stopAdhan });
+          if (running && !S.autoPause && ctl) acts.push({ label: T('إيقاف مؤقت للصلاة'), run: () => ctl.pause() });
+          window.noonCard.show({ kicker: T('حيّ على الصلاة'), title: `${T('حان وقت صلاة')} ${name}`, body: [msg, note].filter(Boolean).join(' '), actions: acts, onClose: stopAdhan });
+        } else {
+          toast(note ? `${msg} ${note}` : msg,
+            running && !S.autoPause && ctl ? { label: T('إيقاف مؤقت للصلاة'), run: () => ctl.pause(), sticky: true } : null);
+        }
         notify(`${T('حان وقت صلاة')} ${name}`, T('حيّ على الصلاة'));
         window.dispatchEvent(new CustomEvent('noon-prayer', { detail: { prayer: k, name } }));
       }

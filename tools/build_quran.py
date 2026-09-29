@@ -14,6 +14,7 @@ source's own al-Fatiha 1:1, so no Quran text is typed by hand.
 Run:  python tools/build_quran.py
 """
 import json
+import re
 import os
 import urllib.request
 
@@ -49,6 +50,41 @@ def strip_basmala(surahs):
 
 def letters(w):
     return ''.join(c for c in w if 'ء' <= c <= 'ي' or c == 'ٱ')
+
+
+def tajweed_texts():
+    """The colour-coded tajweed edition: rules are marked [code[letters] or [code:id[letters].
+
+    Where a verse 1 starts with the basmala, it is cut off at the fourth space outside
+    any mark. Every verse is checked letter for letter against the Uthmani text.
+    """
+    surahs = edition('quran-tajweed')
+    basmala = [letters(w) for w in surahs[0]['ayahs'][0]['text'].replace('﻿', '').strip().split(' ')]
+    mark = re.compile(r'\[[a-z](?::\d+)?\[|\]')
+    out = []
+    for s in surahs:
+        for a in s['ayahs']:
+            t = a['text'].replace('﻿', '').strip()
+            plain = mark.sub('', t)
+            if s['number'] not in (1, 9) and a['numberInSurah'] == 1 and [letters(w) for w in plain.split(' ')[:4]] == basmala:
+                # Walk the marked text and cut after the fourth word.
+                spaces, depth, k = 0, 0, 0
+                while k < len(t):
+                    m = mark.match(t, k)
+                    if m:
+                        depth += 1 if m.group().startswith('[') else -1
+                        k = m.end()
+                        continue
+                    if t[k] == ' ' and depth == 0:
+                        spaces += 1
+                        if spaces == 4:
+                            break
+                    k += 1
+                assert spaces == 4, s['number']
+                t = t[k + 1:].strip()
+            out.append(t)
+    assert len(out) == 6236
+    return out
 
 
 def main():
@@ -89,6 +125,18 @@ def main():
             json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
 
     dump('uthmani.json', texts)
+    tajweed = tajweed_texts()
+    # The two editions spell small yaa/waw and tatweel differently; everything else must match.
+    mark = re.compile(r'\[[a-z](?::\d+)?\[|\]')
+
+    def skeleton(w):
+        w = ''.join(c for c in w if ('ء' <= c <= 'ي' or c == 'ٱ') and c != 'ـ')
+        for a, b in (('ٱ', 'ا'), ('أ', 'ا'), ('إ', 'ا'), ('آ', 'ا'), ('ى', ''), ('ئ', ''), ('ؤ', ''), ('ء', ''), ('ي', ''), ('و', '')):
+            w = w.replace(a, b)
+        return w
+    bad = [i for i in range(6236) if skeleton(mark.sub('', tajweed[i])) != skeleton(texts[i])]
+    assert not bad, bad[:10]
+    dump('tajweed.json', tajweed)
     dump('clean.json', strip_basmala(clean))
     dump('en.json', [a['text'].strip() for s in en for a in s['ayahs']])
 

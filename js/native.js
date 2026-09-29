@@ -22,11 +22,25 @@
     quiet(LN.createChannel({ id: 'focus', name: T('مؤقت التركيز'), importance: 4, visibility: 1, vibration: true })),
     quiet(LN.createChannel({ id: 'sunnah', name: T('الصيام والمواسم والأذكار'), importance: 4, visibility: 1, vibration: true }))
   ]);
-  // Tapping a reminder opens its section.
+  // Tapping a reminder opens its card (or its section).
   quiet(LN.addListener('localNotificationActionPerformed', (a) => {
-    const view = a && a.notification && a.notification.extra && a.notification.extra.view;
-    if (view && window.noonUI.go) setTimeout(() => window.noonUI.go(view), 300);
+    const x = (a && a.notification && a.notification.extra) || {};
+    setTimeout(() => {
+      if (x.key) window.dispatchEvent(new CustomEvent('noon-reminder-tap', { detail: x }));
+      else if (x.view && window.noonUI.go) window.noonUI.go(x.view);
+    }, 400);
   }));
+  // One channel per adhan: Android fixes a channel's sound when it is created.
+  const adhanChannels = {};
+  function adhanChannel(sound) {
+    if (!sound || sound === 'chime') return Promise.resolve('prayer');
+    if (!adhanChannels[sound]) {
+      adhanChannels[sound] = quiet(LN.createChannel({ id: `adhan-${sound}`, name: `${T('الأذان')}: ${T(ADHAN_NAMES[sound] || sound)}`,
+        importance: 5, visibility: 1, vibration: true, sound: `adhan_${sound}.mp3` })).then(() => `adhan-${sound}`);
+    }
+    return adhanChannels[sound];
+  }
+  const ADHAN_NAMES = { madinah: 'أذان من المسجد النبوي', fakhri: 'أذان بصوت صباح فخري', beautiful: 'أذان هادئ', azeez: 'أذان بصوت عاقب عزيز' };
 
   async function permit(ask) {
     try {
@@ -37,8 +51,8 @@
   }
 
   // ---- prayers: the next few days, rebooked whenever the times or settings change ----
-  const settings = () => Object.assign({ enabled: true, notify: true, before: 10 }, load(PA_KEY, {}));
-  function plan() {
+  const settings = () => Object.assign({ enabled: true, notify: true, before: 10, sound: 'madinah' }, load(PA_KEY, {}));
+  function plan(dueChannel) {
     const S = settings(), A = window.noonAstro;
     if (!S.enabled || !S.notify || !A) return [];
     const now = Date.now(), out = [];
@@ -53,7 +67,7 @@
         const name = T(NAMES[k]);
         const id = PRAYER_IDS[0] + d * 10 + i * 2;
         if (at > now + 5000) {
-          out.push({ id, channelId: 'prayer', title: `${T('حان وقت صلاة')} ${name}`, body: T('حيّ على الصلاة'),
+          out.push({ id, channelId: dueChannel || 'prayer', title: `${T('حان وقت صلاة')} ${name}`, body: T('حيّ على الصلاة'),
             schedule: { at: new Date(at), allowWhileIdle: true } });
         }
         const early = at - S.before * 60000;
@@ -71,8 +85,10 @@
     if (busy) return;
     busy = true;
     try {
-      const list = plan();
-      const sig = list.map((n) => n.id + '@' + n.schedule.at.getTime() + n.title).join('|');
+      await channels;
+      const due = await adhanChannel(settings().sound);
+      const list = plan(due);
+      const sig = due + '|' + list.map((n) => n.id + '@' + n.schedule.at.getTime() + n.title).join('|');
       if (sig === lastSig && !force) return;
       if (list.length && !(await permit(false))) return;
       await channels;
@@ -96,7 +112,7 @@
       const list = window.noonSunnah.plan(now, SUNNAH_DAYS).filter((r) => r.at > now + 5000)
         .slice(0, SUNNAH_IDS[1] - SUNNAH_IDS[0])
         .map((r, k) => ({ id: SUNNAH_IDS[0] + k, channelId: 'sunnah', title: r.title, body: r.body,
-          largeBody: r.body, extra: { view: r.view || 'calendar' }, schedule: { at: new Date(r.at), allowWhileIdle: true } }));
+          largeBody: r.body, extra: { view: r.view || 'calendar', key: r.key }, schedule: { at: new Date(r.at), allowWhileIdle: true } }));
       const sig = list.map((n) => n.schedule.at.getTime() + n.title).join('|');
       if (sig === sunnahSig && !force) return;
       if (list.length && !(await permit(false))) return;

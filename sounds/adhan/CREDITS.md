@@ -1,0 +1,11 @@
+# Adhan recordings
+
+All four come from Wikimedia Commons. They were trimmed of leading/trailing silence,
+levelled and re-encoded to 64 kbps mono MP3 for the app; nothing else was changed.
+
+| File | Recording | Author | Licence |
+|---|---|---|---|
+| `adhan_madinah.mp3` | [Call to prayer from the Prophet's Mosque](https://commons.wikimedia.org/wiki/File:33937_ejaz215_call-to-prayer-from-the-prophet-s-mo.ogg) | ejaz215 (Freesound) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
+| `adhan_fakhri.mp3` | [Call to prayer by Sabah Fakhry](https://commons.wikimedia.org/wiki/File:Call_to_prayer_by_Sabah_Fakhry.mp3) | Sabah Fakhri | Public domain (as marked on Commons) |
+| `adhan_beautiful.mp3` | [Beautiful adhan](https://commons.wikimedia.org/wiki/File:Beautiful_adhan.ogg) | Adam-synagda | [CC0](https://creativecommons.org/publicdomain/zero/1.0/) |
+| `adhan_azeez.mp3` | [The Adhan – Muslim Call to Prayer – Aaqib Azeez](https://commons.wikimedia.org/wiki/File:The_Adhan_-_Muslim_Call_to_Prayer_-_Aaqib_Azeez.mp3) | Atcovi | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |

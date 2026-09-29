@@ -2,10 +2,11 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
+const LIBRARY = 'library-v1'; // hadith chapters and tafsirs, kept once read
 const FILES = [
   './', 'index.html', 'install.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png',
@@ -14,6 +15,7 @@ const FILES = [
   'js/prayer-alerts.js', 'js/report.js', 'js/focus-mode.js', 'js/config.js', 'js/vendor/supabase.js',
   'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
+  'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js',
   'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',
   'fonts/Amiri-400-latin-ext.woff2',
@@ -41,13 +43,16 @@ self.addEventListener('install', (ev) => {
 });
 self.addEventListener('activate', (ev) => {
   ev.waitUntil((async () => {
-    for (const k of await caches.keys()) if (k !== SHELL && k !== MEDIA && k !== QURAN) await caches.delete(k);
+    for (const k of await caches.keys()) if (![SHELL, MEDIA, QURAN, LIBRARY].includes(k)) await caches.delete(k);
     await self.clients.claim();
   })());
 });
 
 const isMedia = (url) => (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname) && url.hostname !== 'cdn.islamic.network') || url.hostname === 'fonts.gstatic.com';
 const isFontCss = (url) => url.hostname === 'fonts.googleapis.com';
+// Hadith books and tafsirs never change once published.
+const isLibrary = (url) => (url.hostname === 'cdn.jsdelivr.net' && /\/gh\/(fawazahmed0\/hadith-api|spa5k\/tafsir_api)@/.test(url.pathname))
+  || (url.hostname === 'api.alquran.cloud' && url.pathname.startsWith('/v1/ayah/'));
 
 self.addEventListener('fetch', (ev) => {
   const req = ev.request;
@@ -55,6 +60,7 @@ self.addEventListener('fetch', (ev) => {
   const url = new URL(req.url);
   if (isMedia(url)) { ev.respondWith(media(req)); return; }
   if (isFontCss(url)) { ev.respondWith(networkFirst(req, MEDIA)); return; }
+  if (isLibrary(url)) { ev.respondWith(cacheFirst(req, LIBRARY)); return; }
   if (url.origin !== location.origin) return; // time servers, Supabase, CDNs: straight to the network
   if (url.pathname.endsWith('.apk')) return; // the Android app download is never kept offline
   if (/\/quran\/[a-z]+\.json$/.test(url.pathname)) { ev.respondWith(cacheFirst(req, QURAN)); return; }

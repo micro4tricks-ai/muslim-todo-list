@@ -55,16 +55,19 @@ It runs in any browser, installs as an app on phones, tablets and desktops, work
 | | Feature | Details |
 |:-:|---|---|
 | 🕰️ | **Prayer clock** | Watch-face clock with the next prayer and a countdown, sunrise/sunset, moon phase, Hijri + Gregorian date. 32 countries and 12 calculation methods (Egyptian Survey, Umm al-Qura, Dubai…). Custom dial, frame and background colours. |
-| 📖 | **The Holy Quran** | The full Mushaf in the Uthmani script (Hafs, Tanzil text) with the Sahih International English translation, verse-by-verse recitation from 7 reciters, Tafsir al-Muyassar, bookmarks, search (Arabic, English, `2:255` or a page number), "continue reading", a daily wird counted in pages, completion tracking, and light / sepia / night pages. Works offline once opened. |
+| 📖 | **The Holy Quran** | The full Mushaf in the Uthmani script (Hafs, Tanzil text) with the Sahih International English translation, verse-by-verse recitation from 9 reciters (including al-Husary’s teaching recitation), a colour-coded tajweed Mushaf, a teaching mode (repeat each verse, pause to repeat after the reciter, slower speed) and a memorisation test, 9 tafsirs (al-Muyassar, as-Sa‘di, Ibn Kathir, at-Tabari, al-Qurtubi, al-Baghawi, al-Wasit, al-Jalalayn, and Ibn Kathir in English), verses to memorisation cards, bookmarks, search (Arabic, English, `2:255` or a page number), "continue reading", a daily wird counted in pages, completion tracking, and light / sepia / night pages. Works offline once opened. |
 | 📅 | **Hijri calendar and Sunnah reminders** | Umm al-Qura month view with a day shift for local moon sighting; reminders the evening before Monday and Thursday fasts, the White Days (13–15), Arafah, Tasu‘a and Ashura, six of Shawwal, Ramadan and its last ten nights, and the ten days of Dhul-Hijjah; no-fasting days (the two Eids, Tashreeq) are marked. Each one shows its hadith with the reference and grading. Friday (Surat al-Kahf) and morning/evening adhkar reminders too. |
+| 📚 | **Library** | The six hadith books (al-Bukhari, Muslim, Abu Dawud, at-Tirmidhi, an-Nasa’i, Ibn Majah) and al-Muwatta, in Arabic with English, and the gradings of al-Albani, Shu‘ayb al-Arna’ut, Ahmad Shakir and others; a “sahih and hasan only” filter, search and hadith numbers, saved hadiths. Chapters download on first use and stay offline. |
+| 🕌 | **The Prophet’s prayer ﷺ** | The prayer from the takbir to the taslim in the order of al-Albani’s *Sifat Salat an-Nabi*, each step with its authentic hadith (the book itself is linked on al-Maktaba al-Shamela, not copied). |
 | 🧭 | **Qibla** | Direction and distance to the Kaaba from your place, with a live compass on phones. |
 | ✅ | **Tasks** | Subtasks, estimated time, time tracking, and the day split by prayer (after Fajr, after Dhuhr…). Keyboard shortcuts. |
 | 🎯 | **Focus** | Pomodoro timer with a draggable dial, full-screen focus mode, a "distracting thought" box, useful breaks (dhikr, movement, water, breathing) and prayer alerts. |
 | 🗒️ | **Sticky notes** | Coloured notes you drag to arrange and pin; turn any note into a task. |
-| 🃏 | **Review cards** | Question-and-answer decks with spaced repetition (Leitner system) for memorising and studying. |
+| 🃏 | **Review cards** | Question-and-answer decks with spaced repetition (Leitner system), card designs per deck and a daily review reminder. |
+| 🔔 | **Reminder cards and the adhan** | Reminders appear as designed cards (six designs) that can be shared as images; the prayer alert plays one of four adhan recordings (see `sounds/adhan/CREDITS.md`), also as the Android notification sound. |
 | 🔁 | **Habits and wird** | Adhkar, Quran reading, istighfar, qiyam, fasting… with streaks and a 12-week calendar. |
 | 📿 | **Adhkar and duas** | Morning and evening, after prayer, for students, ease and success, worry and clarity, ruqyah, sleep and istighfar — with a counter, audio recitation and a tasbih. |
-| 📊 | **Report** | Daily and weekly focus minutes, your best time to focus, and streaks. |
+| 📊 | **Report** | Today, the last week or month, or any range: focus, tasks, habits, Quran pages and fasting days, with charts and your best time to focus. |
 | 🎧 | **Focus sounds** | 32 recordings (rain, nature, places, noise, binaural…) that you mix, plus your own music folder from the device. |
 | 🌐 | **Arabic ⇄ English** | Full RTL/LTR switch, remembered per device. Direct English link: `/en/` or `?lang=en`. |
 | 🔄 | **Sync** | Email and password sign-in; tasks and settings sync across devices through Supabase. |
@@ -159,6 +162,9 @@ The signing key lives in the repository secrets, and its original copy is kept o
 | `js/quran.js`, `js/quran-meta.js`, `quran/` | The Mushaf reader and its texts |
 | `js/sunnah.js`, `js/sunnah-data.js` | Hijri calendar, fasting and season reminders, and their evidence |
 | `js/qibla.js` | Qibla direction and compass |
+| `js/library.js`, `js/library-meta.js`, `js/salah-data.js` | The hadith library and the Prophet’s prayer |
+| `js/remind-card.js` | Reminder cards and sharing them as images |
+| `sounds/adhan/` | Adhan recordings and their licences |
 | `js/config.js` | Supabase project settings |
 | `js/sync-core.js` | Rules for merging data between devices |
 | `js/sync.js` | Sign-in and sync |
@@ -172,6 +178,8 @@ The signing key lives in the repository secrets, and its original copy is kept o
 | `tools/build_adhkar.py` | Builds the adhkar data from its sources |
 | `tools/build_quran.py` | Builds the Mushaf data from api.alquran.cloud (Tanzil) |
 | `tools/build_sunnah.py` | Cuts the hadith evidence out of the hadith collections |
+| `tools/build_salah.py` | Builds the prayer steps with their hadiths |
+| `tools/build_library.py` | Builds the index of the hadith library |
 | `app/` | Android app project (Capacitor); it takes the site files as they are |
 | `.github/workflows/android.yml` | Builds, signs, publishes and tests the APK |
 | `docs/` | Logo, screenshots and social preview |

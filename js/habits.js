@@ -162,6 +162,10 @@
   setInterval(() => { if (root.dataset.day !== dayKey()) { root.dataset.day = dayKey(); render(); } }, 60000);
   root.dataset.day = dayKey();
   onRemote(KEY, () => { S = load(KEY, S); render(); });
-  window.noonHabits = { summary: (day) => ({ done: S.habits.filter((h) => done(h, day)).length, total: S.habits.length }) };
+  window.noonHabits = {
+    summary: (day) => ({ done: S.habits.filter((h) => done(h, day)).length, total: S.habits.length }),
+    list: () => S.habits.map((h) => ({ id: h.id, name: T(h.name), type: h.type })),
+    doneOn: (id, day) => { const h = S.habits.find((x) => x.id === id); return !!h && done(h, day); }
+  };
   render();
 })();
