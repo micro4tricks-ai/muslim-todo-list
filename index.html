@@ -725,10 +725,11 @@
     .fm, .fm *, .toast, .flip-inner { animation: none !important; transition: none !important; }
   }
 
-  .sync-code { display: flex; flex-direction: column; gap: 6px; }
-  .sync-code label { font-size: 13px; color: var(--ink-soft); }
+  .sync-links { margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .sync-pass summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+  .sync-pass[open] summary { margin-bottom: 8px; }
   .sync-code-row { display: flex; gap: 8px; }
-  .sync-code input { flex: 1; min-width: 0; font: inherit; font-size: 18px; letter-spacing: 0.2em; text-align: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
+  .sync-code-row input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); }
   .install-btn svg { width: 15px; height: 15px; vertical-align: -3px; margin-inline-end: 4px; }
   /* Installed app: keep the page clear of the status bar and the notch. */
   .is-app body { padding-top: env(safe-area-inset-top, 0px); }
@@ -941,19 +942,23 @@
       </div>
       <div id="syncOff" hidden><p class="hint" id="syncOffText"></p></div>
       <form id="syncSignedOut" novalidate hidden>
-        <p class="hint">سجّل الدخول ببريدك الإلكتروني وسنرسل إليك رابط دخول، دون كلمة مرور. استخدم البريد نفسه على كل أجهزتك لتظهر المهام والإعدادات نفسها.</p>
+        <p class="hint">سجّل الدخول ببريدك الإلكتروني وكلمة مرور، واستخدمهما على كل أجهزتك لتظهر المهام والإعدادات نفسها.</p>
         <div class="field">
           <label for="syncEmail">البريد الإلكتروني</label>
           <input id="syncEmail" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" dir="ltr">
         </div>
-        <div class="form-actions"><button type="submit" class="btn btn-primary" id="syncSend">أرسل رابط الدخول</button></div>
-        <div class="sync-code" id="syncCodeRow" hidden>
-          <label for="syncCode">أو اكتب كود الدخول المكتوب في الرسالة</label>
-          <div class="sync-code-row">
-            <input id="syncCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr" placeholder="123456">
-            <button type="button" class="btn btn-quiet" id="syncVerify">دخول</button>
-          </div>
+        <div class="field">
+          <label for="syncPass">كلمة المرور</label>
+          <input id="syncPass" type="password" autocomplete="current-password" dir="ltr">
         </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="syncLogin">دخول</button>
+          <button type="button" class="btn btn-quiet" id="syncSignup">حساب جديد</button>
+        </div>
+        <p class="sync-links">
+          <button type="button" class="link-btn" id="syncForgot">نسيت كلمة المرور، أو لم تضع واحدة بعد؟</button>
+          <button type="button" class="link-btn" id="syncSend">أرسل رابط دخول إلى بريدي</button>
+        </p>
       </form>
       <div id="syncSignedIn" hidden>
         <p class="sync-user" id="syncUser" dir="ltr"></p>
@@ -962,6 +967,13 @@
           <button type="button" class="btn btn-quiet" id="syncNow">مزامنة الآن</button>
           <button type="button" class="btn btn-quiet" id="syncOut">تسجيل الخروج</button>
         </div>
+        <details class="sync-pass" id="syncPassBox">
+          <summary>كلمة المرور (للدخول من تطبيق الموبايل)</summary>
+          <div class="sync-code-row">
+            <input id="syncNewPass" type="password" autocomplete="new-password" dir="ltr" placeholder="٦ أحرف على الأقل" aria-label="كلمة مرور جديدة">
+            <button type="button" class="btn btn-quiet" id="syncSetPass">حفظ</button>
+          </div>
+        </details>
       </div>
       <p class="hint" id="syncMsg" aria-live="polite"></p>
     </section>

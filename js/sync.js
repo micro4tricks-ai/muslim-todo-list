@@ -212,6 +212,15 @@
   client.auth.onAuthStateChange((event, session) => {
     const was = user && user.id;
     user = session ? session.user : null;
+    // Opened from a "set a new password" email: ask for it right away.
+    if (event === 'PASSWORD_RECOVERY') {
+      setTimeout(() => {
+        panel.hidden = false;
+        $('syncPassBox').open = true;
+        $('syncNewPass').focus();
+        renderUI(T('اكتب كلمة المرور الجديدة ثم اضغط «حفظ».'));
+      }, 0);
+    }
     if (!user) { unsubscribe(); state = 'off'; renderUI(); return; }
     if (was !== user.id) {
       lastCore = null;
@@ -221,40 +230,92 @@
     renderUI();
   });
 
-  $('syncSignedOut').addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const email = $('syncEmail').value.trim();
-    if (!email) return;
-    $('syncSend').disabled = true;
-    renderUI(T('جارٍ الإرسال…'));
-    // The Android app has no web address of its own, so its link opens the website;
-    // the code in the same email signs the app in.
-    const { error } = await client.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.noonNative ? SITE_URL : location.origin + location.pathname }
-    });
-    $('syncSend').disabled = false;
-    $('syncCodeRow').hidden = !!error;
-    renderUI(error
-      ? `${T('تعذّر إرسال الرابط:')} ${error.message}`
-      : T('أرسلنا رابط الدخول إلى بريدك. افتحه على أي جهاز، وستُسجَّل دخولك تلقائياً.'));
-    if (!error) $('syncCode').focus();
-  });
-  // Typing the code works where the link can't reach: the installed app on
-  // iPhone (links open in Safari) and the Android app.
-  async function verifyCode() {
-    const email = $('syncEmail').value.trim();
-    const token = $('syncCode').value.replace(/\D/g, '');
-    if (!email || token.length < 6) { renderUI(T('اكتب الكود كاملاً كما في الرسالة.')); return; }
-    $('syncVerify').disabled = true;
-    renderUI(T('جارٍ التحقق…'));
-    const { error } = await client.auth.verifyOtp({ email, token, type: 'email' });
-    $('syncVerify').disabled = false;
-    if (error) renderUI(`${T('الكود غير صحيح أو انتهت صلاحيته.')} ${error.message}`);
-    else { $('syncCode').value = ''; $('syncCodeRow').hidden = true; renderUI(''); }
+  // Email + password works everywhere, including the Android app and the iPhone
+  // home-screen app, where a link from the email opens the browser instead.
+  // The free email service can't carry sign-in codes, so the emails left are
+  // "confirm your address" (once) and "set a new password".
+  const field = (id) => $(id).value.trim();
+  function authError(error) {
+    const m = String(error.message || '').toLowerCase();
+    if (m.includes('invalid login')) return T('البريد أو كلمة المرور غير صحيحة. إذا لم تضع كلمة مرور من قبل فاضغط «نسيت كلمة المرور».');
+    if (m.includes('not confirmed')) return T('أكّد بريدك أولاً من الرسالة التي وصلتك، ثم اضغط «دخول».');
+    if (m.includes('rate limit') || error.status === 429) return T('أُرسلت رسائل كثيرة. خدمة البريد المجانية ترسل رسالتين فقط في الساعة، فانتظر قليلاً ثم حاول.');
+    if (m.includes('should be different') || m.includes('same password')) return T('هذه هي كلمة المرور الحالية نفسها.');
+    if (m.includes('password')) return T('كلمة المرور قصيرة: ٦ أحرف على الأقل.');
+    if (m.includes('email')) return T('اكتب بريداً إلكترونياً صحيحاً.');
+    return `${T('حدث خطأ:')} ${error.message}`;
   }
-  $('syncVerify').addEventListener('click', verifyCode);
-  $('syncCode').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); verifyCode(); } });
+  async function busyWith(btn, waitMsg, work) {
+    btn.disabled = true;
+    renderUI(T(waitMsg));
+    try { await work(); } finally { btn.disabled = false; }
+  }
+  function needs(email, pass) {
+    if (!email) { renderUI(T('اكتب بريدك الإلكتروني.')); $('syncEmail').focus(); return false; }
+    if (pass !== undefined && pass.length < 6) { renderUI(T('كلمة المرور قصيرة: ٦ أحرف على الأقل.')); $('syncPass').focus(); return false; }
+    return true;
+  }
+  $('syncSignedOut').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const email = field('syncEmail'), password = $('syncPass').value;
+    if (!needs(email, password)) return;
+    busyWith($('syncLogin'), 'جارٍ الدخول…', async () => {
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      renderUI(error ? authError(error) : '');
+      if (!error) $('syncPass').value = '';
+    });
+  });
+  $('syncSignup').addEventListener('click', () => {
+    const email = field('syncEmail'), password = $('syncPass').value;
+    if (!needs(email, password)) return;
+    busyWith($('syncSignup'), 'جارٍ إنشاء الحساب…', async () => {
+      const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: SITE_URL } });
+      if (error) { renderUI(authError(error)); return; }
+      // An address that already has an account comes back with no identities.
+      if (data.user && Array.isArray(data.user.identities) && !data.user.identities.length) {
+        renderUI(T('لديك حساب بهذا البريد. اضغط «دخول»، أو «نسيت كلمة المرور» إذا لم تضع واحدة بعد.'));
+      } else if (!data.session) {
+        renderUI(T('أرسلنا رسالة تأكيد إلى بريدك. افتحها مرة واحدة على أي جهاز، ثم ارجع هنا واضغط «دخول».'));
+      } else renderUI('');
+    });
+  });
+  $('syncForgot').addEventListener('click', () => {
+    const email = field('syncEmail');
+    if (!needs(email)) return;
+    busyWith($('syncForgot'), 'جارٍ الإرسال…', async () => {
+      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: SITE_URL });
+      renderUI(error ? authError(error)
+        : T('أرسلنا رابطاً إلى بريدك. افتحه وستفتح صفحة الموقع لتكتب كلمة مرور جديدة، ثم استخدمها للدخول هنا.'));
+    });
+  });
+  // The link opens the website; used on computers and browsers.
+  $('syncSend').addEventListener('click', () => {
+    const email = field('syncEmail');
+    if (!needs(email)) return;
+    busyWith($('syncSend'), 'جارٍ الإرسال…', async () => {
+      const { error } = await client.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.noonNative ? SITE_URL : location.origin + location.pathname }
+      });
+      renderUI(error ? authError(error)
+        : T(window.noonNative
+          ? 'أرسلنا رابط الدخول إلى بريدك. سيفتح الموقع في المتصفح؛ لتطبيق الموبايل ضع كلمة مرور من الموقع ثم ادخل بها هنا.'
+          : 'أرسلنا رابط الدخول إلى بريدك. افتحه على أي جهاز، وستُسجَّل دخولك تلقائياً.'));
+    });
+  });
+  // Signed in: set or change the password used on the phone app.
+  $('syncSetPass').addEventListener('click', () => {
+    const password = $('syncNewPass').value;
+    if (password.length < 6) { renderUI(T('كلمة المرور قصيرة: ٦ أحرف على الأقل.')); $('syncNewPass').focus(); return; }
+    busyWith($('syncSetPass'), 'جارٍ الحفظ…', async () => {
+      const { error } = await client.auth.updateUser({ password });
+      if (error) { renderUI(authError(error)); return; }
+      $('syncNewPass').value = '';
+      $('syncPassBox').open = false;
+      renderUI(T('حُفظت كلمة المرور. استخدمها مع بريدك للدخول من تطبيق الموبايل.'));
+    });
+  });
+  $('syncNewPass').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); $('syncSetPass').click(); } });
   $('syncNow').addEventListener('click', () => syncNow());
   $('syncOut').addEventListener('click', async () => {
     await client.auth.signOut();
