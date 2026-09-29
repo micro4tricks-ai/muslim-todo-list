@@ -67,7 +67,8 @@ It runs in any browser, installs as an app on phones, tablets and desktops, work
 | 🎯 | **Focus** | Pomodoro timer with a draggable dial, full-screen focus mode, a "distracting thought" box, useful breaks (dhikr, movement, water, breathing) and prayer alerts. |
 | 🗒️ | **Sticky notes** | Coloured notes you drag to arrange and pin; turn any note into a task. |
 | 🃏 | **Review cards** | Question-and-answer decks with spaced repetition (Leitner system), card designs per deck and a daily review reminder. |
-| 🔔 | **Reminder cards and the adhan** | Reminders appear as designed cards (six designs) that can be shared as images; the prayer alert plays one of four adhan recordings (see `sounds/adhan/CREDITS.md`), also as the Android notification sound. |
+| 🔔 | **Reminder cards and the adhan** | Reminders appear as designed cards (six designs) that can be shared as images; the prayer alert plays one of four adhan recordings (see `sounds/adhan/CREDITS.md`), with a separate Fajr adhan and an iqamah reminder, also as the Android notification sound. |
+| 📲 | **Home-screen widget** | Android widget with the next prayer, a live countdown and the day’s five times. |
 | 🔁 | **Habits and wird** | Adhkar, Quran reading, istighfar, qiyam, fasting… with streaks and a 12-week calendar. |
 | 📿 | **Adhkar and duas** | Morning and evening, after prayer, for students, ease and success, worry and clarity, ruqyah, sleep and istighfar — with a counter, audio recitation and a tasbih. |
 | 📊 | **Report** | Today, the last week or month, or any range: focus, tasks, habits, Quran pages and fasting days, with charts and your best time to focus. |
@@ -188,6 +189,8 @@ The signing key lives in the repository secrets, and its original copy is kept o
 | `tools/build_library.py` | Builds the index of the hadith library |
 | `tools/build_extras.py` | Builds the texts for the tools, Ramadan and the verse / hadith of the day |
 | `app/` | Android app project (Capacitor); it takes the site files as they are |
+| `fastlane/metadata/android/` | Store texts, icon and screenshots (Arabic and English) |
+| `docs/PUBLISHING.md` | How to list the app on F-Droid, Samsung, Huawei and Google Play |
 | `.github/workflows/android.yml` | Builds, signs, publishes and tests the APK |
 | `docs/` | Logo, screenshots and social preview |
 

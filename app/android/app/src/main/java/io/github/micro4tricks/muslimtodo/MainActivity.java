@@ -10,6 +10,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // The page hands the prayer times to the home-screen widget through this plugin.
+        registerPlugin(WidgetBridge.class);
         super.onCreate(savedInstanceState);
         // When Android stops the page's renderer (usually to free memory), reopen the
         // screen instead of letting the whole app close. Tasks and settings are saved

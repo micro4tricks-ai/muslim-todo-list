@@ -51,8 +51,9 @@
   }
 
   // ---- prayers: the next few days, rebooked whenever the times or settings change ----
-  const settings = () => Object.assign({ enabled: true, notify: true, before: 10, sound: 'madinah' }, load(PA_KEY, {}));
-  function plan(dueChannel) {
+  const settings = () => Object.assign({ enabled: true, notify: true, before: 10, sound: 'madinah', fajrSound: '', iqamah: 0 }, load(PA_KEY, {}));
+  // channels: { fajr, other } notification channels for the moment each prayer is due.
+  function plan(channels) {
     const S = settings(), A = window.noonAstro;
     if (!S.enabled || !S.notify || !A) return [];
     const now = Date.now(), out = [];
@@ -65,9 +66,9 @@
         if (!Number.isFinite(h)) return;
         const at = Math.round((midnight + h * 3600e3) / 60000) * 60000;
         const name = T(NAMES[k]);
-        const id = PRAYER_IDS[0] + d * 10 + i * 2;
+        const id = PRAYER_IDS[0] + d * 20 + i * 3; // due, before, iqamah
         if (at > now + 5000) {
-          out.push({ id, channelId: dueChannel || 'prayer', title: `${T('حان وقت صلاة')} ${name}`, body: T('حيّ على الصلاة'),
+          out.push({ id, channelId: (k === 'fajr' ? channels.fajr : channels.other) || 'prayer', title: `${T('حان وقت صلاة')} ${name}`, body: T('حيّ على الصلاة'),
             schedule: { at: new Date(at), allowWhileIdle: true } });
         }
         const early = at - S.before * 60000;
@@ -75,6 +76,11 @@
           out.push({ id: id + 1, channelId: 'prayer', title: `${T('اقتربت صلاة')} ${name}`,
             body: `${T('باقي')} ${I.num(S.before)} ${T('دقيقة على صلاة')} ${name}. ${T('اختم ما بين يديك.')}`.trim(),
             schedule: { at: new Date(early), allowWhileIdle: true } });
+        }
+        const iq = at + (S.iqamah || 0) * 60000;
+        if (S.iqamah > 0 && iq > now + 5000) {
+          out.push({ id: id + 2, channelId: 'prayer', title: `${T('الإقامة')}: ${name}`, body: T('قد قامت الصلاة، استووا واعتدلوا.'),
+            schedule: { at: new Date(iq), allowWhileIdle: true } });
         }
       });
     }
@@ -86,9 +92,11 @@
     busy = true;
     try {
       await channels;
-      const due = await adhanChannel(settings().sound);
+      const S = settings();
+      const due = { other: await adhanChannel(S.sound), fajr: await adhanChannel(S.fajrSound || S.sound) };
       const list = plan(due);
-      const sig = due + '|' + list.map((n) => n.id + '@' + n.schedule.at.getTime() + n.title).join('|');
+      updateWidget();
+      const sig = due.fajr + due.other + '|' + list.map((n) => n.id + '@' + n.schedule.at.getTime() + n.title).join('|');
       if (sig === lastSig && !force) return;
       if (list.length && !(await permit(false))) return;
       await channels;
@@ -100,6 +108,29 @@
     } catch (_) {
       lastSig = null; // try again on the next round
     } finally { busy = false; }
+  }
+
+  // ---- the home-screen widget (PrayerWidget.java): the next seven days of prayer times ----
+  const Widget = C.registerPlugin ? C.registerPlugin('WidgetBridge') : null;
+  let widgetSig = '';
+  function updateWidget() {
+    const A = window.noonAstro;
+    if (!Widget || !A) return;
+    const now = Date.now(), days = [];
+    let place = '';
+    for (let d = 0; d < 7; d++) {
+      const epoch = now + d * 864e5;
+      const snap = A.snapshot(epoch);
+      const midnight = epoch - snap.nowH * 3600e3;
+      place = place || snap.place.name;
+      days.push(PRAYERS.filter((k) => Number.isFinite(snap.today[k])).map((k) => ({
+        name: T(NAMES[k]), at: Math.round((midnight + snap.today[k] * 3600e3) / 60000) * 60000, time: snap.fmtHM(snap.today[k])
+      })));
+    }
+    const data = JSON.stringify({ title: `${place} · ${T('مواقيت الصلاة')}`, next: T('القادمة:'), empty: T('افتح التطبيق لتحديث المواقيت.'), days });
+    if (data === widgetSig) return;
+    widgetSig = data;
+    quiet(Widget.update({ data }));
   }
 
   // ---- fasts, seasons, Friday, adhkar and wird (js/sunnah.js decides what and when) ----

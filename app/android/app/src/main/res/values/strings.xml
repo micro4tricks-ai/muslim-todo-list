@@ -4,4 +4,5 @@
     <string name="title_activity_main">Muslim To-Do List</string>
     <string name="package_name">io.github.micro4tricks.muslimtodo</string>
     <string name="custom_url_scheme">io.github.micro4tricks.muslimtodo</string>
+    <string name="widget_description">Prayer times and a countdown to the next prayer</string>
 </resources>

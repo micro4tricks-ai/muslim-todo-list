@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget: place, next prayer with a countdown, and the day's five times. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_bg"
+    android:layoutDirection="locale">
+
+    <TextView
+        android:id="@+id/w_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#B3F5F1E6"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/w_next"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textColor="#FFF2D58A"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <Chronometer
+            android:id="@+id/w_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFF5F1E6"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <LinearLayout android:id="@+id/w_c0" style="@style/WidgetCell">
+            <TextView android:id="@+id/w_n0" style="@style/WidgetName" />
+            <TextView android:id="@+id/w_t0" style="@style/WidgetTime" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/w_c1" style="@style/WidgetCell">
+            <TextView android:id="@+id/w_n1" style="@style/WidgetName" />
+            <TextView android:id="@+id/w_t1" style="@style/WidgetTime" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/w_c2" style="@style/WidgetCell">
+            <TextView android:id="@+id/w_n2" style="@style/WidgetName" />
+            <TextView android:id="@+id/w_t2" style="@style/WidgetTime" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/w_c3" style="@style/WidgetCell">
+            <TextView android:id="@+id/w_n3" style="@style/WidgetName" />
+            <TextView android:id="@+id/w_t3" style="@style/WidgetTime" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/w_c4" style="@style/WidgetCell">
+            <TextView android:id="@+id/w_n4" style="@style/WidgetName" />
+            <TextView android:id="@+id/w_t4" style="@style/WidgetTime" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

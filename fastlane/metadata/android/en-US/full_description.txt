@@ -1,0 +1,27 @@
+A free Muslim companion for your day, made as sadaqa jariya. No ads, no tracking, open source (MIT).
+
+<b>Prayer</b>
+• Prayer times for 32 countries and 12 calculation methods, on a watch-style clock
+• Adhan notifications (four recordings, a separate Fajr adhan) and an iqamah reminder
+• My prayers: log each prayer, the twelve sunnah rak'ahs, witr and duha, and prayers to make up
+• Qibla compass and nearby mosques
+• Home-screen widget with a countdown to the next prayer
+
+<b>Quran</b>
+• The full Mushaf in the Uthmani script, with a colour-coded tajweed edition
+• Recitation from 9 reciters, including al-Husary's teaching recitation with repetition
+• 9 tafsirs, word-by-word meanings with pronunciation, translations in 10 languages
+• Daily portion, completion plan, bookmarks, search, memorisation test, and Juz 'Amma for children
+
+<b>Knowledge</b>
+• The six hadith books and al-Muwatta with gradings (al-Albani and others), plus Riyad as-Salihin, Bulugh al-Maram and more
+• The Prophet's prayer step by step, Hajj and Umrah guides, istikhara, the 99 Names
+
+<b>Seasons and reminders</b>
+• Hijri calendar with reminders for Monday and Thursday fasts, the White Days, Arafah, Ashura and more, each with its hadith
+• Ramadan: suhoor and iftar countdowns, fasting tracker and a shareable imsakiya
+• Reminders shown as beautiful cards you can share
+
+<b>Your day</b>
+• Tasks arranged around the prayers, a focus timer, habits, notes, review cards and reports
+• Zakat calculator, date converter, backup file, dark mode, Arabic and English
