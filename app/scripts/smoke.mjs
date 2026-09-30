@@ -91,7 +91,7 @@ async function phase(name, run, waitMs) {
 }
 await phase('idle', async () => {}, 8000);
 await phase('switch every tab', async () => {
-  for (const v of ['quran', 'library', 'calendar', 'notes', 'cards', 'habits', 'adhkar', 'report', 'tasks']) { await gesture(`document.querySelector('.views [data-view="${v}"]').click()`); await sleep(1200); }
+  for (const v of ['quran', 'listen', 'library', 'calendar', 'notes', 'cards', 'habits', 'adhkar', 'report', 'tasks']) { await gesture(`document.querySelector('.views [data-view="${v}"]').click()`); await sleep(1200); }
 }, 4000);
 await phase('open adhkar list', async () => {
   await gesture(`document.querySelector('.views [data-view="adhkar"]').click()`); await sleep(500);
@@ -109,6 +109,16 @@ await phase('Library: Sahih al-Bukhari, first book', async () => {
   await gesture("document.querySelector('.lib-sec').click()"); await sleep(4000);
   await js('scrollTo(0, document.documentElement.scrollHeight); true');
 }, 6000);
+// The Listen tab: the mp3quran.net lists load, a station plays, and the adhan can reach the page.
+await phase('Listen: radio list, play a station', async () => {
+  await gesture("window.noonUI.go('listen')"); await sleep(5000);
+  report.listen = await js(`({ stations: document.querySelectorAll('#view-listen .ls-row').length,
+    adhanEvents: typeof (Capacitor.Plugins.Adhan && Capacitor.Plugins.Adhan.addListener) })`);
+  await gesture("document.querySelector('#view-listen .ls-live').click()"); await sleep(8000);
+  report.listen.player = await js("document.querySelector('.lp').dataset.state");
+  console.log('listen:', JSON.stringify(report.listen));
+  await gesture('window.noonListen.stop()');
+}, 4000);
 // The native adhan player: it must start (a foreground service), play, and stop cleanly.
 await phase('Adhan player: play, then stop', async () => {
   // Call the plugin directly, so any error is reported instead of swallowed.

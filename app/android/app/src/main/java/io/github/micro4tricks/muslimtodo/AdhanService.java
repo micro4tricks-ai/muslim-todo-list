@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -30,6 +31,18 @@ public class AdhanService extends Service {
     private static final int NOTE_ID = 4242;
     private MediaPlayer player;
     private PowerManager.WakeLock wake;
+    private AudioFocusRequest focus;
+
+    /** Told when the adhan starts and stops, so the page can pause its radio (set by AdhanPlugin). */
+    interface Listener { void onPlaying(boolean playing); }
+    static volatile Listener listener;
+
+    private static void tell(boolean playing) {
+        Listener l = listener;
+        if (l != null) {
+            try { l.onPlaying(playing); } catch (Exception ignored) { }
+        }
+    }
 
     @Override
     public IBinder onBind(Intent intent) { return null; }
@@ -72,16 +85,24 @@ public class AdhanService extends Service {
                 wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "muslimtodo:adhan");
                 wake.acquire(6 * 60 * 1000L);
             }
-            player = new MediaPlayer();
-            player.setAudioAttributes(new AudioAttributes.Builder()
+            AudioAttributes attrs = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build());
+                .build();
+            // Other apps' music pauses for the adhan and comes back after it.
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT).setAudioAttributes(attrs).build();
+                am.requestAudioFocus(focus);
+            }
+            player = new MediaPlayer();
+            player.setAudioAttributes(attrs);
             player.setDataSource(this, Uri.parse("android.resource://" + getPackageName() + "/" + res));
             player.setOnCompletionListener(mp -> finish());
             player.setOnErrorListener((mp, what, extra) -> { Log.w(TAG, "player error " + what + "/" + extra); finish(); return true; });
             player.prepare();
             player.start();
+            tell(true);
             Log.i(TAG, "playing, " + player.getDuration() + " ms");
         } catch (Exception e) {
             Log.w(TAG, "could not play", e);
@@ -100,7 +121,11 @@ public class AdhanService extends Service {
             try { player.stop(); } catch (Exception ignored) { }
             player.release();
             player = null;
+            tell(false);
         }
+        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        if (am != null && focus != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) am.abandonAudioFocusRequest(focus);
+        focus = null;
         if (wake != null && wake.isHeld()) wake.release();
         wake = null;
     }

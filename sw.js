@@ -2,11 +2,12 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v9';
+const VERSION = 'v10';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
 const LIBRARY = 'library-v1'; // hadith chapters and tafsirs, kept once read
+const LISTEN = 'listen-v1'; // the station and reciter lists, kept by js/listen.js itself
 const FILES = [
   './', 'index.html', 'install.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png',
@@ -16,7 +17,7 @@ const FILES = [
   'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
   'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js',
-  'js/extras-data.js', 'js/tools.js', 'js/prayers.js',
+  'js/extras-data.js', 'js/tools.js', 'js/prayers.js', 'js/listen.js',
   'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',
   'fonts/Amiri-400-latin-ext.woff2',
@@ -44,12 +45,13 @@ self.addEventListener('install', (ev) => {
 });
 self.addEventListener('activate', (ev) => {
   ev.waitUntil((async () => {
-    for (const k of await caches.keys()) if (![SHELL, MEDIA, QURAN, LIBRARY].includes(k)) await caches.delete(k);
+    for (const k of await caches.keys()) if (![SHELL, MEDIA, QURAN, LIBRARY, LISTEN].includes(k)) await caches.delete(k);
     await self.clients.claim();
   })());
 });
 
-const isMedia = (url) => (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname) && url.hostname !== 'cdn.islamic.network') || url.hostname === 'fonts.gstatic.com';
+// Recitations from cdn.islamic.network and mp3quran.net stream; they are too many to keep.
+const isMedia = (url) => (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname) && url.hostname !== 'cdn.islamic.network' && !/mp3quran\.net$/.test(url.hostname)) || url.hostname === 'fonts.gstatic.com';
 const isFontCss = (url) => url.hostname === 'fonts.googleapis.com';
 // Hadith books and tafsirs never change once published.
 const isLibrary = (url) => (url.hostname === 'cdn.jsdelivr.net' && /\/gh\/(fawazahmed0\/hadith-api|spa5k\/tafsir_api|AhmedBaset\/hadith-json)@/.test(url.pathname))
