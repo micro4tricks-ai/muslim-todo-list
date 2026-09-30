@@ -188,16 +188,20 @@
   }
   // The public Overpass servers are often busy: try them in turn, 20 seconds each.
   async function overpass(q) {
-    const servers = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
-    for (const url of servers) {
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 20000);
-      try {
+    // The public servers are often busy: ask them all at once and take the first answer.
+    const servers = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 40000);
+    try {
+      return await Promise.any(servers.map(async (url) => {
         const r = await fetch(url, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal: ctl.signal });
-        if (r.ok) return await r.json();
-      } catch (_) { /* next server */ } finally { clearTimeout(timer); }
-    }
-    throw new Error('no server');
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      }));
+    } catch (_) {
+      throw new Error('no server');
+    } finally { clearTimeout(timer); ctl.abort(); }
   }
 
   // ---- date converter ----

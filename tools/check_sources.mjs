@@ -105,10 +105,19 @@ await check('Hadith books (AhmedBaset/hadith-json)', 'Library › other books', 
 await check('Adhkar audio (hisnmuslim.com)', 'Adhkar › listen', 'none', async () => ({ ok: await audio('https://www.hisnmuslim.com/audio/ar/75.mp3') }));
 await check('Focus sounds (moodist on jsDelivr)', 'Sound library (fallback copy)', 'the copy on this site comes first', async () => ({ ok: await audio('https://cdn.jsdelivr.net/gh/remvze/moodist@285ecdbfc67fb082833eee8cef9cd34bbdb1d755/public/sounds/rain/light-rain.mp3') }));
 await check('Mosques near me (Overpass)', 'Tools › mosques', 'three servers, then a Google Maps link', async () => {
-  for (const u of ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter']) {
-    if ((await get(`${u}?data=${encodeURIComponent('[out:json];node(1);out;')}`, { timeout: 25000 })).ok) return { ok: true, note: new URL(u).host };
-  }
-  return { ok: false, note: 'no server answers' };
+  // The same request the app sends (js/tools.js), to all the servers at once.
+  const q = '[out:json][timeout:25];node["amenity"="place_of_worship"](21.42,39.82,21.43,39.83);out 3;';
+  const ask = async (u) => {
+    const r = await fetch(u, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { ...UA, 'Content-Type': 'application/x-www-form-urlencoded' }, signal: AbortSignal.timeout(45000) });
+    if (!r.ok) throw new Error(r.status);
+    await r.json();
+    return new URL(u).host;
+  };
+  try {
+    const host = await Promise.any(['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter',
+      'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'].map(ask));
+    return { ok: true, note: `first answer from ${host}` };
+  } catch (_) { return { ok: false, note: 'no server answers' }; }
 }, true);
 await check('Clock correction (worldtimeapi.org / timeapi.io)', 'Clock accuracy', 'the website’s own clock, then the device clock', async () => {
   const a = (await get('https://worldtimeapi.org/api/timezone/Etc/UTC')).ok;
