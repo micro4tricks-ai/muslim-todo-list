@@ -118,7 +118,7 @@
     audio.addEventListener('ended', () => { btn.textContent = T('استمع'); });
     audio._btn = btn;
   }
-  window.addEventListener('noon-recitation', (ev) => { if (ev.detail && ev.detail.from === 'listen') stopAudio(); });
+  window.addEventListener('noon-recitation', (ev) => { if (ev.detail && /^listen/.test(ev.detail.from)) stopAudio(); });
   function stopAudio() {
     if (!audio) return;
     audio.pause();

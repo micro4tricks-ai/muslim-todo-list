@@ -870,7 +870,7 @@
   }
   function pause() { clearTimeout(gapTimer); audio.pause(); setPlayIcon(false); }
   // The Listen tab started to play.
-  window.addEventListener('noon-recitation', (ev) => { if (ev.detail && ev.detail.from === 'listen' && playing >= 0) pause(); }); // also between two verses
+  window.addEventListener('noon-recitation', (ev) => { if (ev.detail && /^listen/.test(ev.detail.from) && playing >= 0) pause(); }); // also between two verses
   function stopped() { playing = -1; setPlayIcon(false); if (R) R.page.querySelectorAll('.is-play').forEach((n) => n.classList.remove('is-play')); }
   audio.addEventListener('ended', () => {
     const s = surahOf(playing), end = starts[s] + M.surahs[s][4];

@@ -1,0 +1,31 @@
+{
+  "about": "Live links read by js/listen.js on every visit. Fix a dead link here and every copy of the site and the app picks it up without an update. Checked daily by .github/workflows/sources.yml.",
+  "tv": [
+    {
+      "id": "quran",
+      "ar": "قناة القرآن الكريم — من المسجد الحرام",
+      "en": "Quran TV — live from al-Masjid al-Haram",
+      "urls": [
+        "https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8",
+        "https://win.holol.com/live/quran/playlist.m3u8"
+      ]
+    },
+    {
+      "id": "sunnah",
+      "ar": "قناة السنة النبوية — من المسجد النبوي",
+      "en": "Sunnah TV — live from the Prophet's Mosque",
+      "urls": [
+        "https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8",
+        "https://win.holol.com/live/sunnah/playlist.m3u8"
+      ]
+    }
+  ],
+  "radios": [
+    {
+      "id": 900001,
+      "ar": "إذاعة القرآن الكريم من القاهرة",
+      "en": "Holy Quran Radio from Cairo",
+      "urls": ["https://stream.radiojar.com/8s5u5tpdtwzuv", "https://n04.radiojar.com/8s5u5tpdtwzuv"]
+    }
+  ]
+}

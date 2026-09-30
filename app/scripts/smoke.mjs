@@ -118,6 +118,14 @@ await phase('Listen: radio list, play a station', async () => {
   report.listen.player = await js("document.querySelector('.lp').dataset.state");
   console.log('listen:', JSON.stringify(report.listen));
   await gesture('window.noonListen.stop()');
+  // Live TV over HLS inside the WebView: the picture must move.
+  await gesture("[...document.querySelectorAll('#view-listen .ls-tabs .chip')][1].click()"); await sleep(3000);
+  await gesture("document.querySelector('#view-listen .tv-chan').click()"); await sleep(15000);
+  report.liveTv = await js(`(() => { const v = document.querySelector('#view-listen video');
+    return v ? { time: Math.round(v.currentTime), width: v.videoWidth, paused: v.paused, error: v.error && v.error.code,
+      note: document.querySelector('#view-listen .tv-frame + .hint').textContent } : 'no video'; })()`);
+  console.log('live TV:', JSON.stringify(report.liveTv));
+  await gesture("window.noonUI.go('tasks')");
 }, 4000);
 // The native adhan player: it must start (a foreground service), play, and stop cleanly.
 await phase('Adhan player: play, then stop', async () => {

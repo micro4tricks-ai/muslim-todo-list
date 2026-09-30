@@ -1,0 +1,28 @@
+# Every day, checks the outside services the site and the app read from (radio, live TV,
+# recitations, tafsir, hadith, adhkar audio…). A dead link turns this red and GitHub sends an
+# email; live TV and extra station links are then fixed in live.json, with no app update.
+name: Sources check
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/check_sources.mjs --json sources.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sources
+          path: sources.json

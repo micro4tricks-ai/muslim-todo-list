@@ -33,7 +33,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir _site
-          cp -r index.html install.html manifest.webmanifest sw.js .nojekyll README.md en icons fonts js sounds quran _site/
+          cp -r index.html install.html manifest.webmanifest sw.js live.json .nojekyll README.md en icons fonts js sounds quran _site/
           gh release download --repo "$GITHUB_REPOSITORY" --pattern muslim-todo-list.apk --dir _site || echo "No release yet"
           # The app's "check for updates" reads this: the release whose APK is published here.
           tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName 2>/dev/null || echo v0.0.0)

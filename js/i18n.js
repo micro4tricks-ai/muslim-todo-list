@@ -815,6 +815,10 @@
     'إذا ظهر هذا الإشعار بصوت، فالتنبيهات تعمل.': 'If this arrived with a sound, notifications are working.',
     'سيصلك إشعار تجريبي بعد ٥ ثوانٍ.': 'A test notification will arrive in 5 seconds.',
     // v1.6: listen (mp3quran.net)
+    'البث المباشر': 'Live TV',
+    'اضغط على زر التشغيل في الفيديو.': 'Press play on the video.',
+    'تعذّر تشغيل البث الآن. قد يكون متوقفاً مؤقتاً أو الاتصال ضعيف؛ جرّب بعد قليل.': 'Couldn’t play the live broadcast now. It may be off for a while or the connection is weak; try again shortly.',
+    'البث من قناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية). للشاشة الكاملة استخدم زر التكبير في الفيديو.': 'Broadcast by the Quran and Sunnah channels (Saudi Broadcasting Authority). For full screen, use the video’s full-screen button.',
     'السابق': 'Previous',
     'التالي': 'Next',
     'الإذاعة': 'Radio',

@@ -1,7 +1,8 @@
-// ---------- Listen: Quran radio, whole-surah recitations and audio tafsir (mp3quran.net) ----------
-// The lists come from the open API of mp3quran.net and are kept on the device for when there is
-// no connection; the audio itself always streams. One player bar serves all of them and keeps
-// playing while other tabs are open.
+// ---------- Listen: Quran radio, live TV, whole-surah recitations and audio tafsir ----------
+// The lists come from the open API of mp3quran.net on every visit (so their fixes arrive by
+// themselves) and are kept on the device for when there is no connection. live.json on the
+// website adds the TV channels and backup links, so a dead link is fixed there without an app
+// update. One player bar serves the audio and keeps playing while other tabs are open.
 (() => {
   'use strict';
   const { T, I, $, el, button, load, store, toast } = window.noonUI;
@@ -69,6 +70,20 @@
     }
   }
 
+  // live.json from the website, or the copy built in here when it can't be reached.
+  const SITE = 'https://micro4tricks-ai.github.io/muslim-todo-list/';
+  const BUILT_IN = {
+    tv: [
+      { id: 'quran', ar: 'قناة القرآن الكريم — من المسجد الحرام', en: 'Quran TV — live from al-Masjid al-Haram',
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8'] },
+      { id: 'sunnah', ar: 'قناة السنة النبوية — من المسجد النبوي', en: 'Sunnah TV — live from the Prophet\'s Mosque',
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8'] }
+    ],
+    radios: []
+  };
+  let liveP = null;
+  const liveCfg = () => liveP || (liveP = kept(`${SITE}live.json`).then((d) => (d && Array.isArray(d.tv) ? d : BUILT_IN)).catch(() => BUILT_IN));
+
   // Stations: the reciters' own, then mixed and adhkar, lessons and tafsir, and translations.
   const slug = (u) => (String(u).match(/\/radio\/([^/?#]+)/) || [])[1] || '';
   const TOPICS = /^(tafseer|mukhtasartafsir|tabri|gareeb-quran|fatwa|sahabah|fi_zilal_alsiyra|almukhtasar_fi_alsiyra|alaikhtiarat_alfiqhayh_bin_baz|saheh-muslim|saheh-bokharee|alanbiya|riyad|shmaeel|ramadan)$/i;
@@ -83,12 +98,16 @@
     if (MIXED.test(s)) return 'mixed';
     return 'reciters';
   }
+  // The API names backup.qurango.net, which is often down (HTTP 500) while qurango.net plays:
+  // try the main server first and keep the other as the fallback.
+  const hosts = (u) => { const m = String(u).replace('//backup.qurango.net/', '//qurango.net/'); return m === u ? [u] : [m, u]; };
   async function radios() {
-    const d = await api('radios');
-    return d.radios.map((r) => {
+    const [d, cfg] = await Promise.all([api('radios'), liveCfg()]);
+    const extra = (cfg.radios || []).map((r) => ({ id: r.id, name: I.isEn ? r.en : r.ar, note: '', urls: r.urls, kind: 'live' }));
+    return extra.concat(d.radios.map((r) => {
       const style = STYLE.find(([re]) => re.test(slug(r.url)));
-      return { id: r.id, name: clean(r.name).replace(/^Radio\s+/i, ''), note: style ? T(style[1]) : '', url: r.url, kind: kindOf(r.url) };
-    });
+      return { id: r.id, name: clean(r.name).replace(/^Radio\s+/i, ''), note: style ? T(style[1]) : '', urls: hosts(r.url), kind: kindOf(r.url) };
+    }));
   }
   async function reciters() {
     const d = await api('reciters');
@@ -156,8 +175,9 @@
   function start(queue, i, pos) {
     Q = queue; at = i;
     const it = Q[at];
-    audio.src = it.url;
-    if (pos) audio.addEventListener('loadedmetadata', () => { if (audio.src === it.url) try { audio.currentTime = pos; } catch (_) {} }, { once: true });
+    it.tried = 0;
+    audio.src = it.urls[0];
+    if (pos) audio.addEventListener('loadedmetadata', () => { if (audio.src === it.urls[it.tried]) try { audio.currentTime = pos; } catch (_) {} }, { once: true });
     state = 'loading'; paint();
     tryPlay();
     // Other players (the Mushaf, the focus sounds) fall quiet.
@@ -200,7 +220,12 @@
   audio.addEventListener('playing', () => { state = 'playing'; paint(); });
   audio.addEventListener('waiting', () => { if (state === 'playing') { state = 'loading'; paint(); } });
   audio.addEventListener('pause', () => { if (state === 'playing' && !audio.ended) { state = 'paused'; paint(); } });
-  audio.addEventListener('error', () => { if (audio.getAttribute('src')) failed(); });
+  audio.addEventListener('error', () => {
+    if (!audio.getAttribute('src')) return;
+    const it = Q[at];
+    if (it && it.tried + 1 < it.urls.length) { audio.src = it.urls[++it.tried]; tryPlay(); return; } // the backup link
+    failed();
+  });
   audio.addEventListener('ended', () => { if (at + 1 < Q.length) start(Q, at + 1); else { state = 'paused'; S.last = null; save(); paint(); } });
   let lastSave = 0;
   audio.addEventListener('timeupdate', () => {
@@ -209,13 +234,17 @@
     if (S.last && !Q[at].live && Date.now() - lastSave > 5000) { lastSave = Date.now(); S.last.pos = Math.floor(audio.currentTime); save(); }
   });
   // Something else started to play: the Mushaf, an adhkar recording, the adhan on the website.
-  window.addEventListener('noon-recitation', (ev) => { if (!(ev.detail && ev.detail.from === 'listen') && (state === 'playing' || state === 'loading')) pause(); });
+  window.addEventListener('noon-recitation', (ev) => {
+    const from = ev.detail && ev.detail.from;
+    if (from !== 'listen' && (state === 'playing' || state === 'loading')) pause();
+    if (from !== 'listen-tv') stopTv(); // the TV gives way to any other sound
+  });
   // In the app, the native adhan pauses the radio and resumes it after.
   const Adhan = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Adhan;
   if (Adhan && Adhan.addListener) {
     try {
       Adhan.addListener('adhan', (d) => {
-        if (d && d.playing) { if (state === 'playing' || state === 'loading') { paused4adhan = true; pause(); } }
+        if (d && d.playing) { stopTv(); if (state === 'playing' || state === 'loading') { paused4adhan = true; pause(); } }
         else if (paused4adhan) { paused4adhan = false; resume(); }
       });
     } catch (_) {}
@@ -262,15 +291,15 @@
 
   // ---- queues ----
   function playRadio(list, i) {
-    start(list.map((r) => ({ key: `r${r.id}`, title: r.name, sub: r.note || T('بث مباشر'), url: r.url, live: true, last: { kind: 'radio', id: r.id } })), i);
+    start(list.map((r) => ({ key: `r${r.id}`, title: r.name, sub: r.note || T('بث مباشر'), urls: r.urls, live: true, last: { kind: 'radio', id: r.id } })), i);
   }
   function playMoshaf(rec, m, n, pos) {
     const q = m.list.map((k) => ({ key: `m${m.id}:${k}`, title: surahName(k - 1), sub: `${rec.name} · ${m.name}`,
-      url: `${m.server}${pad3(k)}.mp3`, last: { kind: 'surah', rec: rec.id, moshaf: m.id, n: k } }));
+      urls: [`${m.server}${pad3(k)}.mp3`], last: { kind: 'surah', rec: rec.id, moshaf: m.id, n: k } }));
     start(q, Math.max(0, m.list.indexOf(n)), pos);
   }
   function playTafsir(list, i, pos) {
-    start(list.map((x) => ({ key: `t${x.id}`, title: partName(x), sub: T('الخلاصة من تفسير الطبري'), url: x.url, last: { kind: 'tafsir', id: x.id } })), i, pos);
+    start(list.map((x) => ({ key: `t${x.id}`, title: partName(x), sub: T('الخلاصة من تفسير الطبري'), urls: [x.url], last: { kind: 'tafsir', id: x.id } })), i, pos);
   }
   async function resumeLast() {
     const L = S.last;
@@ -288,11 +317,12 @@
   // ================= the tab =================
   let screen = { name: 'home' }; // home | reciter
   let rendered = false;
-  const TABS = [['radio', 'الإذاعات'], ['recite', 'التلاوات'], ['tafsir', 'التفسير الصوتي'], ['fav', 'المفضلة']];
+  const TABS = [['radio', 'الإذاعات'], ['tv', 'البث المباشر'], ['recite', 'التلاوات'], ['tafsir', 'التفسير الصوتي'], ['fav', 'المفضلة']];
   const CATS = [['all', 'الكل'], ['reciters', 'القرّاء'], ['mixed', 'منوعة وأذكار'], ['topics', 'تفسير ودروس'], ['trans', 'ترجمات المعاني']];
 
   function render() {
     rendered = true;
+    stopTv();
     root.replaceChildren();
     if (screen.name === 'reciter') return renderReciter();
     const head = el('div', 'view-head');
@@ -315,7 +345,8 @@
     root.append(tabs);
     const body = el('div', 'ls-body');
     root.append(body, el('p', 'credit', T('الإذاعات والتلاوات والتفسير الصوتي من موقع mp3quran.net (موقع الإذاعات الإسلامية)، تُبث مباشرة من خوادمه.')));
-    ({ radio: renderRadios, recite: renderReciters, tafsir: renderTafsir, fav: renderFav })[S.tab in { radio: 1, recite: 1, tafsir: 1, fav: 1 } ? S.tab : 'radio'](body);
+    const views = { radio: renderRadios, tv: renderTv, recite: renderReciters, tafsir: renderTafsir, fav: renderFav };
+    (views[S.tab] || renderRadios)(body);
     paint();
   }
   const go = (s) => { screen = s; render(); root.scrollIntoView({ block: 'start' }); };
@@ -383,7 +414,7 @@
       });
       const draw = () => {
         const words = norm(q.value);
-        const shown = all.filter((r) => r.kind !== 'live' && (S.cat === 'all' || !S.cat || r.kind === S.cat) && (!words || norm(`${r.name} ${r.note}`).includes(words)));
+        const shown = all.filter((r) => r.kind !== 'live' && (words || S.cat === 'all' || !S.cat || r.kind === S.cat) && (!words || norm(`${r.name} ${r.note}`).includes(words)));
         list.replaceChildren(...shown.map((r) => row(`r${r.id}`, r.name, r.note, () => playRadio(shown, shown.indexOf(r)), star('fav', r.id, r.name))));
         if (!shown.length) list.append(el('p', 'hint', T('لا توجد نتائج.')));
         paint();
@@ -391,6 +422,89 @@
       q.addEventListener('input', draw);
       box.append(q, cats, list);
       draw();
+    });
+  }
+
+  // ---- live TV: the Quran channel (Makkah) and the Sunnah channel (Madinah), over HLS ----
+  // hls.js (js/vendor, Apache-2.0) plays HLS where the browser can't by itself; it loads on first use.
+  let hls = null, tvVideo = null;
+  function loadHls() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    return new Promise((ok, no) => {
+      const s = document.createElement('script');
+      s.src = 'js/vendor/hls.light.min.js';
+      s.onload = () => ok(window.Hls); s.onerror = no;
+      document.head.append(s);
+    });
+  }
+  function stopTv() {
+    if (hls) { hls.destroy(); hls = null; }
+    if (tvVideo) { tvVideo.pause(); tvVideo.removeAttribute('src'); tvVideo.load(); }
+  }
+  // A link counts when it answers with a playlist.
+  async function answers(url) {
+    try { const r = await fetch(url, { cache: 'no-store' }); return r.ok && (await r.text()).trimStart().startsWith('#EXTM3U'); } catch (_) { return false; }
+  }
+  async function attach(video, url) {
+    const Hls = await loadHls().catch(() => null);
+    if (Hls && Hls.isSupported()) {
+      const h = new Hls({ maxBufferLength: 20 });
+      hls = h;
+      await new Promise((ok, no) => {
+        h.on(Hls.Events.MANIFEST_PARSED, ok);
+        h.on(Hls.Events.ERROR, (e, d) => { if (d.fatal) no(new Error(d.details)); });
+        h.loadSource(url); h.attachMedia(video);
+      });
+      // After it starts: ride out short network and decoding hiccups.
+      let retries = 0;
+      h.on(Hls.Events.ERROR, (e, d) => {
+        if (!d.fatal || hls !== h || ++retries > 6) return;
+        if (d.type === Hls.ErrorTypes.MEDIA_ERROR) h.recoverMediaError(); else setTimeout(() => { if (hls === h) h.startLoad(); }, 2000);
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = url; // Safari, iPhone
+    else throw new Error('no HLS');
+  }
+  async function playTv(ch, video, note) {
+    stopTv();
+    tvVideo = video;
+    note.textContent = T('جارٍ التحميل…');
+    window.dispatchEvent(new CustomEvent('noon-recitation', { detail: { from: 'listen-tv' } }));
+    for (const url of ch.urls) {
+      if (tvVideo !== video || !(await answers(url))) continue;
+      try {
+        await attach(video, url);
+        note.textContent = '';
+        video.play().catch(() => { note.textContent = T('اضغط على زر التشغيل في الفيديو.'); });
+        return;
+      } catch (_) { stopTv(); tvVideo = video; }
+    }
+    note.textContent = T('تعذّر تشغيل البث الآن. قد يكون متوقفاً مؤقتاً أو الاتصال ضعيف؛ جرّب بعد قليل.');
+  }
+  function renderTv(box) {
+    loading(box, async () => {
+      const [cfg, fromApi] = await Promise.all([liveCfg(), api('live-tv', 'ar').catch(() => null)]);
+      // Links mp3quran.net publishes are tried after ours, so their fixes count too.
+      const chans = cfg.tv.map((c) => Object.assign({}, c, { urls: c.urls.slice() }));
+      ((fromApi && fromApi.livetv) || []).forEach((x) => {
+        const c = chans.find((k) => k.id === (/سنة|sunnah/i.test(x.name) ? 'sunnah' : 'quran'));
+        if (c && x.url && !c.urls.includes(x.url)) c.urls.push(x.url);
+      });
+      box.replaceChildren();
+      const video = el('video', 'tv-video');
+      video.controls = true; video.playsInline = true; video.setAttribute('playsinline', ''); video.preload = 'none';
+      const frame = el('div', 'tv-frame'); frame.append(video);
+      const note = el('p', 'hint'); note.setAttribute('aria-live', 'polite');
+      const chips = el('div', 'tv-chans');
+      chans.forEach((c) => {
+        const b = button('tv-chan', '', () => {
+          chips.querySelectorAll('.tv-chan').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+          playTv(c, video, note);
+        });
+        b.setAttribute('aria-pressed', 'false');
+        b.append(icon('play'), el('span', '', I.isEn ? c.en : c.ar), el('span', 'ls-badge', T('بث مباشر')));
+        chips.append(b);
+      });
+      box.append(chips, frame, note, el('p', 'hint', T('البث من قناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية). للشاشة الكاملة استخدم زر التكبير في الفيديو.')));
     });
   }
 
@@ -526,7 +640,9 @@
   }
 
   // The lists load the first time the tab opens.
-  window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'listen' && !rendered) render(); });
+  window.addEventListener('noon-view', (ev) => {
+    if (ev.detail.view === 'listen') { if (!rendered) render(); } else stopTv();
+  });
   if (window.noonUI.currentView && window.noonUI.currentView() === 'listen') render();
 
   window.noonListen = { playRadio, stop: () => stop(true), state: () => state, open: () => window.noonUI.go('listen') };
