@@ -44,8 +44,20 @@
         // Server stamped roughly halfway through the round trip.
         offsetMs = serverMs - (EPOCH_ANCHOR + (t0 + t1) / 2);
         return;
-      } catch (_) { /* try next source; keep device time if all fail */ }
+      } catch (_) { /* try next source */ }
     }
+    // Last resort online: the website's own server stamps its replies (to the second).
+    // Skipped inside the Android app, whose pages are served by the phone itself.
+    if (location.protocol !== 'https:' || location.hostname === 'localhost') return; // keep device time
+    try {
+      const t0 = performance.now();
+      const r = await fetch(location.href.split('#')[0], { method: 'HEAD', cache: 'no-store' });
+      const t1 = performance.now();
+      const serverMs = Date.parse(r.headers.get('date'));
+      // Only trust it when the device is clearly off: the header has one-second precision.
+      const off = serverMs + 500 - (EPOCH_ANCHOR + (t0 + t1) / 2);
+      if (Number.isFinite(off) && Math.abs(off) > 2000) offsetMs = off;
+    } catch (_) { /* keep device time */ }
   }
 
   // Offset of the chosen city's wall clock from UTC (falls back to this device).

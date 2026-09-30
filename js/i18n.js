@@ -792,6 +792,8 @@
     'مواقيت الصلاة': 'Prayer times',
     'القادمة:': 'Next:',
     'افتح التطبيق لتحديث المواقيت.': 'Open the app to update the times.',
+    'النصوص من حصن المسلم (hisnmuslim.com)، والآيات من المصحف عبر api.alquran.cloud.': 'Texts from Hisn al-Muslim (hisnmuslim.com); verses from the Mushaf via api.alquran.cloud.',
+    'انتهى موعد الخطة. اختر تاريخاً جديداً.': 'The plan’s date has passed. Choose a new date.',
     // v1.3: my prayers
     'صلواتي': 'My prayers',
     'جماعة': 'Congregation',

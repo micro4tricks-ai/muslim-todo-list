@@ -66,10 +66,14 @@
   });
   let S = Object.assign(blank(), load(KEY, {}));
   // Today's goal: fixed, or worked out from a completion date (pages left ÷ days left).
-  function goal() {
-    if (!S.planEnd) return S.goal;
+  const planDays = () => {
+    if (!S.planEnd) return 0;
     const [y, m, d] = S.planEnd.split('-').map(Number);
-    const days = Math.max(1, Math.round((new Date(y, m - 1, d) - new Date(new Date().toDateString())) / 864e5) + 1);
+    return Math.round((new Date(y, m - 1, d) - new Date(new Date().toDateString())) / 864e5) + 1;
+  };
+  function goal() {
+    const days = planDays();
+    if (days < 1) return S.goal; // no plan, or its date has passed
     const left = PAGES - S.khatma.pages.length + S.today.pages.length; // today's pages still count toward today
     return Math.max(1, Math.ceil(left / days));
   }
@@ -212,10 +216,11 @@
     endIn.min = dayKey();
     endIn.addEventListener('change', () => { S.planEnd = endIn.value || null; save(); renderIndex(); });
     plan.append(el('span', '', T('أختم بحلول')), endIn);
+    if (S.planEnd && planDays() < 1) plan.append(el('span', 'hint', T('انتهى موعد الخطة. اختر تاريخاً جديداً.')));
     if (S.planEnd) plan.append(button('link-btn', T('إلغاء الخطة'), (ev) => { ev.preventDefault(); S.planEnd = null; save(); renderIndex(); }));
     const kh = S.khatma.pages.length;
     wird.append(el('span', 'q-kicker', T('ورد اليوم')),
-      el('b', 'q-big', `${I.num(done)} / ${I.num(g)} ${T('صفحات')}`), bar, S.planEnd ? el('span') : goalSel, plan,
+      el('b', 'q-big', `${I.num(done)} / ${I.num(g)} ${T('صفحات')}`), bar, planDays() >= 1 ? el('span') : goalSel, plan,
       el('span', 'q-meta', `${T('الختمة الحالية')}: ${I.num(kh)} / ${I.num(PAGES)}${S.khatma.count ? ` · ${T('ختمات مكتملة')}: ${I.num(S.khatma.count)}` : ''}`));
     top.append(cont, wird);
     root.append(top);
@@ -305,7 +310,8 @@
           button('btn btn-primary', T('استمع وردّد'), () => {
             Object.assign(S, { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 });
             save();
-            open(starts[k]).then(() => play(starts[k]));
+            play(starts[k]); // inside the tap, so the browser allows the sound
+            open(starts[k]);
           }),
           button('btn btn-quiet', T('حفظتُها ⭐'), () => {
             S.kids[k + 1] = Math.min(3, stars + 1); save(); renderList();
@@ -479,12 +485,19 @@
     box.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape') { if (!sheet.hidden) unselect(); else if (!settings.hidden) settings.hidden = true; else close.click(); }
     });
-    R = { box, tName, tMeta, settings, body, page, sheet, sheetTitle, acts, tafsir, playBtn, trans };
+    // Options can also change from the index (tajweed, teaching Mushaf, memorisation): refresh on open.
+    const sync = () => {
+      size.value = String(S.font); trans.checked = S.trans; tSel.value = transLang(); rec.value = S.reciter;
+      tj.checked = S.tajweed; legend.hidden = !S.tajweed; hide.checked = S.hide;
+      learn.querySelectorAll('select').forEach((x, k) => { x.value = String(S[['repeat', 'gap', 'rate'][k]]); });
+      box.style.setProperty('--qf', S.font + 'px'); box.dataset.theme = S.theme;
+    };
+    R = { box, tName, tMeta, settings, body, page, sheet, sheetTitle, acts, tafsir, playBtn, trans, sync };
   }
 
   // at: the verse to show; keep: put it at the top without a flash (after a layout change).
   function renderSurah(s, at, keep) {
-    // The translation needs its file the first time it is switched on.
+    // The tajweed text and the translations are fetched the first time they are switched on.
     if (S.tajweed && !txt.tajweed) {
       data('tajweed').then(() => renderSurah(s, at, keep)).catch(() => { S.tajweed = false; renderSurah(s, at, keep); });
       return;
@@ -517,7 +530,7 @@
       const b = el('p', 'qr-basmala', M.basmala);
       b.lang = 'ar';
       frag.append(b);
-      if (S.trans) { const e = el('p', 'qr-basmala-en', M.basmalaEn); e.dir = 'ltr'; e.lang = 'en'; frag.append(e); }
+      if (S.trans && transLang() === 'en') { const e = el('p', 'qr-basmala-en', M.basmalaEn); e.dir = 'ltr'; e.lang = 'en'; frag.append(e); }
     }
     let pg = null, flow = null, p = 0;
     for (let i = first; i < first + count; i++) {
@@ -815,6 +828,7 @@
   // ---- open / close ----
   async function open(i) {
     if (!R) build();
+    R.sync();
     R.box.hidden = false;
     document.body.classList.add('qr-open');
     if (!history.state || !history.state.qr) history.pushState({ qr: 1 }, '');
