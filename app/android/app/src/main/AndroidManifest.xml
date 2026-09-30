@@ -20,6 +20,16 @@
             </intent-filter>
         </activity>
 
+        <!-- The adhan: booked with the alarm clock, played by a short foreground service. -->
+        <receiver android:name=".AdhanReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <service android:name=".AdhanService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
+
         <!-- Home-screen widget: next prayer and the day's times. -->
         <receiver android:name=".PrayerWidget" android:exported="false" android:label="@string/app_name">
             <intent-filter>
@@ -45,6 +55,11 @@
     <!-- Prayer and focus alerts at the exact minute, even when the app is closed. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Playing the adhan at prayer time, and booking it again after a restart. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- "Use my location" for prayer times. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

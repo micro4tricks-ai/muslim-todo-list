@@ -24,7 +24,18 @@
   // ---- settings (in the location & prayer times panel) ----
   const en = $('paEnabled'), no = $('paNotify'), ap = $('paPause'), bf = $('paBefore'), snd = $('paSound'), pre = $('paPreview');
   SOUNDS.forEach(([v, label]) => snd.append(new Option(T(label), v)));
-  const fsnd = $('paFajrSound'), iq = $('paIqamah');
+  const fsnd = $('paFajrSound'), iq = $('paIqamah'), sil = $('paSilent');
+  // Only the phone app can play the adhan while the phone is on silent.
+  if (!native()) sil.closest('label').hidden = true;
+  sil.addEventListener('change', () => { S.silentOk = sil.checked; save(); });
+  // In the phone app: send a test notification, and ask for permission if it is missing.
+  if (native()) {
+    $('paTestRow').hidden = false;
+    $('paTest').addEventListener('click', async () => {
+      const ok = await native().testNotify();
+      $('paTestMsg').textContent = ok ? T('سيصلك إشعار تجريبي بعد ٥ ثوانٍ.') : T('لم يُسمح للتطبيق بالإشعارات. يمكنك السماح بها من إعدادات التطبيق في الهاتف.');
+    });
+  }
   fsnd.append(new Option(T('مثل باقي الصلوات'), ''));
   SOUNDS.forEach(([v, label]) => fsnd.append(new Option(T(label), v)));
   fsnd.addEventListener('change', () => { S.fajrSound = fsnd.value; save(); });
@@ -34,6 +45,7 @@
     snd.value = SOUNDS.some((x) => x[0] === S.sound) ? S.sound : 'madinah';
     fsnd.value = SOUNDS.some((x) => x[0] === S.fajrSound) ? S.fajrSound : '';
     iq.value = String(S.iqamah || 0);
+    sil.checked = !!S.silentOk;
     [no, ap, bf, snd, fsnd, iq].forEach((x) => { x.disabled = !S.enabled; });
   }
   snd.addEventListener('change', () => { S.sound = snd.value; save(); if (!adhan.paused) preview(); });
@@ -74,10 +86,23 @@
     window.dispatchEvent(new CustomEvent('noon-recitation')); // the focus sounds fall quiet
     return true;
   }
-  function stopAdhan() { adhan.pause(); pre.textContent = T('استماع'); pre.setAttribute('aria-pressed', 'false'); }
+  function stopAdhan() {
+    adhan.pause();
+    if (native()) native().adhanStop();
+    previewing = false;
+    pre.textContent = T('استماع'); pre.setAttribute('aria-pressed', 'false');
+  }
+  let previewing = false;
   adhan.addEventListener('ended', stopAdhan);
   function preview() {
-    if (!adhan.paused) { stopAdhan(); return; }
+    if (!adhan.paused || previewing) { stopAdhan(); return; }
+    // In the phone app, try the real player (alarm volume), exactly as it will sound at prayer time.
+    if (native() && snd.value !== 'chime') {
+      native().adhanTest(snd.value);
+      previewing = true;
+      pre.textContent = T('إيقاف'); pre.setAttribute('aria-pressed', 'true');
+      return;
+    }
     if (playAdhan(snd.value)) { pre.textContent = T('إيقاف'); pre.setAttribute('aria-pressed', 'true'); }
   }
   pre.addEventListener('click', preview);
@@ -126,8 +151,9 @@
         const ctl = window.noonFocusControl;
         const running = ctl && ctl.state().running && ctl.state().mode === 'focus';
         if (running && S.autoPause) ctl.pause();
-        // In the phone app the notification itself carries the adhan, so the page stays quiet.
-        const withAdhan = native() ? false : playAdhan(k === 'fajr' && S.fajrSound ? S.fajrSound : S.sound);
+        // In the phone app the adhan player (AdhanService) is already playing, so the page stays quiet.
+        const sound = k === 'fajr' && S.fajrSound ? S.fajrSound : S.sound;
+        const withAdhan = native() ? sound !== 'chime' : playAdhan(sound);
         const msg = `${T('حان الآن وقت صلاة')} ${name} (${snap.fmtHM(at)}).`;
         const note = running && S.autoPause ? T('أوقفنا جلسة التركيز مؤقتاً، أكملها بعد الصلاة.') : '';
         if (window.noonCard) {

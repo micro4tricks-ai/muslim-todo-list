@@ -17,11 +17,26 @@
   const SUNNAH_DAYS = 21;
   const quiet = (p) => Promise.resolve(p).catch(() => {});
 
-  const channels = Promise.all([
-    quiet(LN.createChannel({ id: 'prayer', name: T('تنبيهات الصلاة'), importance: 5, visibility: 1, vibration: true })),
-    quiet(LN.createChannel({ id: 'focus', name: T('مؤقت التركيز'), importance: 4, visibility: 1, vibration: true })),
-    quiet(LN.createChannel({ id: 'sunnah', name: T('الصيام والمواسم والأذكار'), importance: 4, visibility: 1, vibration: true }))
-  ]);
+  // Channels carry their own sound (a chime bundled in res/raw), because Android keeps a
+  // channel's sound from the day it was made. The first channels had none, so they were
+  // silent on many phones: v2 channels replace them.
+  const CHIME = 'noon_chime.wav';
+  const channels = (async () => {
+    let cleaned = false;
+    try { cleaned = localStorage.getItem('noon-channels') === 'v2'; } catch (_) {}
+    if (!cleaned) {
+      for (const id of ['prayer', 'focus', 'sunnah', 'adhan-madinah', 'adhan-fakhri', 'adhan-beautiful', 'adhan-azeez']) await quiet(LN.deleteChannel({ id }));
+      try { localStorage.setItem('noon-channels', 'v2'); } catch (_) {}
+    }
+    await Promise.all([
+      quiet(LN.createChannel({ id: 'alerts-v2', name: T('تنبيهات الصلاة'), importance: 5, visibility: 1, vibration: true, sound: CHIME })),
+      quiet(LN.createChannel({ id: 'focus-v2', name: T('مؤقت التركيز'), importance: 4, visibility: 1, vibration: true, sound: CHIME })),
+      quiet(LN.createChannel({ id: 'sunnah-v2', name: T('الصيام والمواسم والأذكار'), importance: 4, visibility: 1, vibration: true, sound: CHIME }))
+    ]);
+  })();
+  // The adhan itself is played by the app's own player (AdhanService.java) through the
+  // alarm volume, so a quiet notification sound can't swallow it.
+  const Adhan = C.registerPlugin ? C.registerPlugin('Adhan') : null;
   // Tapping a reminder opens its card (or its section).
   quiet(LN.addListener('localNotificationActionPerformed', (a) => {
     const x = (a && a.notification && a.notification.extra) || {};
@@ -30,17 +45,6 @@
       else if (x.view && window.noonUI.go) window.noonUI.go(x.view);
     }, 400);
   }));
-  // One channel per adhan: Android fixes a channel's sound when it is created.
-  const adhanChannels = {};
-  function adhanChannel(sound) {
-    if (!sound || sound === 'chime') return Promise.resolve('prayer');
-    if (!adhanChannels[sound]) {
-      adhanChannels[sound] = quiet(LN.createChannel({ id: `adhan-${sound}`, name: `${T('الأذان')}: ${T(ADHAN_NAMES[sound] || sound)}`,
-        importance: 5, visibility: 1, vibration: true, sound: `adhan_${sound}.mp3` })).then(() => `adhan-${sound}`);
-    }
-    return adhanChannels[sound];
-  }
-  const ADHAN_NAMES = { madinah: 'أذان من المسجد النبوي', fakhri: 'أذان بصوت صباح فخري', beautiful: 'أذان هادئ', azeez: 'أذان بصوت عاقب عزيز' };
 
   async function permit(ask) {
     try {
@@ -51,12 +55,13 @@
   }
 
   // ---- prayers: the next few days, rebooked whenever the times or settings change ----
-  const settings = () => Object.assign({ enabled: true, notify: true, before: 10, sound: 'madinah', fajrSound: '', iqamah: 0 }, load(PA_KEY, {}));
-  // channels: { fajr, other } notification channels for the moment each prayer is due.
-  function plan(channels) {
+  const settings = () => Object.assign({ enabled: true, notify: true, before: 10, sound: 'madinah', fajrSound: '', iqamah: 0, silentOk: false }, load(PA_KEY, {}));
+  // Notifications for the chime and the reminders (out), and the adhan times for the player (adhan).
+  function plan() {
     const S = settings(), A = window.noonAstro;
-    if (!S.enabled || !S.notify || !A) return [];
-    const now = Date.now(), out = [];
+    const out = [], adhan = [];
+    if (!S.enabled || !S.notify || !A) return { out, adhan };
+    const now = Date.now();
     for (let d = 0; d < DAYS; d++) {
       const epoch = now + d * 864e5;
       const snap = A.snapshot(epoch);
@@ -67,36 +72,39 @@
         const at = Math.round((midnight + h * 3600e3) / 60000) * 60000;
         const name = T(NAMES[k]);
         const id = PRAYER_IDS[0] + d * 20 + i * 3; // due, before, iqamah
-        if (at > now + 5000) {
-          out.push({ id, channelId: (k === 'fajr' ? channels.fajr : channels.other) || 'prayer', title: `${T('حان وقت صلاة')} ${name}`, body: T('حيّ على الصلاة'),
+        const sound = k === 'fajr' && S.fajrSound ? S.fajrSound : S.sound;
+        if (at > now + 5000 && sound !== 'chime') {
+          adhan.push({ at, sound: `adhan_${sound}`, title: `${T('حان وقت صلاة')} ${name}`, body: T('حيّ على الصلاة'), stop: T('إيقاف الأذان'), silentOk: !!S.silentOk });
+        } else if (at > now + 5000) {
+          out.push({ id, channelId: 'alerts-v2', title: `${T('حان وقت صلاة')} ${name}`, body: T('حيّ على الصلاة'),
             schedule: { at: new Date(at), allowWhileIdle: true } });
         }
         const early = at - S.before * 60000;
         if (S.before > 0 && early > now + 5000) {
-          out.push({ id: id + 1, channelId: 'prayer', title: `${T('اقتربت صلاة')} ${name}`,
+          out.push({ id: id + 1, channelId: 'alerts-v2', title: `${T('اقتربت صلاة')} ${name}`,
             body: `${T('باقي')} ${I.num(S.before)} ${T('دقيقة على صلاة')} ${name}. ${T('اختم ما بين يديك.')}`.trim(),
             schedule: { at: new Date(early), allowWhileIdle: true } });
         }
         const iq = at + (S.iqamah || 0) * 60000;
         if (S.iqamah > 0 && iq > now + 5000) {
-          out.push({ id: id + 2, channelId: 'prayer', title: `${T('الإقامة')}: ${name}`, body: T('قد قامت الصلاة، استووا واعتدلوا.'),
+          out.push({ id: id + 2, channelId: 'alerts-v2', title: `${T('الإقامة')}: ${name}`, body: T('قد قامت الصلاة، استووا واعتدلوا.'),
             schedule: { at: new Date(iq), allowWhileIdle: true } });
         }
       });
     }
-    return out;
+    return { out, adhan };
   }
-  let lastSig = null, busy = false;
+  let lastSig = null, busy = false, lastAdhan = '';
   async function schedulePrayers(force) {
     if (busy) return;
     busy = true;
     try {
       await channels;
-      const S = settings();
-      const due = { other: await adhanChannel(S.sound), fajr: await adhanChannel(S.fajrSound || S.sound) };
-      const list = plan(due);
+      const { out: list, adhan } = plan();
       updateWidget();
-      const sig = due.fajr + due.other + '|' + list.map((n) => n.id + '@' + n.schedule.at.getTime() + n.title).join('|');
+      const adhanJson = JSON.stringify(adhan);
+      if (Adhan && adhanJson !== lastAdhan) { await quiet(Adhan.schedule({ items: adhanJson })); lastAdhan = adhanJson; }
+      const sig = list.map((n) => n.id + '@' + n.schedule.at.getTime() + n.title).join('|');
       if (sig === lastSig && !force) return;
       if (list.length && !(await permit(false))) return;
       await channels;
@@ -142,7 +150,7 @@
       const now = Date.now();
       const list = window.noonSunnah.plan(now, SUNNAH_DAYS).filter((r) => r.at > now + 5000)
         .slice(0, SUNNAH_IDS[1] - SUNNAH_IDS[0])
-        .map((r, k) => ({ id: SUNNAH_IDS[0] + k, channelId: 'sunnah', title: r.title, body: r.body,
+        .map((r, k) => ({ id: SUNNAH_IDS[0] + k, channelId: 'sunnah-v2', title: r.title, body: r.body,
           largeBody: r.body, extra: { view: r.view || 'calendar', key: r.key }, schedule: { at: new Date(r.at), allowWhileIdle: true } }));
       const sig = list.map((n) => n.schedule.at.getTime() + n.title).join('|');
       if (sig === sunnahSig && !force) return;
@@ -175,7 +183,7 @@
       await channels;
       const focus = s.mode === 'focus';
       await quiet(LN.schedule({ notifications: [{
-        id: FOCUS_ID, channelId: 'focus',
+        id: FOCUS_ID, channelId: 'focus-v2',
         title: T(focus ? 'انتهت جلسة التركيز' : 'انتهت الاستراحة'),
         body: T(focus ? 'خذ استراحة قصيرة، ثم ابدأ الجلسة التالية.' : 'جاهز لجلسة تركيز جديدة؟'),
         schedule: { at: new Date(end), allowWhileIdle: true }
@@ -199,5 +207,18 @@
   setInterval(() => schedulePrayers(), 60000);
   setInterval(() => scheduleSunnah(), 15 * 60000);
 
-  window.noonNative = { permit, schedulePrayers, scheduleSunnah };
+  // Hear the adhan now through the app's player (from the prayer settings), or silence it.
+  const adhanTest = (sound) => (Adhan ? quiet(Adhan.test({ sound: `adhan_${sound}`, title: T('الأذان'), body: T('تجربة صوت الأذان'), stop: T('إيقاف الأذان') })) : null);
+  const adhanStop = () => (Adhan ? quiet(Adhan.stop()) : null);
+  // A test notification in five seconds, asking for permission first if needed.
+  async function testNotify() {
+    if (!(await permit(true))) return false;
+    await channels;
+    await quiet(LN.schedule({ notifications: [{ id: 2999, channelId: 'alerts-v2', title: T('تجربة التنبيهات'), body: T('إذا ظهر هذا الإشعار بصوت، فالتنبيهات تعمل.'),
+      schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true } }] }));
+    schedulePrayers(true);
+    scheduleSunnah(true);
+    return true;
+  }
+  window.noonNative = { permit, schedulePrayers, scheduleSunnah, adhanTest, adhanStop, testNotify };
 })();

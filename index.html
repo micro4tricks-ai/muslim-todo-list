@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Muslim To-Do">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=1.4.1">
+<link rel="stylesheet" href="fonts/fonts.css?v=1.5.0">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -870,6 +870,18 @@
   .qr-icon svg { width: 20px; height: 20px; }
   .qr-aa { font-weight: 700; font-size: 15px; }
   .qr-play { background: var(--qgold); color: #fff; border-color: transparent; }
+  .qr-reciter { max-width: 34%; min-width: 0; font: inherit; font-size: 13px; padding: 7px 8px; border-radius: 999px; border: 1px solid var(--qline); background: transparent; color: var(--qink); }
+  .qr-reciter option { color: #222; background: #fff; }
+  .qr-tools { display: flex; align-items: center; gap: 6px; padding: 6px 12px 8px; border-bottom: 1px solid var(--qline); overflow-x: auto; scrollbar-width: none; }
+  .qr-tools::-webkit-scrollbar { display: none; }
+  .qr-chip { flex: none; border: 1px solid var(--qline); background: transparent; color: var(--qink); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; }
+  .qr-chip[aria-pressed="true"] { background: var(--qgold); border-color: var(--qgold); color: #fff; }
+  .qr-zoom { min-width: 44px; font-weight: 700; direction: ltr; }
+  .qr-settings > .btn { flex-basis: 100%; }
+  .qr-size input { flex: 1; min-width: 80px; }
+  .ay-tf { margin: 8px 0 0; padding: 8px 12px; border-inline-start: 3px solid var(--qgold); border-radius: 8px; background: var(--qsel); }
+  .ay-tf p { margin: 0 0 6px; font-family: "Amiri", serif; font-size: calc(var(--qf, 30px) * 0.62); line-height: 1.9; color: var(--qink); }
+  .ay-tf:lang(en) p { font-family: var(--font); font-size: 15px; line-height: 1.7; }
   .qr-settings { display: flex; flex-wrap: wrap; gap: 12px 22px; padding: 12px 16px; border-bottom: 1px solid var(--qline); font-size: 14px; }
   .qr-row { display: flex; align-items: center; gap: 10px; }
   .qr-row select { font: inherit; font-size: 14px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--qline); background: transparent; color: var(--qink); }
@@ -1112,6 +1124,8 @@
   .qr-tafsir-text p { margin: 0 0 10px; font-family: "Amiri", serif; font-size: 19px; line-height: 1.95; }
   .qr-tafsir-text:lang(en) p { font-family: var(--font); font-size: 15px; line-height: 1.7; }
 
+  .app-version { margin: 0; font-size: 12px; color: var(--ink-faint); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .app-version a { color: var(--accent); font-weight: 600; }
   /* ---- Daily cards, tools ---- */
   .daily-card { display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); border-inline-start: 4px solid #C9A45C; }
   .daily-text { margin: 0; font-family: "Amiri", serif; font-size: 20px; line-height: 1.9; }
@@ -1336,6 +1350,8 @@
         <label for="paFajrSound">أذان الفجر</label>
         <select id="paFajrSound"></select>
       </div>
+      <p class="pa-test" id="paTestRow" hidden><button type="button" class="btn btn-quiet" id="paTest">تجربة التنبيهات</button> <span class="hint" id="paTestMsg" aria-live="polite"></span></p>
+      <label class="check" for="paSilent"><input type="checkbox" id="paSilent"> شغّل الأذان حتى لو الهاتف على الوضع الصامت</label>
       <label class="pa-before" for="paIqamah">تذكير بالإقامة بعد الأذان بـ
         <select id="paIqamah"><option value="0">بدون</option><option value="10">١٠ دقائق</option><option value="15">١٥ دقيقة</option><option value="20">٢٠ دقيقة</option><option value="25">٢٥ دقيقة</option></select>
       </label>
@@ -1568,6 +1584,7 @@
     <div class="view" id="view-adhkar" data-view="adhkar" hidden></div>
     <div class="view" id="view-report" data-view="report" hidden></div>
 
+    <p class="app-version"><span id="appVersion"></span> · <button type="button" class="link-btn" id="checkUpdate">تحقق من وجود تحديث</button> <span id="updateMsg" aria-live="polite"></span></p>
     <p class="shortcuts">اختصارات: <kbd>N</kbd> مهمة جديدة · <kbd>Space</kbd> تشغيل/إيقاف التركيز · اسحب القرص أو استخدم عجلة الماوس لضبط المدة · <kbd>Esc</kbd> إغلاق النموذج · <kbd>F</kbd> وضع التركيز</p>
   </div>
 </main>
@@ -1600,39 +1617,39 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=1.4.1"></script>
-<script src="js/clock.js?v=1.4.1"></script>
-<script src="js/astro.js?v=1.4.1"></script>
-<script src="js/look.js?v=1.4.1"></script>
-<script src="js/sounds.js?v=1.4.1"></script>
-<script src="js/tasks.js?v=1.4.1"></script>
-<script src="js/views.js?v=1.4.1"></script>
-<script src="js/remind-card.js?v=1.4.1"></script>
-<script src="js/notes.js?v=1.4.1"></script>
-<script src="js/cards.js?v=1.4.1"></script>
-<script src="js/adhkar-data.js?v=1.4.1"></script>
-<script src="js/adhkar.js?v=1.4.1"></script>
-<script src="js/habits.js?v=1.4.1"></script>
-<script src="js/prayers.js?v=1.4.1"></script>
-<script src="js/focus-plus.js?v=1.4.1"></script>
-<script src="js/native.js?v=1.4.1"></script>
-<script src="js/prayer-alerts.js?v=1.4.1"></script>
-<script src="js/extras-data.js?v=1.4.1"></script>
-<script src="js/quran-meta.js?v=1.4.1"></script>
-<script src="js/quran.js?v=1.4.1"></script>
-<script src="js/sunnah-data.js?v=1.4.1"></script>
-<script src="js/sunnah.js?v=1.4.1"></script>
-<script src="js/qibla.js?v=1.4.1"></script>
-<script src="js/library-meta.js?v=1.4.1"></script>
-<script src="js/salah-data.js?v=1.4.1"></script>
-<script src="js/tools.js?v=1.4.1"></script>
-<script src="js/library.js?v=1.4.1"></script>
-<script src="js/report.js?v=1.4.1"></script>
-<script src="js/focus-mode.js?v=1.4.1"></script>
-<script src="js/config.js?v=1.4.1"></script>
-<script src="js/vendor/supabase.js?v=1.4.1" defer></script>
-<script src="js/sync-core.js?v=1.4.1" defer></script>
-<script src="js/sync.js?v=1.4.1" defer></script>
-<script src="js/app.js?v=1.4.1" defer></script>
+<script src="js/i18n.js?v=1.5.0"></script>
+<script src="js/clock.js?v=1.5.0"></script>
+<script src="js/astro.js?v=1.5.0"></script>
+<script src="js/look.js?v=1.5.0"></script>
+<script src="js/sounds.js?v=1.5.0"></script>
+<script src="js/tasks.js?v=1.5.0"></script>
+<script src="js/views.js?v=1.5.0"></script>
+<script src="js/remind-card.js?v=1.5.0"></script>
+<script src="js/notes.js?v=1.5.0"></script>
+<script src="js/cards.js?v=1.5.0"></script>
+<script src="js/adhkar-data.js?v=1.5.0"></script>
+<script src="js/adhkar.js?v=1.5.0"></script>
+<script src="js/habits.js?v=1.5.0"></script>
+<script src="js/prayers.js?v=1.5.0"></script>
+<script src="js/focus-plus.js?v=1.5.0"></script>
+<script src="js/native.js?v=1.5.0"></script>
+<script src="js/prayer-alerts.js?v=1.5.0"></script>
+<script src="js/extras-data.js?v=1.5.0"></script>
+<script src="js/quran-meta.js?v=1.5.0"></script>
+<script src="js/quran.js?v=1.5.0"></script>
+<script src="js/sunnah-data.js?v=1.5.0"></script>
+<script src="js/sunnah.js?v=1.5.0"></script>
+<script src="js/qibla.js?v=1.5.0"></script>
+<script src="js/library-meta.js?v=1.5.0"></script>
+<script src="js/salah-data.js?v=1.5.0"></script>
+<script src="js/tools.js?v=1.5.0"></script>
+<script src="js/library.js?v=1.5.0"></script>
+<script src="js/report.js?v=1.5.0"></script>
+<script src="js/focus-mode.js?v=1.5.0"></script>
+<script src="js/config.js?v=1.5.0"></script>
+<script src="js/vendor/supabase.js?v=1.5.0" defer></script>
+<script src="js/sync-core.js?v=1.5.0" defer></script>
+<script src="js/sync.js?v=1.5.0" defer></script>
+<script src="js/app.js?v=1.5.0" defer></script>
 </body>
 </html>

@@ -109,6 +109,14 @@ await phase('Library: Sahih al-Bukhari, first book', async () => {
   await gesture("document.querySelector('.lib-sec').click()"); await sleep(4000);
   await js('scrollTo(0, document.documentElement.scrollHeight); true');
 }, 6000);
+// The native adhan player: it must start (a foreground service), play, and stop cleanly.
+await phase('Adhan player: play, then stop', async () => {
+  await gesture("window.noonNative && window.noonNative.adhanTest('azeez')"); await sleep(4000);
+  const services = adb(`shell dumpsys activity services ${pkg}`);
+  report.adhanServiceRunning = /AdhanService/.test(services);
+  console.log('adhan service running:', report.adhanServiceRunning);
+  await gesture('window.noonNative && window.noonNative.adhanStop()'); await sleep(1500);
+}, 4000);
 await phase('Tools and my prayers', async () => {
   await gesture("window.noonLibrary.open('tool', 'zakat')"); await sleep(800);
   await gesture("window.noonUI.go('habits')"); await sleep(800);

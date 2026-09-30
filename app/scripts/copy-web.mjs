@@ -14,7 +14,7 @@ for (const item of ['index.html', 'install.html', 'manifest.webmanifest', 'icons
 // The adhan recordings are also notification sounds, which Android reads from res/raw.
 const raw = path.join(app, 'android', 'app', 'src', 'main', 'res', 'raw');
 mkdirSync(raw, { recursive: true });
-for (const f of readdirSync(path.join(root, 'sounds', 'adhan')).filter((f) => f.endsWith('.mp3'))) {
+for (const f of readdirSync(path.join(root, 'sounds', 'adhan')).filter((f) => /\.(mp3|wav)$/.test(f))) {
   cpSync(path.join(root, 'sounds', 'adhan', f), path.join(raw, f));
 }
 console.log('Copied the site into', www, 'and the adhan sounds into', raw);

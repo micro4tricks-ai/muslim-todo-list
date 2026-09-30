@@ -12,6 +12,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // The page hands the prayer times to the home-screen widget through this plugin.
         registerPlugin(WidgetBridge.class);
+        // ... and books the adhan with the phone's alarm clock through this one.
+        registerPlugin(AdhanPlugin.class);
         super.onCreate(savedInstanceState);
         // When Android stops the page's renderer (usually to free memory), reopen the
         // screen instead of letting the whole app close. Tasks and settings are saved
