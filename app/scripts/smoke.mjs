@@ -111,7 +111,17 @@ await phase('Library: Sahih al-Bukhari, first book', async () => {
 }, 6000);
 // The native adhan player: it must start (a foreground service), play, and stop cleanly.
 await phase('Adhan player: play, then stop', async () => {
-  await gesture("window.noonNative && window.noonNative.adhanTest('azeez')"); await sleep(3000);
+  // Call the plugin directly, so any error is reported instead of swallowed.
+  report.adhanCall = await js(`(async () => {
+    try {
+      const C = window.Capacitor;
+      const has = !!(C && C.registerPlugin), names = Object.keys((C && C.Plugins) || {}).join(',');
+      await C.registerPlugin('Adhan').test({ sound: 'adhan_azeez', title: 'test', body: 'test', stop: 'Stop' });
+      return 'ok; plugins: ' + names + '; registerPlugin: ' + has;
+    } catch (e) { return 'ERR ' + (e && (e.code || '') + ' ' + e.message); }
+  })()`);
+  console.log('adhan call:', report.adhanCall);
+  await sleep(3000);
   const services = adb(`shell dumpsys activity services ${pkg}`);
   report.adhanServiceRunning = /AdhanService/.test(services);
   // What the player said (AdhanService logs as NoonAdhan); the emulator here usually has no sound card.
