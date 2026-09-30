@@ -111,10 +111,12 @@ await phase('Library: Sahih al-Bukhari, first book', async () => {
 }, 6000);
 // The native adhan player: it must start (a foreground service), play, and stop cleanly.
 await phase('Adhan player: play, then stop', async () => {
-  await gesture("window.noonNative && window.noonNative.adhanTest('azeez')"); await sleep(4000);
+  await gesture("window.noonNative && window.noonNative.adhanTest('azeez')"); await sleep(3000);
   const services = adb(`shell dumpsys activity services ${pkg}`);
   report.adhanServiceRunning = /AdhanService/.test(services);
-  console.log('adhan service running:', report.adhanServiceRunning);
+  // What the player said (AdhanService logs as NoonAdhan); the emulator here usually has no sound card.
+  report.adhanLog = adb('logcat -d -s NoonAdhan:* AndroidRuntime:E').split('\n').filter((l) => /NoonAdhan|AndroidRuntime/.test(l)).slice(-8);
+  console.log('adhan service running:', report.adhanServiceRunning, JSON.stringify(report.adhanLog));
   await gesture('window.noonNative && window.noonNative.adhanStop()'); await sleep(1500);
 }, 4000);
 await phase('Tools and my prayers', async () => {

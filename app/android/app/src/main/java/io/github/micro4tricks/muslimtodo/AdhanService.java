@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.util.Log;
 import androidx.core.app.NotificationCompat;
 
 /**
@@ -25,6 +26,7 @@ import androidx.core.app.NotificationCompat;
 public class AdhanService extends Service {
 
     private static final String CHANNEL = "adhan-player";
+    private static final String TAG = "NoonAdhan";
     private static final int NOTE_ID = 4242;
     private MediaPlayer player;
     private PowerManager.WakeLock wake;
@@ -51,6 +53,7 @@ public class AdhanService extends Service {
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         boolean silent = audio != null && audio.getRingerMode() != AudioManager.RINGER_MODE_NORMAL;
         int res = sound == null ? 0 : getResources().getIdentifier(sound, "raw", getPackageName());
+        Log.i(TAG, "start sound=" + sound + " res=" + res + " silent=" + silent + " silentOk=" + silentOk);
         if (res == 0 || (silent && !silentOk)) {
             // Keep the notice, drop the sound.
             stopForeground(STOP_FOREGROUND_DETACH);
@@ -76,10 +79,12 @@ public class AdhanService extends Service {
                 .build());
             player.setDataSource(this, Uri.parse("android.resource://" + getPackageName() + "/" + res));
             player.setOnCompletionListener(mp -> finish());
-            player.setOnErrorListener((mp, what, extra) -> { finish(); return true; });
+            player.setOnErrorListener((mp, what, extra) -> { Log.w(TAG, "player error " + what + "/" + extra); finish(); return true; });
             player.prepare();
             player.start();
+            Log.i(TAG, "playing, " + player.getDuration() + " ms");
         } catch (Exception e) {
+            Log.w(TAG, "could not play", e);
             finish();
         }
     }
