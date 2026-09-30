@@ -115,12 +115,19 @@ await phase('Adhan player: play, then stop', async () => {
   report.adhanCall = await js(`(async () => {
     try {
       const C = window.Capacitor;
-      const has = !!(C && C.registerPlugin), names = Object.keys((C && C.Plugins) || {}).join(',');
-      await C.registerPlugin('Adhan').test({ sound: 'adhan_azeez', title: 'test', body: 'test', stop: 'Stop' });
-      return 'ok; plugins: ' + names + '; registerPlugin: ' + has;
+      const A = C.Plugins.Adhan, W = C.Plugins.WidgetBridge;
+      if (!A || !W) return 'ERR plugins missing: Adhan ' + !!A + ', WidgetBridge ' + !!W;
+      await A.test({ sound: 'adhan_azeez', title: 'test', body: 'test', stop: 'Stop' });
+      return 'ok';
     } catch (e) { return 'ERR ' + (e && (e.code || '') + ' ' + e.message); }
   })()`);
   console.log('adhan call:', report.adhanCall);
+  // The widget's data and the booked adhan times, as the app saved them (debug builds allow run-as).
+  const prefs = (f) => { try { return adb(`shell run-as ${pkg} cat shared_prefs/${f}.xml`); } catch (e) { return ''; } };
+  const w = prefs('noon_widget'), a = prefs('noon_adhan');
+  report.widgetHasTimes = /&quot;at&quot;/.test(w);
+  report.adhanBooked = Number((a.match(/name="count" value="(\d+)"/) || [])[1] || 0);
+  console.log('widget has prayer times:', report.widgetHasTimes, '| adhan alarms booked:', report.adhanBooked);
   await sleep(3000);
   const services = adb(`shell dumpsys activity services ${pkg}`);
   report.adhanServiceRunning = /AdhanService/.test(services);

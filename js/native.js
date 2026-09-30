@@ -36,7 +36,10 @@
   })();
   // The adhan itself is played by the app's own player (AdhanService.java) through the
   // alarm volume, so a quiet notification sound can't swallow it.
-  const Adhan = C.registerPlugin ? C.registerPlugin('Adhan') : null;
+  // Plugins added by the app itself (MainActivity.registerPlugin) show up in Capacitor.Plugins,
+  // like the npm ones; Capacitor.registerPlugin only exists when @capacitor/core is bundled.
+  const plugin = (name) => (C.Plugins && C.Plugins[name]) || (C.registerPlugin ? C.registerPlugin(name) : null);
+  const Adhan = plugin('Adhan');
   // Tapping a reminder opens its card (or its section).
   quiet(LN.addListener('localNotificationActionPerformed', (a) => {
     const x = (a && a.notification && a.notification.extra) || {};
@@ -119,7 +122,7 @@
   }
 
   // ---- the home-screen widget (PrayerWidget.java): the next seven days of prayer times ----
-  const Widget = C.registerPlugin ? C.registerPlugin('WidgetBridge') : null;
+  const Widget = plugin('WidgetBridge');
   let widgetSig = '';
   function updateWidget() {
     const A = window.noonAstro;
