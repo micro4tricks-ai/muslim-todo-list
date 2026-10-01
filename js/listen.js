@@ -75,9 +75,9 @@
   const BUILT_IN = {
     tv: [
       { id: 'quran', ar: 'قناة القرآن الكريم — من المسجد الحرام', en: 'Quran TV — live from al-Masjid al-Haram',
-        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8'], youtube: { video: 'eC4LfEVxvKg' } },
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8'], youtube: { video: 'eC4LfEVxvKg' }, official: 'https://aloula.sba.sa/ar/live/quran' },
       { id: 'sunnah', ar: 'قناة السنة النبوية — من المسجد النبوي', en: 'Sunnah TV — live from the Prophet\'s Mosque',
-        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8'], youtube: { video: 'Rs7St51oDDc' } }
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8'], youtube: { video: 'Rs7St51oDDc' }, official: 'https://aloula.sba.sa/ar/live/sunna' }
     ],
     radios: []
   };
@@ -519,14 +519,22 @@
       const frame = el('div', 'tv-frame'); frame.append(video);
       const note = el('p', 'hint'); note.setAttribute('aria-live', 'polite');
       const chips = el('div', 'tv-chans');
-      let cur = null, hd = true;
+      // YouTube shows its own ads; the HLS link has none but lower quality. The choice is kept.
+      let cur = null, hd = !S.tvNoAds;
       const hasHd = (c) => !!(c.youtube && /^[\w-]{11}$/.test(c.youtube.video || ''));
-      const swap = button('link-btn tv-swap', '', () => { hd = !hd; play(); });
+      const swap = button('link-btn tv-swap', '', () => { hd = !hd; S.tvNoAds = !hd; save(); play(); });
       swap.hidden = true;
+      // The broadcaster's own platform: full quality and no ads, in the browser.
+      const official = el('a', 'link-btn tv-swap');
+      official.target = '_blank'; official.rel = 'noopener';
+      official.textContent = T('شاهد بجودة عالية وبدون إعلانات على منصة «الأولى» الرسمية');
+      official.hidden = true;
       const play = () => {
         const useHd = hd && hasHd(cur);
         swap.hidden = !hasHd(cur) || !cur.urls.length;
-        swap.textContent = T(useHd ? 'الصورة لا تظهر؟ جرّب الرابط البديل (جودة أقل)' : 'عودة إلى البث بجودة عالية');
+        swap.textContent = T(useHd ? 'بدون إعلانات (جودة أقل)' : 'جودة عالية (يوتيوب، قد تظهر إعلانات)');
+        official.hidden = !cur.official;
+        if (cur.official) official.href = I.isEn ? cur.official.replace('/ar/', '/en/') : cur.official;
         tvFail = useHd && cur.urls.length ? () => { tvFail = null; hd = false; play(); toast(T('البث عالي الجودة غير متاح الآن، فشُغّل الرابط البديل.')); } : null;
         if (useHd) playYoutube(cur, frame, video, note); else playHls(cur, video, note);
       };
@@ -540,7 +548,7 @@
         b.append(icon('play'), el('span', '', I.isEn ? c.en : c.ar), el('span', 'ls-badge', T('بث مباشر')));
         chips.append(b);
       });
-      box.append(chips, frame, note, swap, el('p', 'hint', T('البث الرسمي لقناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية) بجودة تصل إلى 1080p. للشاشة الكاملة استخدم زر التكبير في الفيديو.')));
+      box.append(chips, frame, note, swap, official, el('p', 'hint', T('البث الرسمي لقناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية) بجودة تصل إلى 1080p. للشاشة الكاملة استخدم زر التكبير في الفيديو.')));
       loadHls().catch(() => {}); // ready for the backup link
     });
   }

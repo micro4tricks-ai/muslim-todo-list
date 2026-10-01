@@ -12,7 +12,8 @@
       "youtube": {
         "handle": "SaudiQuranTv",
         "video": "eC4LfEVxvKg"
-      }
+      },
+      "official": "https://aloula.sba.sa/ar/live/quran"
     },
     {
       "id": "sunnah",
@@ -25,7 +26,8 @@
       "youtube": {
         "handle": "SaudiSunnahTv",
         "video": "Rs7St51oDDc"
-      }
+      },
+      "official": "https://aloula.sba.sa/ar/live/sunna"
     }
   ],
   "radios": [

@@ -815,6 +815,9 @@
     'إذا ظهر هذا الإشعار بصوت، فالتنبيهات تعمل.': 'If this arrived with a sound, notifications are working.',
     'سيصلك إشعار تجريبي بعد ٥ ثوانٍ.': 'A test notification will arrive in 5 seconds.',
     // v1.6: listen (mp3quran.net)
+    'بدون إعلانات (جودة أقل)': 'No ads (lower quality)',
+    'جودة عالية (يوتيوب، قد تظهر إعلانات)': 'High quality (YouTube, may show ads)',
+    'شاهد بجودة عالية وبدون إعلانات على منصة «الأولى» الرسمية': 'Watch in high quality without ads on the official Aloula platform',
     'البث عالي الجودة غير متاح الآن، فشُغّل الرابط البديل.': 'The high-quality broadcast isn’t available now, so the backup link is playing.',
     'الصورة لا تظهر؟ جرّب الرابط البديل (جودة أقل)': 'No picture? Try the backup link (lower quality)',
     'عودة إلى البث بجودة عالية': 'Back to the high-quality broadcast',
