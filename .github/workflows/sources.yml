@@ -1,6 +1,7 @@
-# Every day, checks the outside services the site and the app read from (radio, live TV,
-# recitations, tafsir, hadith, adhkar audio…). A dead link turns this red and GitHub sends an
-# email; live TV and extra station links are then fixed in live.json, with no app update.
+# Every day: picks up the official channels' current live video ids (tools/refresh_live.mjs)
+# and publishes live.json if one changed, then checks the outside services the site and the app
+# read from (radio, live TV, recitations, tafsir, hadith, adhkar audio…). A dead link turns this
+# red and GitHub sends an email; links are then fixed in live.json, with no app update.
 name: Sources check
 
 on:
@@ -9,7 +10,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
 
 jobs:
   check:
@@ -20,6 +22,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Refresh the live video ids
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node tools/refresh_live.mjs
+          if ! git diff --quiet live.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "live.json: the channels' current live videos" live.json
+            git push
+            # A push made with this token starts no workflow, so publish the site directly.
+            gh workflow run Website --ref main
+          fi
       - run: node tools/check_sources.mjs --json sources.json
       - if: always()
         uses: actions/upload-artifact@v4

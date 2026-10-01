@@ -75,9 +75,9 @@
   const BUILT_IN = {
     tv: [
       { id: 'quran', ar: 'قناة القرآن الكريم — من المسجد الحرام', en: 'Quran TV — live from al-Masjid al-Haram',
-        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8'] },
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8'], youtube: { video: 'eC4LfEVxvKg' } },
       { id: 'sunnah', ar: 'قناة السنة النبوية — من المسجد النبوي', en: 'Sunnah TV — live from the Prophet\'s Mosque',
-        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8'] }
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8'], youtube: { video: 'Rs7St51oDDc' } }
     ],
     radios: []
   };
@@ -425,9 +425,12 @@
     });
   }
 
-  // ---- live TV: the Quran channel (Makkah) and the Sunnah channel (Madinah), over HLS ----
-  // hls.js (js/vendor, Apache-2.0) plays HLS where the browser can't by itself; it loads on first use.
-  let hls = null, tvVideo = null;
+  // ---- live TV: the Quran channel (Makkah) and the Sunnah channel (Madinah) ----
+  // First choice: the channel's official live broadcast on YouTube (up to 1080p), shown through
+  // tv.html on the website, because YouTube's player asks for a real web address and the app's
+  // pages come from https://localhost. Backup: the lower-quality HLS links, played by hls.js
+  // (js/vendor, Apache-2.0) where the browser can't play HLS by itself.
+  let hls = null, tvVideo = null, tvFrame = null;
   function loadHls() {
     if (window.Hls) return Promise.resolve(window.Hls);
     return new Promise((ok, no) => {
@@ -440,6 +443,7 @@
   function stopTv() {
     if (hls) { hls.destroy(); hls = null; }
     if (tvVideo) { tvVideo.pause(); tvVideo.removeAttribute('src'); tvVideo.load(); }
+    if (tvFrame) { tvFrame.remove(); tvFrame = null; }
   }
   // A link counts when it answers with a playlist.
   async function answers(url) {
@@ -464,11 +468,27 @@
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = url; // Safari, iPhone
     else throw new Error('no HLS');
   }
-  async function playTv(ch, video, note) {
+  const tvStarted = () => window.dispatchEvent(new CustomEvent('noon-recitation', { detail: { from: 'listen-tv' } }));
+  function playYoutube(ch, frame, video, note) {
     stopTv();
+    video.hidden = true;
+    const f = el('iframe', 'tv-yt');
+    f.src = `${window.noonNative ? SITE : ''}tv.html?v=${encodeURIComponent(ch.youtube.video)}&hl=${I.isEn ? 'en' : 'ar'}`;
+    f.title = I.isEn ? ch.en : ch.ar;
+    f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'strict-origin-when-cross-origin';
+    tvFrame = f;
+    frame.append(f);
+    note.textContent = '';
+    tvStarted();
+  }
+  async function playHls(ch, video, note) {
+    stopTv();
+    video.hidden = false;
     tvVideo = video;
     note.textContent = T('جارٍ التحميل…');
-    window.dispatchEvent(new CustomEvent('noon-recitation', { detail: { from: 'listen-tv' } }));
+    tvStarted();
     for (const url of ch.urls) {
       if (tvVideo !== video || !(await answers(url))) continue;
       try {
@@ -484,7 +504,7 @@
     loading(box, async () => {
       const [cfg, fromApi] = await Promise.all([liveCfg(), api('live-tv', 'ar').catch(() => null)]);
       // Links mp3quran.net publishes are tried after ours, so their fixes count too.
-      const chans = cfg.tv.map((c) => Object.assign({}, c, { urls: c.urls.slice() }));
+      const chans = cfg.tv.map((c) => Object.assign({}, c, { urls: (c.urls || []).slice() }));
       ((fromApi && fromApi.livetv) || []).forEach((x) => {
         const c = chans.find((k) => k.id === (/سنة|sunnah/i.test(x.name) ? 'sunnah' : 'quran'));
         if (c && x.url && !c.urls.includes(x.url)) c.urls.push(x.url);
@@ -495,16 +515,28 @@
       const frame = el('div', 'tv-frame'); frame.append(video);
       const note = el('p', 'hint'); note.setAttribute('aria-live', 'polite');
       const chips = el('div', 'tv-chans');
+      let cur = null, hd = true;
+      const hasHd = (c) => !!(c.youtube && /^[\w-]{11}$/.test(c.youtube.video || ''));
+      const swap = button('link-btn tv-swap', '', () => { hd = !hd; play(); });
+      swap.hidden = true;
+      const play = () => {
+        const useHd = hd && hasHd(cur);
+        swap.hidden = !hasHd(cur) || !cur.urls.length;
+        swap.textContent = T(useHd ? 'الصورة لا تظهر؟ جرّب الرابط البديل (جودة أقل)' : 'عودة إلى البث بجودة عالية');
+        if (useHd) playYoutube(cur, frame, video, note); else playHls(cur, video, note);
+      };
       chans.forEach((c) => {
         const b = button('tv-chan', '', () => {
           chips.querySelectorAll('.tv-chan').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-          playTv(c, video, note);
+          cur = c;
+          play();
         });
         b.setAttribute('aria-pressed', 'false');
         b.append(icon('play'), el('span', '', I.isEn ? c.en : c.ar), el('span', 'ls-badge', T('بث مباشر')));
         chips.append(b);
       });
-      box.append(chips, frame, note, el('p', 'hint', T('البث من قناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية). للشاشة الكاملة استخدم زر التكبير في الفيديو.')));
+      box.append(chips, frame, note, swap, el('p', 'hint', T('البث الرسمي لقناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية) بجودة تصل إلى 1080p. للشاشة الكاملة استخدم زر التكبير في الفيديو.')));
+      loadHls().catch(() => {}); // ready for the backup link
     });
   }
 

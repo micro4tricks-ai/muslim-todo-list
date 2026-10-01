@@ -2,8 +2,10 @@ package io.github.micro4tricks.muslimtodo;
 
 import android.os.Bundle;
 import android.webkit.RenderProcessGoneDetail;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
 import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
@@ -23,6 +25,16 @@ public class MainActivity extends BridgeActivity {
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 recreate();
                 return true;
+            }
+        });
+        // Capacitor sends every link outside the app to the browser, frames included. The live
+        // broadcast (YouTube inside the website's tv.html) is a frame, so frames load in place;
+        // links on the page itself still open outside.
+        bridge.setWebViewClient(new BridgeWebViewClient(bridge) {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                if (!request.isForMainFrame()) return false;
+                return super.shouldOverrideUrlLoading(view, request);
             }
         });
     }

@@ -118,13 +118,21 @@ await phase('Listen: radio list, play a station', async () => {
   report.listen.player = await js("document.querySelector('.lp').dataset.state");
   console.log('listen:', JSON.stringify(report.listen));
   await gesture('window.noonListen.stop()');
-  // Live TV over HLS inside the WebView: the picture must move.
+  // Live TV: the official YouTube broadcast must open inside the app (in tv.html from the website),
+  // not in the browser; then the HLS backup link must play in the WebView itself.
   await gesture("[...document.querySelectorAll('#view-listen .ls-tabs .chip')][1].click()"); await sleep(3000);
   await gesture("document.querySelector('#view-listen .tv-chan').click()"); await sleep(15000);
+  const top = adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '';
+  let frames = [];
+  try { frames = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).filter((t) => /youtube|tv\.html/.test(t.url)).map((t) => `${t.type} ${t.url.slice(0, 80)}`); } catch { /* none */ }
+  report.liveTvHd = { iframe: await js("(document.querySelector('#view-listen .tv-yt') || {}).src || 'none'"), appInFront: top.includes(pkg), frames };
+  console.log('live TV (YouTube):', JSON.stringify(report.liveTvHd));
+  if (!top.includes(pkg)) { adb(`shell am start -n ${pkg}/.MainActivity`); await sleep(3000); }
+  await gesture("document.querySelector('#view-listen .tv-swap').click()"); await sleep(15000);
   report.liveTv = await js(`(() => { const v = document.querySelector('#view-listen video');
     return v ? { time: Math.round(v.currentTime), width: v.videoWidth, paused: v.paused, error: v.error && v.error.code,
       note: document.querySelector('#view-listen .tv-frame + .hint').textContent } : 'no video'; })()`);
-  console.log('live TV:', JSON.stringify(report.liveTv));
+  console.log('live TV (HLS backup):', JSON.stringify(report.liveTv));
   await gesture("window.noonUI.go('tasks')");
 }, 4000);
 // The native adhan player: it must start (a foreground service), play, and stop cleanly.

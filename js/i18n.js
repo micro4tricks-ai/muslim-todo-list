@@ -815,6 +815,9 @@
     'إذا ظهر هذا الإشعار بصوت، فالتنبيهات تعمل.': 'If this arrived with a sound, notifications are working.',
     'سيصلك إشعار تجريبي بعد ٥ ثوانٍ.': 'A test notification will arrive in 5 seconds.',
     // v1.6: listen (mp3quran.net)
+    'الصورة لا تظهر؟ جرّب الرابط البديل (جودة أقل)': 'No picture? Try the backup link (lower quality)',
+    'عودة إلى البث بجودة عالية': 'Back to the high-quality broadcast',
+    'البث الرسمي لقناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية) بجودة تصل إلى 1080p. للشاشة الكاملة استخدم زر التكبير في الفيديو.': 'The official broadcast of the Quran and Sunnah channels (Saudi Broadcasting Authority), up to 1080p. For full screen, use the video’s full-screen button.',
     'البث المباشر': 'Live TV',
     'اضغط على زر التشغيل في الفيديو.': 'Press play on the video.',
     'تعذّر تشغيل البث الآن. قد يكون متوقفاً مؤقتاً أو الاتصال ضعيف؛ جرّب بعد قليل.': 'Couldn’t play the live broadcast now. It may be off for a while or the connection is weak; try again shortly.',

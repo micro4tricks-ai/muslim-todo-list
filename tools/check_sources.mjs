@@ -31,8 +31,16 @@ const audio = async (url) => (await get(url, { range: true })).ok;
 const firstOk = async (urls, test) => { for (const u of urls) if (await test(u)) return u; return null; };
 
 // ---- live TV and extra stations (live.json) ----
+for (const ch of live.tv.filter((c) => c.youtube)) {
+  await check(`TV (YouTube, HD): ${ch.en}`, 'Listen › Live TV', 'the HLS links below (lower quality)', async () => {
+    const r = await get(`https://www.youtube.com/watch?v=${ch.youtube.video}`, { text: true });
+    const html = String(r.body || '');
+    const live = /"isLiveNow":true|"isLiveContent":true/.test(html), embed = /"playableInEmbed":true/.test(html);
+    return { ok: r.ok && live && embed, note: `${ch.youtube.video}: ${live ? 'live' : 'not live'}, ${embed ? 'embeddable' : 'not embeddable'}` };
+  });
+}
 for (const ch of live.tv) {
-  await check(`TV: ${ch.en}`, 'Listen › Live TV', 'the next link in live.json, then mp3quran.net', async () => {
+  await check(`TV (HLS backup): ${ch.en}`, 'Listen › Live TV', 'the next link in live.json, then mp3quran.net', async () => {
     const u = await firstOk(ch.urls, playlist);
     return { ok: !!u, note: u ? `plays from ${new URL(u).host}` : 'no link answers' };
   });

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>البث المباشر</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  iframe { display: block; width: 100%; height: 100%; border: 0; }
+</style>
+</head>
+<body>
+<script>
+  // The live broadcast of the official YouTube channels, shown inside the app and the site
+  // (js/listen.js). Served from the website so YouTube sees a real web address, which its
+  // player asks for; the app's own pages come from https://localhost.
+  // ?c=<channel id> plays that channel's current live stream; ?v=<video id> a given one.
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var c = p.get('c') || '', v = p.get('v') || '';
+    var base = 'https://www.youtube.com/embed/';
+    var opts = 'autoplay=1&playsinline=1&rel=0&modestbranding=1&hl=' + (p.get('hl') === 'en' ? 'en' : 'ar');
+    var src = /^[\w-]{11}$/.test(v) ? base + v + '?' + opts
+      : /^UC[\w-]{22}$/.test(c) ? base + 'live_stream?channel=' + c + '&' + opts : '';
+    if (!src) return;
+    var f = document.createElement('iframe');
+    f.src = src;
+    f.title = document.title;
+    f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'strict-origin-when-cross-origin';
+    document.body.appendChild(f);
+  })();
+</script>
+</body>
+</html>

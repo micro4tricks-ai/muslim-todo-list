@@ -1,5 +1,5 @@
 {
-  "about": "Live links read by js/listen.js on every visit. Fix a dead link here and every copy of the site and the app picks it up without an update. Checked daily by .github/workflows/sources.yml.",
+  "about": "Live links read by js/listen.js on every visit. Fix a dead link here and every copy of the site and the app picks it up without an update. tv[].youtube.video is the official channel's live video, refreshed daily by tools/refresh_live.mjs; tv[].urls are the lower-quality HLS fallback. Checked daily by .github/workflows/sources.yml.",
   "tv": [
     {
       "id": "quran",
@@ -8,7 +8,11 @@
       "urls": [
         "https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8",
         "https://win.holol.com/live/quran/playlist.m3u8"
-      ]
+      ],
+      "youtube": {
+        "handle": "SaudiQuranTv",
+        "video": "eC4LfEVxvKg"
+      }
     },
     {
       "id": "sunnah",
@@ -17,7 +21,11 @@
       "urls": [
         "https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8",
         "https://win.holol.com/live/sunnah/playlist.m3u8"
-      ]
+      ],
+      "youtube": {
+        "handle": "SaudiSunnahTv",
+        "video": "Rs7St51oDDc"
+      }
     }
   ],
   "radios": [
@@ -25,7 +33,10 @@
       "id": 900001,
       "ar": "إذاعة القرآن الكريم من القاهرة",
       "en": "Holy Quran Radio from Cairo",
-      "urls": ["https://stream.radiojar.com/8s5u5tpdtwzuv", "https://n04.radiojar.com/8s5u5tpdtwzuv"]
+      "urls": [
+        "https://stream.radiojar.com/8s5u5tpdtwzuv",
+        "https://n04.radiojar.com/8s5u5tpdtwzuv"
+      ]
     }
   ]
 }
