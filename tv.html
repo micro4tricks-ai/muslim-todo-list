@@ -7,30 +7,40 @@
 <title>البث المباشر</title>
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-  iframe { display: block; width: 100%; height: 100%; border: 0; }
+  #player, iframe { display: block; width: 100%; height: 100%; border: 0; }
 </style>
 </head>
 <body>
+<div id="player"></div>
 <script>
   // The live broadcast of the official YouTube channels, shown inside the app and the site
   // (js/listen.js). Served from the website so YouTube sees a real web address, which its
   // player asks for; the app's own pages come from https://localhost.
-  // ?c=<channel id> plays that channel's current live stream; ?v=<video id> a given one.
+  // ?v=<video id>. When the video can't play or the broadcast ends, the page that holds this
+  // one is told ({ noonTv: 'error' }) and switches to its backup link.
   (function () {
     var p = new URLSearchParams(location.search);
-    var c = p.get('c') || '', v = p.get('v') || '';
-    var base = 'https://www.youtube.com/embed/';
-    var opts = 'autoplay=1&playsinline=1&rel=0&modestbranding=1&hl=' + (p.get('hl') === 'en' ? 'en' : 'ar');
-    var src = /^[\w-]{11}$/.test(v) ? base + v + '?' + opts
-      : /^UC[\w-]{22}$/.test(c) ? base + 'live_stream?channel=' + c + '&' + opts : '';
-    if (!src) return;
-    var f = document.createElement('iframe');
-    f.src = src;
-    f.title = document.title;
-    f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
-    f.allowFullscreen = true;
-    f.referrerPolicy = 'strict-origin-when-cross-origin';
-    document.body.appendChild(f);
+    var v = p.get('v') || '';
+    var tell = function (what) { try { parent.postMessage({ noonTv: what }, '*'); } catch (e) {} };
+    if (!/^[\w-]{11}$/.test(v)) { tell('error'); return; }
+    window.onYouTubeIframeAPIReady = function () {
+      new YT.Player('player', {
+        videoId: v,
+        host: 'https://www.youtube.com',
+        playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, hl: p.get('hl') === 'en' ? 'en' : 'ar' },
+        events: {
+          onReady: function (e) { e.target.playVideo(); tell('ready'); },
+          onStateChange: function (e) { if (e.data === 1) tell('playing'); if (e.data === 0) tell('error'); },
+          onError: function () { tell('error'); }
+        }
+      });
+    };
+    var s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api';
+    s.onerror = function () { tell('error'); };
+    document.head.appendChild(s);
+    // No player at all after a while (YouTube blocked on this network).
+    setTimeout(function () { if (!window.YT || !window.YT.Player) tell('error'); }, 15000);
   })();
 </script>
 </body>

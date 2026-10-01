@@ -430,7 +430,11 @@
   // tv.html on the website, because YouTube's player asks for a real web address and the app's
   // pages come from https://localhost. Backup: the lower-quality HLS links, played by hls.js
   // (js/vendor, Apache-2.0) where the browser can't play HLS by itself.
-  let hls = null, tvVideo = null, tvFrame = null;
+  let hls = null, tvVideo = null, tvFrame = null, tvFail = null;
+  // tv.html says when YouTube can't play (removed, ended, blocked on this network).
+  window.addEventListener('message', (ev) => {
+    if (tvFrame && ev.source === tvFrame.contentWindow && ev.data && ev.data.noonTv === 'error' && tvFail) tvFail();
+  });
   function loadHls() {
     if (window.Hls) return Promise.resolve(window.Hls);
     return new Promise((ok, no) => {
@@ -523,6 +527,7 @@
         const useHd = hd && hasHd(cur);
         swap.hidden = !hasHd(cur) || !cur.urls.length;
         swap.textContent = T(useHd ? 'الصورة لا تظهر؟ جرّب الرابط البديل (جودة أقل)' : 'عودة إلى البث بجودة عالية');
+        tvFail = useHd && cur.urls.length ? () => { tvFail = null; hd = false; play(); toast(T('البث عالي الجودة غير متاح الآن، فشُغّل الرابط البديل.')); } : null;
         if (useHd) playYoutube(cur, frame, video, note); else playHls(cur, video, note);
       };
       chans.forEach((c) => {

@@ -33,10 +33,13 @@ const firstOk = async (urls, test) => { for (const u of urls) if (await test(u))
 // ---- live TV and extra stations (live.json) ----
 for (const ch of live.tv.filter((c) => c.youtube)) {
   await check(`TV (YouTube, HD): ${ch.en}`, 'Listen › Live TV', 'the HLS links below (lower quality)', async () => {
-    const r = await get(`https://www.youtube.com/watch?v=${ch.youtube.video}`, { text: true });
-    const html = String(r.body || '');
-    const live = /"isLiveNow":true|"isLiveContent":true/.test(html), embed = /"playableInEmbed":true/.test(html);
-    return { ok: r.ok && live && embed, note: `${ch.youtube.video}: ${live ? 'live' : 'not live'}, ${embed ? 'embeddable' : 'not embeddable'}` };
+    // oEmbed answers from any server: 200 = the video exists and may be embedded.
+    const o = await get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ch.youtube.video}&format=json`);
+    if (!o.ok) return { ok: false, note: `${ch.youtube.video}: oEmbed ${o.status} (removed or not embeddable)` };
+    // Whether it is live shows on the watch page, which YouTube hides from some servers behind a bot check.
+    const html = String((await get(`https://www.youtube.com/watch?v=${ch.youtube.video}`, { text: true })).body || '');
+    const state = !/"videoDetails"/.test(html) ? 'live state not readable from this server' : /"isLiveNow":true|"isLiveContent":true/.test(html) ? 'live' : 'NOT live';
+    return { ok: state !== 'NOT live', note: `${ch.youtube.video}: embeddable, ${state}` };
   });
 }
 for (const ch of live.tv) {

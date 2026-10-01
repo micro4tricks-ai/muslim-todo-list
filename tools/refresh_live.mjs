@@ -18,7 +18,7 @@ for (const ch of live.tv) {
     const html = await r.text();
     const id = (html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/) || [])[1];
     const isLive = /"isLiveNow":true|"isLiveContent":true/.test(html);
-    if (!id || !isLive) { console.log(`${ch.id}: no live video found on @${yt.handle}; kept ${yt.video}`); continue; }
+    if (!id || !isLive) { console.log(`${ch.id}: no live video found on @${yt.handle} (YouTube hides it from some servers); kept ${yt.video}`); continue; }
     if (id !== yt.video) { console.log(`${ch.id}: ${yt.video} -> ${id}`); yt.video = id; changed = true; }
     else console.log(`${ch.id}: still ${id}`);
   } catch (e) {
