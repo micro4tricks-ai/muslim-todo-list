@@ -121,11 +121,12 @@ await phase('Listen: radio list, play a station', async () => {
   // Live TV: the official YouTube broadcast must open inside the app (in tv.html from the website),
   // not in the browser; then the HLS backup link must play in the WebView itself.
   await gesture("[...document.querySelectorAll('#view-listen .ls-tabs .chip')][1].click()"); await sleep(3000);
+  await js("window.__tv = []; addEventListener('message', (e) => { if (e.data && e.data.noonTv) __tv.push(e.data.noonTv + (e.data.code !== undefined ? ':' + e.data.code : '')); }); true");
   await gesture("document.querySelector('#view-listen .tv-chan').click()"); await sleep(15000);
   const top = adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '';
   let frames = [];
   try { frames = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).filter((t) => /youtube|tv\.html/.test(t.url)).map((t) => `${t.type} ${t.url.slice(0, 80)}`); } catch { /* none */ }
-  report.liveTvHd = { iframe: await js("(document.querySelector('#view-listen .tv-yt') || {}).src || 'none'"), appInFront: top.includes(pkg), frames };
+  report.liveTvHd = { iframe: await js("(document.querySelector('#view-listen .tv-yt') || {}).src || 'none'"), appInFront: top.includes(pkg), frames, said: await js('window.__tv') };
   console.log('live TV (YouTube):', JSON.stringify(report.liveTvHd));
   if (!top.includes(pkg)) { adb(`shell am start -n ${pkg}/.MainActivity`); await sleep(3000); }
   await gesture("document.querySelector('#view-listen .tv-swap').click()"); await sleep(15000);

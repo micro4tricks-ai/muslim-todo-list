@@ -38,7 +38,9 @@ for (const ch of live.tv.filter((c) => c.youtube)) {
     if (!o.ok) return { ok: false, note: `${ch.youtube.video}: oEmbed ${o.status} (removed or not embeddable)` };
     // Whether it is live shows on the watch page, which YouTube hides from some servers behind a bot check.
     const html = String((await get(`https://www.youtube.com/watch?v=${ch.youtube.video}`, { text: true })).body || '');
-    const state = !/"videoDetails"/.test(html) ? 'live state not readable from this server' : /"isLiveNow":true|"isLiveContent":true/.test(html) ? 'live' : 'NOT live';
+    const status = (html.match(/"playabilityStatus":\{"status":"(\w+)"/) || [])[1] || '';
+    const state = status !== 'OK' ? `live state not readable from this server (${status || 'no player data'})`
+      : /"isLiveNow":true|"isLiveContent":true/.test(html) ? 'live' : 'NOT live';
     return { ok: state !== 'NOT live', note: `${ch.youtube.video}: embeddable, ${state}` };
   });
 }

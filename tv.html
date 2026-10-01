@@ -21,7 +21,7 @@
   (function () {
     var p = new URLSearchParams(location.search);
     var v = p.get('v') || '';
-    var tell = function (what) { try { parent.postMessage({ noonTv: what }, '*'); } catch (e) {} };
+    var tell = function (what, code) { try { parent.postMessage({ noonTv: what, code: code }, '*'); } catch (e) {} };
     if (!/^[\w-]{11}$/.test(v)) { tell('error'); return; }
     window.onYouTubeIframeAPIReady = function () {
       new YT.Player('player', {
@@ -30,17 +30,17 @@
         playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, hl: p.get('hl') === 'en' ? 'en' : 'ar' },
         events: {
           onReady: function (e) { e.target.playVideo(); tell('ready'); },
-          onStateChange: function (e) { if (e.data === 1) tell('playing'); if (e.data === 0) tell('error'); },
-          onError: function () { tell('error'); }
+          onStateChange: function (e) { if (e.data === 1) tell('playing'); if (e.data === 0) tell('error', 'ended'); },
+          onError: function (e) { tell('error', e.data); }
         }
       });
     };
     var s = document.createElement('script');
     s.src = 'https://www.youtube.com/iframe_api';
-    s.onerror = function () { tell('error'); };
+    s.onerror = function () { tell('error', 'no api'); };
     document.head.appendChild(s);
     // No player at all after a while (YouTube blocked on this network).
-    setTimeout(function () { if (!window.YT || !window.YT.Player) tell('error'); }, 15000);
+    setTimeout(function () { if (!window.YT || !window.YT.Player) tell('error', 'timeout'); }, 15000);
   })();
 </script>
 </body>
