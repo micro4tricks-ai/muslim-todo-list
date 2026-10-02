@@ -325,5 +325,7 @@
     renderUI(T('سجّلت الخروج. مهامك باقية على هذا الجهاز.'));
   });
 
+  // For the group khatma (js/khatma.js): the same client and the signed-in account.
+  window.noonSync = { client: () => client, user: () => user };
   renderUI();
 })();

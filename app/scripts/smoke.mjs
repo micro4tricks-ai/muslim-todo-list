@@ -43,10 +43,10 @@ const m0 = await metric(); await sleep(5000);
 report.busyWhileIdlePercent = Math.round((await metric() - m0) / 5 * 100);
 // The welcome steps open by themselves on the first launch; go through them like a new user.
 report.welcome = await js(`(async () => {
-  const st = document.querySelector('.st');
+  const st = document.getElementById('settingsScreen');
   if (!st || st.hidden || !st.classList.contains('is-wizard')) return 'not shown';
   const seen = [];
-  for (let k = 0; k < 8 && !st.hidden; k++) { seen.push(st.dataset.page); document.querySelector('.st-next').click(); await new Promise((r) => setTimeout(r, 700)); }
+  for (let k = 0; k < 8 && !st.hidden; k++) { seen.push(st.dataset.page); document.querySelector('#settingsScreen .st-next').click(); await new Promise((r) => setTimeout(r, 700)); }
   return seen.join(' > ') + (st.hidden ? ' > done' : ' > STUCK');
 })()`);
 console.log('welcome:', report.welcome);
@@ -173,19 +173,19 @@ await phase('Listen: the Quran radios on the native player', async () => {
 await phase('Settings: every page, a font, the back key', async () => {
   await gesture("document.getElementById('quickSettings').click()"); await sleep(1500);
   report.settings = { pages: {} };
-  const ids = await js("[...document.querySelectorAll('.st-row[data-page]')].map((r) => r.dataset.page)");
+  const ids = await js("[...document.querySelectorAll('#settingsScreen .st-row[data-page]')].map((r) => r.dataset.page)");
   for (const id of ids || []) {
-    await gesture(`document.querySelector('.st-row[data-page="${id}"]').click()`); await sleep(1200);
-    report.settings.pages[id] = await js("document.querySelector('.st-title').textContent + ' | ' + Math.round(document.querySelector('.st-body').scrollHeight) + 'px'");
+    await gesture(`document.querySelector('#settingsScreen .st-row[data-page="${id}"]').click()`); await sleep(1200);
+    report.settings.pages[id] = await js("document.querySelector('#settingsScreen .st-title').textContent + ' | ' + Math.round(document.querySelector('#settingsScreen .st-body').scrollHeight) + 'px'");
     adb('shell input keyevent BACK'); await sleep(1200);
   }
-  await gesture("document.querySelector('.st-row[data-page=\"fonts\"]').click()"); await sleep(1200);
-  await gesture("[...document.querySelectorAll('.st-choice')][1].click()"); await sleep(2500);
+  await gesture("document.querySelector('#settingsScreen .st-row[data-page=\"fonts\"]').click()"); await sleep(1200);
+  await gesture("[...document.querySelectorAll('#settingsScreen .st-choice')][1].click()"); await sleep(2500);
   report.settings.font = await js("getComputedStyle(document.body).fontFamily + ' | loaded: ' + [...document.fonts].some((f) => f.family === 'Cairo' && f.status === 'loaded')");
-  await gesture("[...document.querySelectorAll('.st-choice')][0].click()"); await sleep(800);
+  await gesture("[...document.querySelectorAll('#settingsScreen .st-choice')][0].click()"); await sleep(800);
   adb('shell input keyevent BACK'); await sleep(1000);
   adb('shell input keyevent BACK'); await sleep(1500);
-  report.settings.closedByBack = await js("document.querySelector('.st').hidden");
+  report.settings.closedByBack = await js("document.getElementById('settingsScreen').hidden");
   report.settings.appStillOpen = alive() && (adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '').includes(pkg);
   // Reliability: what the phone allows, as the adhan page shows it.
   report.settings.device = await js("(async () => { try { return await Capacitor.Plugins.Device.status(); } catch (e) { return 'ERR ' + e.message; } })()");
@@ -224,6 +224,7 @@ await phase('Adhan player: play, then stop', async () => {
   const w = prefs('noon_widget'), a = prefs('noon_adhan');
   report.widgetHasTimes = /&quot;at&quot;/.test(w);
   report.verseWidget = /name="verse"/.test(w);
+  report.autoCatalog = /folders/.test(prefs('noon_auto'));
   report.adhanBooked = Number((a.match(/name="count" value="(\d+)"/) || [])[1] || 0);
   console.log('widget has prayer times:', report.widgetHasTimes, '| adhan alarms booked:', report.adhanBooked);
   await sleep(3000);
@@ -239,6 +240,9 @@ await phase('Tools and my prayers', async () => {
   await gesture("window.noonUI.go('habits')"); await sleep(800);
 }, 4000);
 await phase('play mix: rain + fire', async () => { await js('scrollTo(0, 0); true'); await gesture(`document.getElementById('dockToggle').click(); document.querySelector('.preset').click()`); }, 30000);
+// The app doesn't carry the focus sounds: the ones just played came from the website and are kept.
+report.soundsKept = await js("(async () => { try { const b = await caches.open('sounds-v1'); return (await b.keys()).length; } catch (e) { return 'ERR ' + e.message; } })()");
+console.log('focus sounds kept on the phone:', report.soundsKept);
 await phase('play mix: 3 sounds', async () => { await gesture(`document.querySelectorAll('.preset')[2].click()`); }, 30000);
 await phase('focus mode with sound', async () => { await gesture(`window.noonFocusMode.open()`); }, 15000);
 await phase('close focus mode, stop sound', async () => { await gesture(`window.noonFocusMode.close(); document.getElementById('sndPlay').click()`); }, 8000);
@@ -279,7 +283,9 @@ if (report.adhanCall !== 'ok') problems.push(`adhan: ${report.adhanCall}`);
 if (!report.settings || !report.settings.device || typeof report.settings.device !== 'object') problems.push(`device status: ${report.settings && report.settings.device}`);
 if (!report.settings || report.settings.offset !== 1) problems.push(`a minute added to Fajr moved it by ${report.settings && report.settings.offset}`);
 if (!report.widgetHasTimes) problems.push('the widget has no prayer times');
+if (!(report.soundsKept > 0)) problems.push(`focus sounds were not downloaded and kept: ${report.soundsKept}`);
 if (!report.verseWidget) problems.push('the verse widget got no verse');
+if (!report.autoCatalog) problems.push('Android Auto got no station list');
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 report.problems = problems;
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));

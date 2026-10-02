@@ -29,6 +29,7 @@
 
   // ---- the screen ----
   const root = el('div', 'st');
+  root.id = 'settingsScreen';
   root.hidden = true;
   root.dir = I.isEn ? 'ltr' : 'rtl';
   root.lang = I.isEn ? 'en' : 'ar';

@@ -18,11 +18,19 @@ import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import android.content.Context;
+import android.content.SharedPreferences;
 import androidx.media3.session.DefaultMediaNotificationProvider;
+import androidx.media3.session.LibraryResult;
+import androidx.media3.session.MediaLibraryService;
 import androidx.media3.session.MediaSession;
-import androidx.media3.session.MediaSessionService;
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * The app's audio player for the Listen tab (radio, whole surahs, audio tafsir): Media3 ExoPlayer
@@ -30,9 +38,12 @@ import java.util.List;
  * and lock-screen controls, gives way to calls and to the adhan (audio focus), and follows the
  * stations' redirects between https and http. Each item may carry several links; when one fails
  * the next is tried. The page drives it through PlayerPlugin and hears back through {@link #listener}.
+ * It is also a media library, so Android Auto and other media browsers can list and play the
+ * stations the page handed over (PlayerPlugin.catalog): the live ones, the favourites, and the
+ * last thing listened to.
  */
 @OptIn(markerClass = UnstableApi.class)
-public class PlayerService extends MediaSessionService {
+public class PlayerService extends MediaLibraryService {
 
     private static final String TAG = "NoonPlayer";
 
@@ -52,7 +63,8 @@ public class PlayerService extends MediaSessionService {
     static volatile PlayerService instance;
 
     private ExoPlayer player;
-    private MediaSession session;
+    private MediaLibrarySession session;
+    static final String CATALOG_PREFS = "noon_auto", CATALOG_KEY = "catalog";
     private final List<Item> items = new ArrayList<>();
     private final Handler main = new Handler(Looper.getMainLooper());
     private String lastError = null;
@@ -96,7 +108,7 @@ public class PlayerService extends MediaSessionService {
                 if (!tryNextLink()) { lastError = e.getErrorCodeName(); emit(); }
             }
         });
-        session = new MediaSession.Builder(this, player).setSessionActivity(AdhanAlarms.openApp(this)).build();
+        session = new MediaLibrarySession.Builder(this, player, new Library()).setSessionActivity(AdhanAlarms.openApp(this)).build();
         DefaultMediaNotificationProvider notes = new DefaultMediaNotificationProvider.Builder(this).build();
         notes.setSmallIcon(R.drawable.ic_stat_notify);
         setMediaNotificationProvider(notes);
@@ -105,7 +117,97 @@ public class PlayerService extends MediaSessionService {
     }
 
     @Override
-    public MediaSession onGetSession(@NonNull MediaSession.ControllerInfo controller) { return session; }
+    public MediaLibrarySession onGetSession(@NonNull MediaSession.ControllerInfo controller) { return session; }
+
+    // ---- the media library (Android Auto) ----
+
+    /** The page's list: { folders: [{ id, title, items: [{ key, title, sub, urls: [], live }] }] }. */
+    private JSONObject catalog() {
+        SharedPreferences p = getSharedPreferences(CATALOG_PREFS, Context.MODE_PRIVATE);
+        try { return new JSONObject(p.getString(CATALOG_KEY, "{}")); } catch (Exception e) { return new JSONObject(); }
+    }
+
+    private static MediaItem folder(String id, String title) {
+        return new MediaItem.Builder().setMediaId(id).setMediaMetadata(new MediaMetadata.Builder()
+            .setTitle(title).setIsBrowsable(true).setIsPlayable(false)
+            .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_RADIO_STATIONS).build()).build();
+    }
+
+    private static Item itemOf(JSONObject o) {
+        JSONArray u = o.optJSONArray("urls");
+        if (u == null || u.length() == 0) return null;
+        String[] urls = new String[u.length()];
+        for (int k = 0; k < u.length(); k++) urls[k] = u.optString(k);
+        return new Item(o.optString("key"), o.optString("title"), o.optString("sub"), urls, o.optBoolean("live"));
+    }
+
+    /** Every playable item in the catalog with this id, wherever it is listed. */
+    private Item find(String key) {
+        JSONArray folders = catalog().optJSONArray("folders");
+        if (folders == null) return null;
+        for (int f = 0; f < folders.length(); f++) {
+            JSONArray items = folders.optJSONObject(f).optJSONArray("items");
+            if (items == null) continue;
+            for (int i = 0; i < items.length(); i++) {
+                JSONObject o = items.optJSONObject(i);
+                if (o != null && key.equals(o.optString("key"))) return itemOf(o);
+            }
+        }
+        return null;
+    }
+
+    private final class Library implements MediaLibrarySession.Callback {
+        @Override
+        public ListenableFuture<LibraryResult<MediaItem>> onGetLibraryRoot(@NonNull MediaLibrarySession s, @NonNull MediaSession.ControllerInfo browser, LibraryParams params) {
+            return Futures.immediateFuture(LibraryResult.ofItem(folder("root", "Muslim To-Do"), params));
+        }
+
+        @Override
+        public ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> onGetChildren(@NonNull MediaLibrarySession s, @NonNull MediaSession.ControllerInfo browser,
+                @NonNull String parentId, int page, int pageSize, LibraryParams params) {
+            ImmutableList.Builder<MediaItem> out = ImmutableList.builder();
+            JSONArray folders = catalog().optJSONArray("folders");
+            if (folders != null) {
+                for (int f = 0; f < folders.length(); f++) {
+                    JSONObject fo = folders.optJSONObject(f);
+                    if (fo == null) continue;
+                    if ("root".equals(parentId)) { out.add(folder("f:" + fo.optString("id"), fo.optString("title"))); continue; }
+                    if (!parentId.equals("f:" + fo.optString("id"))) continue;
+                    JSONArray items = fo.optJSONArray("items");
+                    for (int i = 0; items != null && i < items.length(); i++) {
+                        Item it = itemOf(items.optJSONObject(i));
+                        if (it != null) out.add(mediaItem(it, 0));
+                    }
+                }
+            }
+            return Futures.immediateFuture(LibraryResult.ofItemList(out.build(), params));
+        }
+
+        @Override
+        public ListenableFuture<LibraryResult<MediaItem>> onGetItem(@NonNull MediaLibrarySession s, @NonNull MediaSession.ControllerInfo browser, @NonNull String mediaId) {
+            Item it = find(mediaId);
+            return Futures.immediateFuture(it == null ? LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE) : LibraryResult.ofItem(mediaItem(it, 0), null));
+        }
+
+        // A browser asked to play items by id: they become the queue, with their backup links.
+        @Override
+        public ListenableFuture<MediaSession.MediaItemsWithStartPosition> onSetMediaItems(@NonNull MediaSession s, @NonNull MediaSession.ControllerInfo controller,
+                @NonNull List<MediaItem> mediaItems, int startIndex, long startPositionMs) {
+            List<Item> found = new ArrayList<>();
+            List<MediaItem> media = new ArrayList<>();
+            for (MediaItem m : mediaItems) {
+                Item it = find(m.mediaId);
+                if (it == null) continue;
+                found.add(it);
+                media.add(mediaItem(it, 0));
+            }
+            items.clear();
+            items.addAll(found);
+            lastError = null;
+            liveStopped = false;
+            return Futures.immediateFuture(new MediaSession.MediaItemsWithStartPosition(media, Math.max(0, Math.min(startIndex, Math.max(0, media.size() - 1))), startPositionMs));
+        }
+    }
 
     /** Swiped away from recent apps: stop unless something is playing. */
     @Override

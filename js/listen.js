@@ -339,6 +339,23 @@
     toast(next ? `${T('سيتوقف الاستماع بعد')} ${I.num(next)} ${T('دقيقة')}` : T('أُلغي مؤقت النوم'));
   }
 
+  // ---- what Android Auto lists (PlayerService's media library): live stations, favourites, the rest ----
+  async function sendCatalog() {
+    if (!NP || !NP.catalog) return;
+    try {
+      const all = await radios();
+      const it = (r) => ({ key: `r${r.id}`, title: r.name, sub: r.note || T('بث مباشر'), urls: r.urls, live: true });
+      const folders = [
+        { id: 'live', title: T('بث مباشر'), items: all.filter((r) => r.kind === 'live').map(it) },
+        { id: 'fav', title: T('المفضلة'), items: all.filter((r) => S.fav.includes(r.id)).map(it) },
+        { id: 'reciters', title: T('القرّاء'), items: all.filter((r) => r.kind === 'reciters').slice(0, 80).map(it) },
+        { id: 'mixed', title: T('منوعة وأذكار'), items: all.filter((r) => r.kind === 'mixed' || r.kind === 'topics').map(it) }
+      ].filter((f) => f.items.length);
+      await NP.catalog({ data: JSON.stringify({ folders }) });
+    } catch (_) { /* offline: next time */ }
+  }
+  if (NP) setTimeout(sendCatalog, 4000);
+
   // ---- queues ----
   function playRadio(list, i) {
     start(list.map((r) => ({ key: `r${r.id}`, title: r.name, sub: r.note || T('بث مباشر'), urls: r.urls, live: true, last: { kind: 'radio', id: r.id } })), i);
@@ -467,6 +484,7 @@
       const k = S[list].indexOf(id);
       if (k >= 0) S[list].splice(k, 1); else S[list].push(id);
       save();
+      if (list === 'fav') sendCatalog();
       const now = S[list].includes(id);
       b.classList.toggle('is-fav', now);
       b.setAttribute('aria-label', T(now ? 'إزالة من المفضلة' : 'إضافة للمفضلة'));
@@ -520,6 +538,7 @@
       };
       q.addEventListener('input', draw);
       box.append(q, cats, list);
+      if (NP) box.append(el('p', 'hint', T('في السيارة: الإذاعات تظهر في Android Auto. لأن التطبيق ليس من متجر Play، فعّل مرة واحدة: إعدادات Android Auto ← اضغط «الإصدار» عشر مرات ← من القائمة «إعدادات المطوّر» ← «مصادر غير معروفة».')));
       draw();
     });
   }

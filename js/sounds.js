@@ -88,8 +88,20 @@
   // with the site, otherwise the same files from the Moodist repository on
   // jsDelivr (pinned to one commit so they never change underneath the page).
   const CDN = 'https://cdn.jsdelivr.net/gh/remvze/moodist@285ecdbfc67fb082833eee8cef9cd34bbdb1d755/public/sounds/';
-  const BASES = ['sounds/', CDN];
   const SITE_URL = 'https://micro4tricks-ai.github.io/muslim-todo-list/';
+  // The Android app leaves the recordings out to keep its download small: each one comes from the
+  // website the first time it plays and is kept on the phone (Cache API) for later, offline too.
+  const IN_APP = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Player);
+  const BASES = IN_APP ? [SITE_URL + 'sounds/', CDN] : ['sounds/', CDN];
+  const KEEP = 'sounds-v1';
+  async function keptUrl(id) {
+    if (!IN_APP || typeof caches === 'undefined') return null;
+    try {
+      const box = await caches.open(KEEP);
+      for (const { url } of urlsFor(id)) { const hit = await box.match(url); if (hit) return URL.createObjectURL(await hit.blob()); }
+    } catch (_) {}
+    return null;
+  }
   let workingBase = null; // the first source that served a file; tried first afterwards
   const urlsFor = (id) => {
     const order = workingBase ? [workingBase].concat(BASES.filter((b) => b !== workingBase)) : BASES;
@@ -206,8 +218,14 @@
         let lastError = new Error('no source');
         for (const { base, url } of urlsFor(id)) {
           try {
-            const r = await fetch(url);
-            if (!r.ok) throw new Error('HTTP ' + r.status);
+            let box = null;
+            if (IN_APP && typeof caches !== 'undefined') { try { box = await caches.open(KEEP); } catch (_) {} }
+            let r = box && await box.match(url);
+            if (!r) {
+              r = await fetch(url);
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              if (box) box.put(url, r.clone()).catch(() => {});
+            }
             const bytes = await r.arrayBuffer();
             let buf;
             if (LITE) {
@@ -315,8 +333,12 @@
         playElement(p, [{ base: null, url }]);
       }).catch(() => { p.loading = false; p.failed = true; render(); });
     } else {
-      playElement(p, urlsFor(id));
-      if (ac && location.protocol !== 'file:') upgradeToBuffer(p);
+      const go = (kept) => {
+        if (live[id] !== p) return;
+        playElement(p, (kept ? [{ base: null, url: kept }] : []).concat(urlsFor(id)));
+        if (ac && location.protocol !== 'file:') upgradeToBuffer(p);
+      };
+      if (IN_APP) keptUrl(id).then(go, () => go(null)); else go(null);
     }
     render();
   }

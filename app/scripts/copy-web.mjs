@@ -8,9 +8,11 @@ const root = path.dirname(app);
 const www = path.join(app, 'www');
 rmSync(www, { recursive: true, force: true });
 mkdirSync(www);
-for (const item of ['index.html', 'install.html', 'manifest.webmanifest', 'icons', 'fonts', 'js', 'sounds', 'en', 'quran']) {
+for (const item of ['index.html', 'install.html', 'manifest.webmanifest', 'icons', 'fonts', 'js', 'en', 'quran']) {
   cpSync(path.join(root, item), path.join(www, item), { recursive: true });
 }
+// The focus sounds (about 50 MB) stay out of the app: js/sounds.js fetches each from the website
+// the first time and keeps it on the phone. The adhan recordings go to res/raw below.
 // The adhan recordings are also notification sounds, which Android reads from res/raw.
 const raw = path.join(app, 'android', 'app', 'src', 'main', 'res', 'raw');
 mkdirSync(raw, { recursive: true });

@@ -95,6 +95,14 @@ public class PlayerPlugin extends Plugin {
         withService(call, true, (s) -> s.load(items, index, position));
     }
 
+    /** What Android Auto and other media browsers may list: { data: JSON } (see PlayerService.catalog). */
+    @PluginMethod
+    public void catalog(PluginCall call) {
+        getContext().getSharedPreferences(PlayerService.CATALOG_PREFS, android.content.Context.MODE_PRIVATE)
+            .edit().putString(PlayerService.CATALOG_KEY, call.getString("data", "{}")).apply();
+        call.resolve();
+    }
+
     @PluginMethod public void pause(PluginCall call) { withService(call, false, PlayerService::pause); }
     @PluginMethod public void resume(PluginCall call) { withService(call, false, PlayerService::resume); }
     @PluginMethod public void stop(PluginCall call) { withService(call, false, PlayerService::stopAll); }

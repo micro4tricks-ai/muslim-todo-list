@@ -245,6 +245,7 @@
       const h = window.noonHifz.summary();
       mode(h.due > 0, 'متابعة الحفظ', h.due ? `${I.num(h.due)} ${T('للمراجعة اليوم')}` : T('سجّل ما حفظته ونذكّرك بمراجعته في وقته'), () => window.noonHifz.open());
     }
+    if (window.noonKhatma) mode(false, 'الختمة الجماعية', 'اقسموا الختمة على الأجزاء مع أهلك وأصحابك', () => window.noonKhatma.open());
     root.append(modes);
 
     // Search.

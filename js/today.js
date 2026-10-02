@@ -53,6 +53,10 @@
     // Memorisation reviews due today.
     const H = window.noonHifz && window.noonHifz.summary();
     if (H && H.due) cards.push(card('td-hifz', T('مراجعة الحفظ'), H.next, `${I.num(H.due)} ${T('للمراجعة اليوم')}`, () => window.noonHifz.open()));
+    // A group-khatma invite that is still waiting to be accepted.
+    let invite = '';
+    try { invite = localStorage.getItem('noon-khatma-code') || ''; } catch (_) {}
+    if (invite && window.noonKhatma) cards.push(card('td-fast', T('دعوة لختمة جماعية'), invite, T('اضغط للانضمام'), () => window.noonKhatma.open(invite)));
     // The last thing listened to.
     const last = L && L.last && L.last();
     if (last && last.title) {
