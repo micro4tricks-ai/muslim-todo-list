@@ -19,6 +19,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- The adhan: booked with the alarm clock, played by a short foreground service. -->
@@ -48,6 +49,20 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/prayer_widget_info" />
+        </receiver>
+
+        <!-- The verse of the day, and a tasbih that counts on the home screen. -->
+        <receiver android:name=".VerseWidget" android:exported="false" android:label="@string/verse_widget_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/verse_widget_info" />
+        </receiver>
+        <receiver android:name=".TasbihWidget" android:exported="false" android:label="@string/tasbih_widget_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/tasbih_widget_info" />
         </receiver>
 
         <provider

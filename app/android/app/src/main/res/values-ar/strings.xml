@@ -1,4 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="widget_description">مواقيت الصلاة وعدّ تنازلي للصلاة القادمة</string>
+    <string name="verse_widget_description">آية اليوم</string>
+    <string name="tasbih_widget_description">مسبحة: اضغط للعدّ</string>
+    <string name="verse_title">آية اليوم</string>
+    <string name="verse_empty">افتح التطبيق مرة لتظهر آية اليوم.</string>
+    <string name="shortcut_listen">الإذاعة</string>
+    <string name="shortcut_quran">المصحف</string>
+    <string name="shortcut_adhkar">الأذكار</string>
+    <string name="shortcut_qibla">القبلة</string>
 </resources>

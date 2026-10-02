@@ -50,6 +50,9 @@
         T(pr.complete ? 'تقبّل الله' : pr.done ? 'أكمل أذكارك' : 'لم تبدأ بعد'), `${I.num(pr.done)} / ${I.num(pr.total)}`,
         () => Z.open('am-pm'), bar(pr.done, pr.total)));
     }
+    // Memorisation reviews due today.
+    const H = window.noonHifz && window.noonHifz.summary();
+    if (H && H.due) cards.push(card('td-hifz', T('مراجعة الحفظ'), H.next, `${I.num(H.due)} ${T('للمراجعة اليوم')}`, () => window.noonHifz.open()));
     // The last thing listened to.
     const last = L && L.last && L.last();
     if (last && last.title) {
@@ -60,7 +63,7 @@
 
   render();
   setInterval(render, 60000);
-  ['noon-adhkar-done', 'noon-place', 'noon-storage', 'noon-view', 'noon-sunnah'].forEach((e) => window.addEventListener(e, () => setTimeout(render, 50)));
+  ['noon-adhkar-done', 'noon-place', 'noon-storage', 'noon-view', 'noon-sunnah', 'noon-hifz'].forEach((e) => window.addEventListener(e, () => setTimeout(render, 50)));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
   window.noonToday = { render };
 })();

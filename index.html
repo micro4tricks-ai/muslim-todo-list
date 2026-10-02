@@ -13,8 +13,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Muslim To-Do">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=1.9.0">
-<link rel="stylesheet" href="fonts/extra.css?v=1.9.0">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.0.0">
+<link rel="stylesheet" href="fonts/extra.css?v=2.0.0">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -1171,6 +1171,31 @@
   .ls-surah.is-on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .ls-surah.is-on small { color: inherit; opacity: 0.8; }
   .ls-body > .btn-primary { align-self: flex-start; }
+  .ls-surah { position: relative; }
+  .ls-dl { position: absolute; top: 3px; inset-inline-end: 6px; font-size: 11px; font-weight: 700; color: var(--done); }
+  .ls-surah.is-getting .ls-dl { color: var(--accent); }
+  .ls-surahs.is-dl .ls-surah { border-style: dashed; }
+  .ls-surahs.is-dl .ls-surah.is-saved { border-style: solid; border-color: var(--done); }
+  .ls-surahs.is-dl .ls-surah:not(.is-saved):not(.is-getting) .ls-dl::after { content: "⬇"; color: var(--ink-faint); }
+  .hz-head { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .hz-stat { display: flex; flex-direction: column; align-items: center; padding: 12px 6px; border-radius: 16px; background: var(--paper); border: 1px solid var(--line); }
+  .hz-stat b { font-size: 24px; color: var(--accent-deep); }
+  .hz-stat span { font-size: 12px; color: var(--ink-soft); text-align: center; }
+  .hz-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; }
+  .hz-row + .hz-row { border-top: 1px solid var(--line); }
+  .hz-text { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+  .hz-text b { font-size: 15.5px; }
+  .hz-text small { color: var(--ink-faint); font-size: 12.5px; }
+  .hz-acts { display: flex; gap: 6px; flex-basis: 100%; }
+  .hz-g { flex: 1; padding: 9px 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; font-size: 13.5px; }
+  .hz-well { border-color: var(--done); color: var(--done); }
+  .hz-shaky { border-color: #C9A45C; color: #A07A2C; }
+  .hz-forgot { border-color: var(--accent); color: var(--accent); }
+  .hz-form { padding: 14px 16px; gap: 10px; }
+  .hz-range { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hz-range input { width: 80px; }
+  .td-hifz { border-color: var(--done); }
+  .ls-dlbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .ls-tf { display: flex; flex-direction: column; gap: 6px; }
   .ls-group { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); overflow: hidden; }
   .ls-group summary { padding: 10px 14px; cursor: pointer; font-weight: 600; }
@@ -1855,44 +1880,45 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=1.9.0"></script>
-<script src="js/clock.js?v=1.9.0"></script>
-<script src="js/astro.js?v=1.9.0"></script>
-<script src="js/look.js?v=1.9.0"></script>
-<script src="js/sounds.js?v=1.9.0"></script>
-<script src="js/tasks.js?v=1.9.0"></script>
-<script src="js/views.js?v=1.9.0"></script>
-<script src="js/remind-card.js?v=1.9.0"></script>
-<script src="js/notes.js?v=1.9.0"></script>
-<script src="js/cards.js?v=1.9.0"></script>
-<script src="js/adhkar-data.js?v=1.9.0"></script>
-<script src="js/adhkar.js?v=1.9.0"></script>
-<script src="js/habits.js?v=1.9.0"></script>
-<script src="js/prayers.js?v=1.9.0"></script>
-<script src="js/focus-plus.js?v=1.9.0"></script>
-<script src="js/native.js?v=1.9.0"></script>
-<script src="js/prayer-alerts.js?v=1.9.0"></script>
-<script src="js/device.js?v=1.9.0"></script>
-<script src="js/extras-data.js?v=1.9.0"></script>
-<script src="js/quran-meta.js?v=1.9.0"></script>
-<script src="js/quran.js?v=1.9.0"></script>
-<script src="js/sunnah-data.js?v=1.9.0"></script>
-<script src="js/sunnah.js?v=1.9.0"></script>
-<script src="js/qibla.js?v=1.9.0"></script>
-<script src="js/library-meta.js?v=1.9.0"></script>
-<script src="js/salah-data.js?v=1.9.0"></script>
-<script src="js/tools.js?v=1.9.0"></script>
-<script src="js/library.js?v=1.9.0"></script>
-<script src="js/listen.js?v=1.9.0"></script>
-<script src="js/report.js?v=1.9.0"></script>
-<script src="js/focus-mode.js?v=1.9.0"></script>
-<script src="js/config.js?v=1.9.0"></script>
-<script src="js/vendor/supabase.js?v=1.9.0" defer></script>
-<script src="js/sync-core.js?v=1.9.0" defer></script>
-<script src="js/sync.js?v=1.9.0" defer></script>
-<script src="js/app.js?v=1.9.0" defer></script>
-<script src="js/settings.js?v=1.9.0" defer></script>
-<script src="js/today.js?v=1.9.0" defer></script>
-<script src="js/nav.js?v=1.9.0" defer></script>
+<script src="js/i18n.js?v=2.0.0"></script>
+<script src="js/clock.js?v=2.0.0"></script>
+<script src="js/astro.js?v=2.0.0"></script>
+<script src="js/look.js?v=2.0.0"></script>
+<script src="js/sounds.js?v=2.0.0"></script>
+<script src="js/tasks.js?v=2.0.0"></script>
+<script src="js/views.js?v=2.0.0"></script>
+<script src="js/remind-card.js?v=2.0.0"></script>
+<script src="js/notes.js?v=2.0.0"></script>
+<script src="js/cards.js?v=2.0.0"></script>
+<script src="js/adhkar-data.js?v=2.0.0"></script>
+<script src="js/adhkar.js?v=2.0.0"></script>
+<script src="js/habits.js?v=2.0.0"></script>
+<script src="js/prayers.js?v=2.0.0"></script>
+<script src="js/focus-plus.js?v=2.0.0"></script>
+<script src="js/native.js?v=2.0.0"></script>
+<script src="js/prayer-alerts.js?v=2.0.0"></script>
+<script src="js/device.js?v=2.0.0"></script>
+<script src="js/extras-data.js?v=2.0.0"></script>
+<script src="js/quran-meta.js?v=2.0.0"></script>
+<script src="js/hifz.js?v=2.0.0"></script>
+<script src="js/quran.js?v=2.0.0"></script>
+<script src="js/sunnah-data.js?v=2.0.0"></script>
+<script src="js/sunnah.js?v=2.0.0"></script>
+<script src="js/qibla.js?v=2.0.0"></script>
+<script src="js/library-meta.js?v=2.0.0"></script>
+<script src="js/salah-data.js?v=2.0.0"></script>
+<script src="js/tools.js?v=2.0.0"></script>
+<script src="js/library.js?v=2.0.0"></script>
+<script src="js/listen.js?v=2.0.0"></script>
+<script src="js/report.js?v=2.0.0"></script>
+<script src="js/focus-mode.js?v=2.0.0"></script>
+<script src="js/config.js?v=2.0.0"></script>
+<script src="js/vendor/supabase.js?v=2.0.0" defer></script>
+<script src="js/sync-core.js?v=2.0.0" defer></script>
+<script src="js/sync.js?v=2.0.0" defer></script>
+<script src="js/app.js?v=2.0.0" defer></script>
+<script src="js/settings.js?v=2.0.0" defer></script>
+<script src="js/today.js?v=2.0.0" defer></script>
+<script src="js/nav.js?v=2.0.0" defer></script>
 </body>
 </html>

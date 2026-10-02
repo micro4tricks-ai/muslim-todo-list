@@ -144,6 +144,31 @@
     quiet(Widget.update({ data }));
   }
 
+  // The verse-of-the-day widget (VerseWidget.java), refreshed when the day changes.
+  let verseSig = '';
+  function updateVerse() {
+    const N = window.noonSunnah;
+    if (!Widget || !Widget.verse || !N || !N.verseOfDay) return;
+    const v = N.verseOfDay();
+    if (!v) return;
+    const data = JSON.stringify({ title: T('آية اليوم'), text: I.isEn ? v.en : v.ar, ref: I.isEn ? v.refEn : v.refAr });
+    if (data === verseSig) return;
+    verseSig = data;
+    quiet(Widget.verse({ data }));
+  }
+  // A widget or an icon shortcut opened the app on a section (MainActivity keeps it until asked).
+  function openSection(view) {
+    if (view === 'qibla') { const q = document.getElementById('qiblaBtn'); if (q) q.click(); return; }
+    if (['quran', 'listen', 'adhkar', 'library', 'calendar'].includes(view)) window.noonUI.go(view);
+  }
+  window.noonTakeAction = async () => {
+    if (!Widget || !Widget.takeAction) return;
+    try { const r = await Widget.takeAction(); if (r && r.view) openSection(r.view); } catch (_) {}
+  };
+  addEventListener('load', () => setTimeout(() => { window.noonTakeAction(); updateVerse(); }, 600));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { window.noonTakeAction(); updateVerse(); } });
+  setInterval(updateVerse, 30 * 60000);
+
   // ---- fasts, seasons, Friday, adhkar and wird (js/sunnah.js decides what and when) ----
   let sunnahSig = null, sunnahBusy = false;
   async function scheduleSunnah(force) {

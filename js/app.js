@@ -32,7 +32,7 @@
   // ---- version, and a check against the latest release ----
   // Only this button speaks for the app's updates: any other "security update" message
   // on the phone does not come from Muslim To-Do List.
-  const VERSION = '1.9.0';
+  const VERSION = '2.0.0';
   const T = window.noonUI.T;
   const verEl = $('appVersion'), upBtn = $('checkUpdate'), upMsg = $('updateMsg');
   verEl.textContent = `${T('الإصدار')} ${I.num(VERSION)}`;

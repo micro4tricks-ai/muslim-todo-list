@@ -343,9 +343,57 @@
   function playRadio(list, i) {
     start(list.map((r) => ({ key: `r${r.id}`, title: r.name, sub: r.note || T('بث مباشر'), urls: r.urls, live: true, last: { kind: 'radio', id: r.id } })), i);
   }
+  // ---- downloads, for listening without internet (app only; PlayerPlugin keeps the files) ----
+  const DL_KEY = 'noon-sweep-downloads'; // what each downloaded file is, for the downloads list
+  const fileId = (key) => String(key).replace(/[^A-Za-z0-9_-]/g, '_');
+  const saved = new Map();   // file id -> local address
+  const getting = new Map(); // file id -> percent, while downloading
+  let dlMeta = load(DL_KEY, {});
+  async function readDownloads() {
+    if (!NP || !NP.downloads) return;
+    try { const r = await NP.downloads(); saved.clear(); (r.items || []).forEach((x) => saved.set(x.id, x.path)); dlTotal = r.total || 0; } catch (_) {}
+  }
+  let dlTotal = 0;
+  if (NP && NP.addListener) {
+    try { NP.addListener('download', (d) => { getting.set(d.id, d.percent); paintDownloads(); }); } catch (_) {}
+  }
+  readDownloads();
+  async function fetchFile(key, url, meta) {
+    const id = fileId(key);
+    if (saved.has(id) || getting.has(id)) return;
+    getting.set(id, 0); paintDownloads();
+    try {
+      const r = await NP.download({ id, url });
+      saved.set(id, r.path);
+      dlMeta[id] = meta; store(DL_KEY, dlMeta);
+    } catch (e) {
+      if (e && e.code === 'NO_SPACE') toast(T('لا توجد مساحة كافية على الهاتف للتنزيل.'));
+      else if (!(e && e.code === 'CANCELLED')) toast(T('تعذّر التنزيل. تأكد من الاتصال بالإنترنت.'));
+    } finally { getting.delete(id); paintDownloads(); }
+  }
+  async function dropFile(id) {
+    try { await NP.remove({ id }); } catch (_) {}
+    saved.delete(id); delete dlMeta[id]; store(DL_KEY, dlMeta);
+    paintDownloads();
+  }
+  // Each tile that is a file shows ✓ when kept, or how far its download is.
+  function paintDownloads() {
+    root.querySelectorAll('[data-file]').forEach((n) => {
+      const id = n.dataset.file, pct = getting.get(id);
+      n.classList.toggle('is-saved', saved.has(id));
+      n.classList.toggle('is-getting', pct !== undefined);
+      const badge = n.querySelector('.ls-dl');
+      if (badge) badge.textContent = pct !== undefined ? (pct >= 0 ? `${I.num(pct)}${I.isEn ? '%' : '٪'}` : '…') : saved.has(id) ? '✓' : '';
+    });
+  }
+  const sizeText = (b) => (b > 1e9 ? `${I.num((b / 1e9).toFixed(1))} ${T('جيجابايت')}` : `${I.num(Math.round(b / 1e6))} ${T('ميجابايت')}`);
+
   function playMoshaf(rec, m, n, pos) {
-    const q = m.list.map((k) => ({ key: `m${m.id}:${k}`, title: surahName(k - 1), sub: `${rec.name} · ${m.name}`,
-      urls: [`${m.server}${pad3(k)}.mp3`], last: { kind: 'surah', rec: rec.id, moshaf: m.id, n: k } }));
+    const q = m.list.map((k) => {
+      const key = `m${m.id}:${k}`, remote = `${m.server}${pad3(k)}.mp3`, local = saved.get(fileId(key));
+      return { key, title: surahName(k - 1), sub: `${rec.name} · ${m.name}`,
+        urls: local ? [local, remote] : [remote], last: { kind: 'surah', rec: rec.id, moshaf: m.id, n: k } };
+    });
     start(q, Math.max(0, m.list.indexOf(n)), pos);
   }
   function playTafsir(list, i, pos) {
@@ -367,7 +415,8 @@
   // ================= the tab =================
   let screen = { name: 'home' }; // home | reciter
   let rendered = false;
-  const TABS = [['radio', 'الإذاعات'], ['tv', 'البث المباشر'], ['recite', 'التلاوات'], ['tafsir', 'التفسير الصوتي'], ['fav', 'المفضلة']];
+  const TABS = [['radio', 'الإذاعات'], ['tv', 'البث المباشر'], ['recite', 'التلاوات'], ['tafsir', 'التفسير الصوتي'], ['fav', 'المفضلة']]
+    .concat(NP && NP.downloads ? [['dl', 'التنزيلات']] : []);
   const CATS = [['all', 'الكل'], ['reciters', 'القرّاء'], ['mixed', 'منوعة وأذكار'], ['topics', 'تفسير ودروس'], ['trans', 'ترجمات المعاني']];
 
   function render() {
@@ -395,7 +444,7 @@
     root.append(tabs);
     const body = el('div', 'ls-body');
     root.append(body, el('p', 'credit', T('الإذاعات والتلاوات والتفسير الصوتي من موقع mp3quran.net (موقع الإذاعات الإسلامية)، تُبث مباشرة من خوادمه.')));
-    const views = { radio: renderRadios, tv: renderTv, recite: renderReciters, tafsir: renderTafsir, fav: renderFav };
+    const views = { radio: renderRadios, tv: renderTv, recite: renderReciters, tafsir: renderTafsir, fav: renderFav, dl: renderDownloads };
     (views[S.tab] || renderRadios)(body);
     paint();
   }
@@ -695,16 +744,35 @@
       const pick = el('div', 'ls-cats');
       const grid = el('div', 'ls-surahs');
       const all = button('btn btn-primary', '', () => playMoshaf(rec, m, m.list[0]));
+      // In the app: a mode where tapping a surah keeps it on the phone (or lets it go).
+      let dlMode = false;
+      const dlBar = el('div', 'ls-dlbar');
+      const dlToggle = button('btn btn-quiet', '', () => { dlMode = !dlMode; drawM(); });
+      const dlAll = button('btn btn-quiet', T('تنزيل الكل'), async () => {
+        for (const k of m.list) { if (!dlMode) break; await fetchFile(`m${m.id}:${k}`, `${m.server}${pad3(k)}.mp3`, { title: surahName(k - 1), sub: `${rec.name} · ${m.name}`, rec: rec.id, moshaf: m.id, n: k }); }
+      });
+      const dlStop = button('link-btn', T('إيقاف التنزيل'), () => { NP.cancel(); });
+      dlBar.append(dlToggle, dlAll, dlStop);
       const drawM = () => {
         pick.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(Number(c.dataset.id) === m.id)));
         all.textContent = `${T('تشغيل الكل')} (${I.num(m.list.length)} ${T('سورة')})`;
+        dlToggle.textContent = T(dlMode ? 'تم' : 'تنزيل للاستماع دون إنترنت');
+        dlAll.hidden = dlStop.hidden = !dlMode;
+        grid.classList.toggle('is-dl', dlMode);
         grid.replaceChildren(...m.list.map((k) => {
-          const b = button('ls-surah', '', () => playMoshaf(rec, m, k));
-          b.dataset.play = `m${m.id}:${k}`;
-          b.append(el('small', '', I.num(k)), el('b', '', surahName(k - 1)));
+          const key = `m${m.id}:${k}`, id = fileId(key);
+          const b = button('ls-surah', '', () => {
+            if (!dlMode) { playMoshaf(rec, m, k); return; }
+            if (saved.has(id)) dropFile(id);
+            else fetchFile(key, `${m.server}${pad3(k)}.mp3`, { title: surahName(k - 1), sub: `${rec.name} · ${m.name}`, rec: rec.id, moshaf: m.id, n: k });
+          });
+          b.dataset.play = key;
+          b.dataset.file = id;
+          b.append(el('small', '', I.num(k)), el('b', '', surahName(k - 1)), el('span', 'ls-dl'));
           return b;
         }));
         paint();
+        paintDownloads();
       };
       if (rec.moshaf.length > 1) {
         rec.moshaf.forEach((x) => {
@@ -714,8 +782,31 @@
         });
         box.append(pick);
       } else box.append(el('p', 'hint', m.name));
-      box.append(all, grid);
+      box.append(all);
+      if (NP && NP.download) box.append(dlBar);
+      box.append(grid);
       drawM();
+    });
+  }
+
+  // ---- downloads ----
+  function renderDownloads(box) {
+    loading(box, async () => {
+      await readDownloads();
+      box.replaceChildren();
+      const ids = [...saved.keys()].filter((id) => dlMeta[id]).sort((a, b) => (dlMeta[a].sub + pad3(dlMeta[a].n)).localeCompare(dlMeta[b].sub + pad3(dlMeta[b].n)));
+      if (!ids.length) { box.append(el('p', 'hint', T('لا توجد سور منزّلة بعد. افتح قارئاً من «التلاوات» واضغط «تنزيل للاستماع دون إنترنت».'))); return; }
+      box.append(el('p', 'hint', `${I.num(ids.length)} ${T('سورة')} · ${sizeText(dlTotal)}`));
+      const list = el('div', 'ls-list');
+      const queue = ids.map((id) => ({ key: id, title: dlMeta[id].title, sub: dlMeta[id].sub, urls: [saved.get(id)],
+        last: { kind: 'surah', rec: dlMeta[id].rec, moshaf: dlMeta[id].moshaf, n: dlMeta[id].n } }));
+      ids.forEach((id, i) => {
+        const del = button('ls-ib', '', () => { dropFile(id).then(() => render()); }, T('حذف'));
+        del.textContent = '🗑';
+        list.append(row(id, dlMeta[id].title, dlMeta[id].sub, () => start(queue, i), del));
+      });
+      box.append(list);
+      paint();
     });
   }
 

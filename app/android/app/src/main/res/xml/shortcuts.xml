@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the app's icon: straight to the radio, the Mushaf, the adhkar or the qibla. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="listen" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_listen">
+        <intent android:action="noon.OPEN.listen" android:targetPackage="io.github.micro4tricks.muslimtodo"
+            android:targetClass="io.github.micro4tricks.muslimtodo.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="quran" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_quran">
+        <intent android:action="noon.OPEN.quran" android:targetPackage="io.github.micro4tricks.muslimtodo"
+            android:targetClass="io.github.micro4tricks.muslimtodo.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="adhkar" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_adhkar">
+        <intent android:action="noon.OPEN.adhkar" android:targetPackage="io.github.micro4tricks.muslimtodo"
+            android:targetClass="io.github.micro4tricks.muslimtodo.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="qibla" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_qibla">
+        <intent android:action="noon.OPEN.qibla" android:targetPackage="io.github.micro4tricks.muslimtodo"
+            android:targetClass="io.github.micro4tricks.muslimtodo.MainActivity" />
+    </shortcut>
+</shortcuts>

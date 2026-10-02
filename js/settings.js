@@ -293,7 +293,7 @@
     if (resume !== null) { setTimeout(() => wizard(Number(resume) || 0), 300); return; }
     if (read2(DONE) === '1') return;
     // Someone who has used the app already isn't shown the welcome.
-    const used = ['noon-sweep-place', 'noon-sweep-look', 'noon-native-asked', 'noon-sweep-sync-meta', 'noon-sweep-listen', 'noon-sweep-library']
+    const used = ['noon-sweep-place', 'noon-sweep-look', 'noon-sweep-sync-meta']
       .some((k) => read2(k) !== null);
     if (used) markDone(); else setTimeout(() => wizard(0), 700);
   })();

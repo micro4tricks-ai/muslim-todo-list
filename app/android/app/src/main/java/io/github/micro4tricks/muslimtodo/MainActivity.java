@@ -11,6 +11,30 @@ import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
 
+    /** A widget or an icon shortcut opening the app on one of its sections (quran, listen, adhkar, qibla). */
+    static final String EXTRA_VIEW = "noon_view";
+    private static volatile String pending = null;
+
+    static String takePending() { String v = pending; pending = null; return v; }
+
+    private void keep(android.content.Intent intent) {
+        if (intent == null) return;
+        String v = intent.getStringExtra(EXTRA_VIEW);
+        String a = intent.getAction();
+        if (v == null && a != null && a.startsWith("noon.OPEN.")) v = a.substring("noon.OPEN.".length());
+        if (v != null && v.matches("[a-z]{3,12}")) pending = v;
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        keep(intent);
+        // Already open: the page picks it up at once.
+        if (pending != null && bridge != null) {
+            bridge.getWebView().evaluateJavascript("window.noonTakeAction && window.noonTakeAction()", null);
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         // The page hands the prayer times to the home-screen widget through this plugin.
@@ -21,6 +45,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PlayerPlugin.class);
         // ... and keeps the adhan reliable and installs updates through this one.
         registerPlugin(DevicePlugin.class);
+        keep(getIntent());
         super.onCreate(savedInstanceState);
         // When Android stops the page's renderer (usually to free memory), reopen the
         // screen instead of letting the whole app close. Tasks and settings are saved

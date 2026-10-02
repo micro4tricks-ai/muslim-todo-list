@@ -241,6 +241,10 @@
       if (on) toast(T('فعّلنا المصحف المعلّم. افتح أي سورة واضغط ▶ واستمع ثم ردّد بعد القارئ.'));
     });
     mode(S.hide, 'التسميع والحفظ', 'تُخفى الآيات فتسمّع حفظك، واضغط الآية لتظهر', () => { S.hide = !S.hide; save(); renderIndex(); });
+    if (window.noonHifz) {
+      const h = window.noonHifz.summary();
+      mode(h.due > 0, 'متابعة الحفظ', h.due ? `${I.num(h.due)} ${T('للمراجعة اليوم')}` : T('سجّل ما حفظته ونذكّرك بمراجعته في وقته'), () => window.noonHifz.open());
+    }
     root.append(modes);
 
     // Search.
@@ -938,8 +942,9 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden && R && !R.box.hidden) keepAwake(); });
 
   onRemote(KEY, () => { S = Object.assign(blank(), load(KEY, {})); fresh(); if (!root.hidden) renderIndex(); });
+  window.addEventListener('noon-hifz', () => { if (!root.hidden) renderIndex(); }); // the memorisation card's count
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'quran') renderIndex(); });
   setInterval(() => { if (S.today.day !== dayKey()) { fresh(); if (!root.hidden) renderIndex(); } }, 60000);
-  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), last: () => (S.last ? { i: S.last.i, label: refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
+  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), openAyah: (s, a) => open(starts[s - 1] + Math.max(0, a - 1)), last: () => (S.last ? { i: S.last.i, label: refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
   renderIndex();
 })();

@@ -5,4 +5,12 @@
     <string name="package_name">io.github.micro4tricks.muslimtodo</string>
     <string name="custom_url_scheme">io.github.micro4tricks.muslimtodo</string>
     <string name="widget_description">Prayer times and a countdown to the next prayer</string>
+    <string name="verse_widget_description">The verse of the day</string>
+    <string name="tasbih_widget_description">A tasbih: tap to count</string>
+    <string name="verse_title">Verse of the day</string>
+    <string name="verse_empty">Open the app once to show the verse of the day.</string>
+    <string name="shortcut_listen">Radio</string>
+    <string name="shortcut_quran">Quran</string>
+    <string name="shortcut_adhkar">Adhkar</string>
+    <string name="shortcut_qibla">Qibla</string>
 </resources>

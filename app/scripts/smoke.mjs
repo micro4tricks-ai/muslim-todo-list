@@ -138,6 +138,17 @@ await phase('Listen: the Quran radios on the native player', async () => {
     report.listen.radios.push({ state: st, mediaSession: ms });
   }
   report.listen.playerLog = adb('logcat -d -s NoonPlayer:*').split('\n').filter(Boolean).slice(-6);
+  // Downloads for listening offline: one short surah (al-Fatiha, al-Afasy; the server redirects) in and out.
+  report.listen.download = await js(`(async () => {
+    try {
+      const P = Capacitor.Plugins.Player;
+      const got = await P.download({ id: 'smoke_test', url: 'https://server8.mp3quran.net/afs/001.mp3' });
+      const list = await P.downloads();
+      const there = (list.items || []).some((x) => x.id === 'smoke_test');
+      await P.remove({ id: 'smoke_test' });
+      return { size: got.size, listed: there, local: /^file:/.test(got.path) };
+    } catch (e) { return 'ERR ' + (e.code || '') + ' ' + e.message; }
+  })()`);
   console.log('listen:', JSON.stringify(report.listen));
   await gesture('window.noonListen.stop()'); await sleep(1500);
   // Live TV: in the app the broadcaster's own stream (Aloula, HLS up to 1080p) plays first, in the
@@ -212,6 +223,7 @@ await phase('Adhan player: play, then stop', async () => {
   const prefs = (f) => { try { return adb(`shell run-as ${pkg} cat shared_prefs/${f}.xml`); } catch (e) { return ''; } };
   const w = prefs('noon_widget'), a = prefs('noon_adhan');
   report.widgetHasTimes = /&quot;at&quot;/.test(w);
+  report.verseWidget = /name="verse"/.test(w);
   report.adhanBooked = Number((a.match(/name="count" value="(\d+)"/) || [])[1] || 0);
   console.log('widget has prayer times:', report.widgetHasTimes, '| adhan alarms booked:', report.adhanBooked);
   await sleep(3000);
@@ -258,6 +270,7 @@ const problems = [];
 report.phases.forEach((p) => { if (!p.appRunning) problems.push(`app not running after "${p.name}"`); if (p.error) problems.push(`${p.name}: ${p.error}`); });
 ((report.listen && report.listen.radios) || []).forEach((r) => { if (!/^playing/.test(r.state)) problems.push(`radio not playing: ${r.state}`); });
 if (!report.listen || !report.listen.radios) problems.push('the radio check did not run');
+if (!report.listen || !report.listen.download || !report.listen.download.listed || !(report.listen.download.size > 10000)) problems.push(`download: ${JSON.stringify(report.listen && report.listen.download)}`);
 if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== false) problems.push('live TV did not play');
 if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');
 if (!report.settings || report.settings.appStillOpen !== true) problems.push('the back key closed the app');
@@ -266,6 +279,7 @@ if (report.adhanCall !== 'ok') problems.push(`adhan: ${report.adhanCall}`);
 if (!report.settings || !report.settings.device || typeof report.settings.device !== 'object') problems.push(`device status: ${report.settings && report.settings.device}`);
 if (!report.settings || report.settings.offset !== 1) problems.push(`a minute added to Fajr moved it by ${report.settings && report.settings.offset}`);
 if (!report.widgetHasTimes) problems.push('the widget has no prayer times');
+if (!report.verseWidget) problems.push('the verse widget got no verse');
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 report.problems = problems;
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));
