@@ -2,26 +2,46 @@
 
 <img src="docs/logo.svg" width="96" height="96" alt="Muslim To-Do List logo">
 
-# Muslim To-Do List
+# Muslim To-Do List · قائمة مهام المسلم
 
-**Plan your day around the prayers — tasks, focus timer, habits, adhkar and focus sounds, in Arabic and English.**
+**Plan your day around the prayers — the Quran, hadith, Quran radio and live TV from Makkah and Madinah, adhkar, tasks and focus, in Arabic and English.**
+
+**نظّم يومك حول الصلاة: المصحف، والحديث، وإذاعات القرآن، والبث المباشر من الحرمين، والأذكار، والمهام والتركيز.**
 
 [![Open the app](https://img.shields.io/badge/Open%20the%20app-→-c4502b?style=for-the-badge)](https://micro4tricks-ai.github.io/muslim-todo-list/)
 &nbsp;
-[![Android APK](https://img.shields.io/github/v/release/micro4tricks-ai/muslim-todo-list?style=for-the-badge&logo=android&logoColor=white&label=Android%20APK&color=3DDC84)](https://github.com/micro4tricks-ai/muslim-todo-list/releases/latest)
+[![Android APK](https://img.shields.io/github/v/release/micro4tricks-ai/muslim-todo-list?style=for-the-badge&logo=android&logoColor=white&label=Android%20APK&color=3DDC84)](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk)
 &nbsp;
 ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
 &nbsp;
-![Supabase sync](https://img.shields.io/badge/Sync-Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Free, no ads](https://img.shields.io/badge/Free-no%20ads-2E8B6E?style=for-the-badge)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
-[![Android build](https://img.shields.io/github/actions/workflow/status/micro4tricks-ai/muslim-todo-list/android.yml?style=flat-square&label=Android%20build)](https://github.com/micro4tricks-ai/muslim-todo-list/actions/workflows/android.yml)
+[![Android build](https://img.shields.io/github/actions/workflow/status/micro4tricks-ai/muslim-todo-list/android.yml?style=flat-square&label=Android%20build%20%2B%20emulator%20test)](https://github.com/micro4tricks-ai/muslim-todo-list/actions/workflows/android.yml)
+[![Sources check](https://img.shields.io/github/actions/workflow/status/micro4tricks-ai/muslim-todo-list/sources.yml?style=flat-square&label=daily%20sources%20check)](https://github.com/micro4tricks-ai/muslim-todo-list/actions/workflows/sources.yml)
 ![Last commit](https://img.shields.io/github/last-commit/micro4tricks-ai/muslim-todo-list?style=flat-square)
 [![Downloads](https://img.shields.io/github/downloads/micro4tricks-ai/muslim-todo-list/total?style=flat-square&label=APK%20downloads)](https://github.com/micro4tricks-ai/muslim-todo-list/releases)
 
-<a href="https://micro4tricks-ai.github.io/muslim-todo-list/"><img src="docs/screenshot.png" alt="Muslim To-Do List: prayer-times clock, focus timer and tasks" width="860"></a>
+<a href="https://micro4tricks-ai.github.io/muslim-todo-list/"><img src="docs/screenshot.png" alt="Muslim To-Do List: the prayer-times clock, the quick bar and the Listen tab with Quran radio" width="860"></a>
 
-[**Open the app**](https://micro4tricks-ai.github.io/muslim-todo-list/) · [English version](https://micro4tricks-ai.github.io/muslim-todo-list/en/) · [Install on your phone](https://micro4tricks-ai.github.io/muslim-todo-list/install.html) · [Report a problem](https://github.com/micro4tricks-ai/muslim-todo-list/issues/new/choose)
+[**Open the app**](https://micro4tricks-ai.github.io/muslim-todo-list/) · [English version](https://micro4tricks-ai.github.io/muslim-todo-list/en/) · [**Download for Android**](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk) · [Install on any device](https://micro4tricks-ai.github.io/muslim-todo-list/install.html) · [Report a problem](https://github.com/micro4tricks-ai/muslim-todo-list/issues/new/choose) · [**بالعربي**](#بالعربي)
+
+<br>
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screens/home.png" width="190" alt="Home: the prayer clock and the quick bar"><br><sub>Home · الرئيسية</sub></td>
+    <td align="center"><img src="docs/screens/quran.png" width="190" alt="The Mushaf with tafsir under each verse"><br><sub>The Mushaf · المصحف</sub></td>
+    <td align="center"><img src="docs/screens/listen.png" width="190" alt="Quran radio from Cairo and Saudi Arabia, and 177 stations"><br><sub>Listen · استماع</sub></td>
+    <td align="center"><img src="docs/screens/settings.png" width="190" alt="The Settings screen"><br><sub>Settings · الإعدادات</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screens/fonts.png" width="190" alt="Choosing the Arabic and English fonts"><br><sub>Fonts · الخطوط</sub></td>
+    <td align="center"><img src="docs/screens/library.png" width="190" alt="The library: tools and the hadith books"><br><sub>Library · المكتبة</sub></td>
+    <td align="center"><img src="docs/screens/adhkar.png" width="190" alt="Adhkar and duas"><br><sub>Adhkar · الأذكار</sub></td>
+    <td align="center"><img src="docs/screenshot-en.png" width="190" alt="The English interface on a computer"><br><sub>English · الإنجليزية</sub></td>
+  </tr>
+</table>
 
 </div>
 
@@ -30,13 +50,13 @@
 ## Contents
 
 - [About](#about)
+- [What's new in 1.7](#whats-new-in-17)
 - [Features](#features)
-- [Screenshots](#screenshots)
 - [Install](#install)
 - [Tech stack](#tech-stack)
 - [Run locally](#run-locally)
 - [Sync between devices (Supabase)](#sync-between-devices-supabase)
-- [Android releases](#android-releases)
+- [Releases and quality checks](#releases-and-quality-checks)
 - [Project structure](#project-structure)
 - [Contributing](#contributing)
 - [Privacy](#privacy)
@@ -46,46 +66,44 @@
 
 ## About
 
-A calm daily planner built around the five prayers. The left side is a watch-face clock that shows the next prayer, sunrise and sunset, the moon phase and the Hijri and Gregorian dates. The right side is your day: tasks split around the prayers, sticky notes, review cards, habits, adhkar and a focus report. A Pomodoro timer and a library of focus sounds sit underneath.
+A calm daily companion built around the five prayers, made as an ongoing charity (*sadaqa jariya*): **free, with no ads and no tracking**. A watch-face clock shows the next prayer, sunrise and sunset, the moon and the Hijri and Gregorian dates. Around it: the full Mushaf with nine tafsirs, the six hadith books and more, Quran radio and live TV from the Two Holy Mosques, adhkar, a Hijri calendar with Sunnah fasting reminders, and a day of tasks, habits and focus sessions.
 
-It runs in any browser, installs as an app on phones, tablets and desktops, works offline after the first visit, and can sync between your devices. It opens in Arabic by default; one button switches everything to English.
+It runs in any browser, installs as an app on phones, tablets and computers, works offline after the first visit, and can sync between your devices. It opens in Arabic; one switch turns everything to English.
+
+## What's new in 1.7
+
+| | |
+|---|---|
+| 📻 **Quran radio that keeps playing** | In the Android app the Listen tab plays through a native player (Media3 / ExoPlayer): it carries on with the screen off, shows the media notification and lock-screen controls, pauses for calls and the adhan and comes back after. Quran Radio from **Cairo** and from **Saudi Arabia** now play in the app. |
+| 📺 **Live TV without ads** | The Quran channel from al-Masjid al-Haram and the Sunnah channel from the Prophet's Mosque. In the app it starts with the broadcaster's own stream (up to 1080p, no ads), then YouTube, then a lighter link — each one handing over to the next if it fails. |
+| ⚙️ **A real Settings screen** | One screen, laid out like Android's: language, location and prayer times, adhan and alerts, colours, fonts, account, about. The phone's back key steps back through it. |
+| 🔤 **Fonts** | 9 Arabic fonts (IBM Plex, Cairo, Tajawal, Almarai, Noto Kufi, Noto Naskh, Readex, El Messiri, Amiri) and 5 English ones, each with a live sample — kept with the app, so they work offline. |
+| 📚 **More books** | Sunan ad-Darimi, Musnad Ahmad (the Rightly Guided Caliphs' part) and Shah Waliullah's Forty — 17 books in the library. |
+| ↩️ **Back key** | Steps back (a book, a reciter, focus mode, Settings, the Mushaf) instead of closing the app; at the start it sends the app to the background, so the radio and the adhan carry on. |
 
 ## Features
 
 | | Feature | Details |
 |:-:|---|---|
-| 🕰️ | **Prayer clock** | Watch-face clock with the next prayer and a countdown, sunrise/sunset, moon phase, Hijri + Gregorian date. 32 countries and 12 calculation methods (Egyptian Survey, Umm al-Qura, Dubai…). Custom dial, frame and background colours. |
-| 📖 | **The Holy Quran** | The full Mushaf in the Uthmani script (Hafs, Tanzil text) with the Sahih International English translation, verse-by-verse recitation from 9 reciters (including al-Husary’s teaching recitation), a colour-coded tajweed Mushaf, a teaching mode (repeat each verse, pause to repeat after the reciter, slower speed) and a memorisation test, 9 tafsirs (al-Muyassar, as-Sa‘di, Ibn Kathir, at-Tabari, al-Qurtubi, al-Baghawi, al-Wasit, al-Jalalayn, and Ibn Kathir in English), word-by-word meanings with each word’s pronunciation, translations in ten languages, a completion plan by date, a verse of the day, a children’s Juz ‘Amma with stars, verses to memorisation cards, bookmarks, search (Arabic, English, `2:255` or a page number), "continue reading", a daily wird counted in pages, completion tracking, and light / sepia / night pages. Works offline once opened. |
-| 📅 | **Hijri calendar and Sunnah reminders** | Umm al-Qura month view with a day shift for local moon sighting; reminders the evening before Monday and Thursday fasts, the White Days (13–15), Arafah, Tasu‘a and Ashura, six of Shawwal, Ramadan and its last ten nights, and the ten days of Dhul-Hijjah; no-fasting days (the two Eids, Tashreeq) are marked. Each one shows its hadith with the reference and grading. Friday (Surat al-Kahf) and morning/evening adhkar reminders too. |
-| 📚 | **Library** | The six hadith books (al-Bukhari, Muslim, Abu Dawud, at-Tirmidhi, an-Nasa’i, Ibn Majah) and al-Muwatta, in Arabic with English, plus an-Nawawi’s Forty, the Forty Qudsi, Riyad as-Salihin, Bulugh al-Maram, al-Adab al-Mufrad, ash-Shama’il and Mishkat al-Masabih, and the gradings of al-Albani, Shu‘ayb al-Arna’ut, Ahmad Shakir and others; a “sahih and hasan only” filter, search and hadith numbers, saved hadiths. Chapters download on first use and stay offline. |
-| 🕋 | **My prayers** | Log each prayer (in congregation, on time, late, missed), the twelve sunnah rak‘ahs, witr, duha and qiyam; a week at a glance and a count of prayers to make up. |
-| 🌙 | **Ramadan** | Imsak and iftar countdowns, the iftar and Laylat al-Qadr supplications, a tracker for the month’s fasts (and days to make up), a shareable imsakiya, and a suhoor reminder. |
-| 🧰 | **Tools** | Zakat calculator (gold/silver nisab, savings, trade goods, debts, jewellery option, Zakat al-Fitr), Umrah and Hajj guides with their hadiths, the 99 Names, istikhara, nearby mosques (OpenStreetMap), Hijri ⇄ Gregorian converter, and a backup file. |
-| 🕌 | **The Prophet’s prayer ﷺ** | The prayer from the takbir to the taslim in the order of al-Albani’s *Sifat Salat an-Nabi*, each step with its authentic hadith (the book itself is linked on al-Maktaba al-Shamela, not copied). |
-| 🧭 | **Qibla** | Direction and distance to the Kaaba from your place, with a live compass on phones. |
-| ✅ | **Tasks** | Subtasks, estimated time, time tracking, and the day split by prayer (after Fajr, after Dhuhr…). Keyboard shortcuts. |
-| 🎯 | **Focus** | Pomodoro timer with a draggable dial, full-screen focus mode, a "distracting thought" box, useful breaks (dhikr, movement, water, breathing) and prayer alerts. |
-| 🗒️ | **Sticky notes** | Coloured notes you drag to arrange and pin; turn any note into a task. |
-| 🃏 | **Review cards** | Question-and-answer decks with spaced repetition (Leitner system), card designs per deck and a daily review reminder. |
-| 🔔 | **Reminder cards and the adhan** | Reminders appear as designed cards (six designs) that can be shared as images; the prayer alert plays one of four adhan recordings (see `sounds/adhan/CREDITS.md`), with a separate Fajr adhan and an iqamah reminder, also as the Android notification sound. |
-| 📲 | **Home-screen widget** | Android widget with the next prayer, a live countdown and the day’s five times. |
-| 🔁 | **Habits and wird** | Adhkar, Quran reading, istighfar, qiyam, fasting… with streaks and a 12-week calendar. |
-| 📿 | **Adhkar and duas** | Morning and evening, after prayer, for students, ease and success, worry and clarity, ruqyah, sleep and istighfar — with a counter, audio recitation and a tasbih. |
-| 📊 | **Report** | Today, the last week or month, or any range: focus, tasks, habits, Quran pages and fasting days, with charts and your best time to focus. |
-| 🎧 | **Focus sounds** | 32 recordings (rain, nature, places, noise, binaural…) that you mix, plus your own music folder from the device. |
-| 🌗 | **Dark mode and text size** | Light, dark or following the device, for the whole app, and four text sizes. |
-| 🌐 | **Arabic ⇄ English** | Full RTL/LTR switch, remembered per device. Direct English link: `/en/` or `?lang=en`. |
+| 🕰️ | **Prayer clock** | Watch-face clock with the next prayer and a countdown, sunrise/sunset, moon phase, Hijri + Gregorian date. 32 countries and 12 calculation methods (Egyptian Survey, Umm al-Qura, Dubai…). Custom dial, frame and background. |
+| 📖 | **The Holy Quran** | The full Mushaf in the Uthmani script (Hafs, Tanzil text) with the Sahih International translation; verse-by-verse recitation from 9 reciters (including al-Husary's teaching recitation); a colour-coded tajweed Mushaf; a teaching mode (repeat each verse, pause to repeat after the reciter, slower speed) and a memorisation test; **9 tafsirs** (al-Muyassar, as-Sa‘di, Ibn Kathir, at-Tabari, al-Qurtubi, al-Baghawi, al-Wasit, al-Jalalayn, Ibn Kathir in English), shown under each verse if you like; word-by-word meanings with pronunciation; a completion plan; a daily wird; Juz ‘Amma for children; bookmarks, search, "continue reading", and light / sepia / night pages. Works offline once opened. |
+| 📻 | **Listen** | **177 Quran radio stations** (reciters, mixed and adhkar, tafsir and lessons, translations of the meanings) plus Quran Radio from Cairo; **241 reciters** in every riwayah (Hafs, Warsh, Qalun, ad-Duri…), whole surahs one after another; **audio tafsir** (at-Tabari's summary, by surah and verses); favourites, "continue listening" from the same minute, and a sleep timer. |
+| 📺 | **Live TV** | Live from al-Masjid al-Haram and the Prophet's Mosque — the official broadcast of the Quran and Sunnah channels, in the app without ads. |
+| 📅 | **Hijri calendar and Sunnah reminders** | Umm al-Qura month view with a day shift for local moon sighting; reminders for Monday and Thursday fasts, the White Days, Arafah, Ashura, six of Shawwal, Ramadan and its last ten nights, and the ten days of Dhul-Hijjah, each with its hadith, reference and grading; no-fasting days marked; Friday and adhkar reminders. |
+| 📚 | **Library** | The six hadith books and al-Muwatta (Arabic with English and the gradings of al-Albani, Shu‘ayb al-Arna’ut, Ahmad Shakir and others; a "sahih and hasan only" filter), plus Sunan ad-Darimi, Musnad Ahmad (the Caliphs' part), an-Nawawi's Forty, the Forty Qudsi, Shah Waliullah's Forty, Riyad as-Salihin, Bulugh al-Maram, al-Adab al-Mufrad, ash-Shama’il and Mishkat al-Masabih. Search, hadith numbers, saved hadiths; chapters stay offline once read. |
+| 🕌 | **The Prophet's prayer ﷺ** | The prayer from the takbir to the taslim in the order of al-Albani's *Sifat Salat an-Nabi*, each step with its authentic hadith (the book itself is linked on al-Maktaba al-Shamela, not copied). |
+| 🕋 | **My prayers** | Log each prayer (in congregation, on time, late, missed), the sunnah rak‘ahs, witr, duha and qiyam; a week at a glance and a count of prayers to make up. |
+| 🌙 | **Ramadan** | Imsak and iftar countdowns, the iftar and Laylat al-Qadr supplications, a fasting tracker, a shareable imsakiya and a suhoor reminder. |
+| 🧰 | **Tools** | Zakat calculator, Umrah and Hajj guides with their hadiths, the 99 Names, istikhara, nearby mosques (OpenStreetMap), Hijri ⇄ Gregorian converter, and a backup file. |
+| 🧭 | **Qibla** | Direction and distance to the Kaaba, with a live compass on phones. |
+| 📿 | **Adhkar and duas** | Morning and evening, after prayer, for students, ease, worry, ruqyah, sleep and istighfar — with a counter, audio and a tasbih. |
+| 🔔 | **Adhan and alerts** | Four adhan recordings plus a separate Fajr adhan, played by the phone's alarm clock even when the app is closed (and, if you wish, on silent mode); an iqamah reminder; reminders as designed cards you can share. |
+| 📲 | **Home-screen widget** | The next prayer, a live countdown and the day's five times. |
+| ✅ | **Tasks and focus** | Tasks with subtasks and time tracking, the day split by prayer; a Pomodoro timer, full-screen focus mode, useful breaks, sticky notes, review cards with spaced repetition, habits with streaks, and a report with charts. |
+| 🎧 | **Focus sounds** | 32 recordings (rain, nature, places, noise…) to mix, plus your own music folder. |
+| ⚙️ | **Settings, fonts, dark mode** | One Settings screen; 9 Arabic and 5 English interface fonts; light, dark or following the device; four text sizes. |
+| 🌐 | **Arabic ⇄ English** | Full RTL/LTR switch. Direct English link: `/en/` or `?lang=en`. |
 | 🔄 | **Sync** | Email and password sign-in; tasks and settings sync across devices through Supabase. |
-| 📱 | **Installable** | PWA on every platform, plus a free Android app with prayer, fasting and season notifications that arrive even when the app is closed. |
-
-## Screenshots
-
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshot.png" alt="Arabic interface"><p align="center"><sub>Arabic (default)</sub></p></td>
-    <td width="50%"><img src="docs/screenshot-en.png" alt="English interface"><p align="center"><sub>English</sub></p></td>
-  </tr>
-</table>
 
 ## Install
 
@@ -93,24 +111,25 @@ Step-by-step page for every device: **[install.html](https://micro4tricks-ai.git
 
 | Device | How |
 |---|---|
-| **Android** | Download the [APK from the site](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk) (also on the [releases page](https://github.com/micro4tricks-ai/muslim-todo-list/releases/latest)). It is a full app, and prayer alerts arrive even when it is closed. Or use "Install app" in Chrome. |
+| **Android** | Download the [APK from the site](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk) (also on the [releases page](https://github.com/micro4tricks-ai/muslim-todo-list/releases/latest)). To update later: Settings → About → "Check for updates". |
 | **iPhone / iPad** | In Safari: Share → "Add to Home Screen". |
-| **Desktop** | The "Install the app" button above the task list, or the install icon in the address bar. |
+| **Computer** | The "Install the app" button above the task list, or the install icon in the address bar. |
 
-After the first visit the app works offline (`sw.js`), and every sound you have played once is kept on the device.
+After the first visit the app works offline (`sw.js`); the radio, live TV and recitations need the internet.
 
 ## Tech stack
 
 | Layer | Used |
 |---|---|
 | App | HTML5, CSS3 and vanilla JavaScript — no framework, no build step |
-| Clock | Canvas 2D, with a lighter path on touch devices for smooth phone performance |
+| Clock | Canvas 2D, with a lighter path on touch devices |
 | Prayer times | Own implementation of the [PrayTimes.org](http://praytimes.org) algorithm |
 | Offline / install | Service worker (`sw.js`) + Web App Manifest |
-| Sync | [Supabase](https://supabase.com) (Postgres with row-level security, email and password auth) |
-| Android | [Capacitor](https://capacitorjs.com) 8 with native local notifications |
-| CI/CD | GitHub Actions: signed APK on every `v*` tag, emulator smoke test, GitHub Pages deploy |
-| Data tools | Python scripts that build the adhkar, Mushaf and hadith data from their sources, so no religious text is typed by hand |
+| Sync | [Supabase](https://supabase.com) (Postgres with row-level security) |
+| Android | [Capacitor](https://capacitorjs.com) 8; native Java for the adhan (alarm clock + foreground service), the widget, the back key and the Listen player ([Media3 ExoPlayer](https://developer.android.com/media/media3) with a media session) |
+| Live TV | [hls.js](https://github.com/video-dev/hls.js) (local copy) and the YouTube IFrame API |
+| CI/CD | GitHub Actions: signed APK on every `v*` tag, a full test on an Android emulator before the release is published, GitHub Pages deploy, and a daily check of every outside source |
+| Data tools | Python and Node scripts that build the adhkar, Mushaf, hadith and font data from their sources, so no religious text is typed by hand |
 
 ## Run locally
 
@@ -120,103 +139,75 @@ cd muslim-todo-list
 python -m http.server 8765      # then open http://localhost:8765
 ```
 
-On Windows you can also double-click `تشغيل.bat`, which starts a small local server so the sounds loop without a gap. Opening `index.html` directly works too.
+On Windows you can also double-click `تشغيل.bat`.
 
 ## Sync between devices (Supabase)
 
-The **Sync** button signs in with an email and password (with a sign-in link as a fallback) and syncs your tasks and settings across devices. To set it up once on your own Supabase project:
+The account (Settings → Account & sync) signs in with an email and password and syncs tasks and settings. To set it up on your own Supabase project:
 
 1. Create a free project on [supabase.com](https://supabase.com).
-2. **SQL Editor → New query:** paste `supabase/schema.sql` and press **Run**.
-3. **Authentication → URL Configuration:** set *Site URL* to the site's address, and add the site and `http://localhost:8765/` to *Redirect URLs*.
+2. **SQL Editor:** run `supabase/schema.sql`.
+3. **Authentication → URL Configuration:** set the *Site URL* and add the site and `http://localhost:8765/` to *Redirect URLs*.
 4. **Project Settings → API:** copy the *Project URL* and the *anon public key* into `js/config.js`.
 
-**Synced:** tasks (with subtasks and time), city and calculation method, appearance, sound choices, language.
-**Kept per device:** the focus timer, the background image, the music folder.
+## Releases and quality checks
 
-## Android releases
+1. Push a version tag: `git tag v1.7.2 && git push origin v1.7.2`.
+2. GitHub Actions builds a signed APK, installs the debug build on an **Android emulator** and goes through the app like a person would: every tab, the Mushaf, the library, both Quran radios on the native player, live TV, every Settings page, a font change, the back key, the adhan, the widget, and a renderer crash it must recover from. It measures memory and freezes, and **the release is published only if nothing is wrong**.
+3. The site is redeployed with the new APK next to it and `version.json`, which the app's "Check for updates" reads.
 
-1. Edit the site files as usual.
-2. Create and push a version tag: `git tag v1.0.5 && git push origin v1.0.5`
-3. GitHub Actions builds a signed APK, publishes it on the releases page, and tests it on an Android emulator (screenshots are in the run's results).
+Every day, [`sources.yml`](.github/workflows/sources.yml) checks every outside service the app reads from (radio, TV, recitations, tafsir, hadith, adhkar audio) and turns red when one is down. Live links live in [`live.json`](live.json) on the site, so a dead link is fixed there **without an app update**.
 
-The signing key lives in the repository secrets, and its original copy is kept outside the repository. **Don't lose it:** every update must be signed with the same key, or phones will refuse to install it.
+The signing key lives in the repository secrets, and its original copy is kept outside the repository: every update must be signed with the same key.
 
 ## Project structure
 
 | Path | Description |
 |---|---|
-| `index.html` | The page and its styles |
-| `en/index.html` | Direct link to the English version |
-| `install.html` | Install steps for every device |
+| `index.html`, `en/`, `install.html` | The page and its styles, the English link, install steps |
 | `js/i18n.js` | Translation and the Arabic ⇄ English switch |
-| `js/clock.js` | Drawing the clock, hands and dial |
-| `js/astro.js` | Location, prayer times, moon and dates |
-| `js/look.js` | Dial, frame and page background colours |
-| `js/sounds.js` | Sound library |
-| `js/tasks.js` | Tasks and the focus timer |
-| `js/views.js` | Section tabs and shared helpers |
-| `js/notes.js` | Sticky notes |
-| `js/cards.js` | Review cards |
-| `js/habits.js` | Habits and wird |
-| `js/adhkar.js`, `js/adhkar-data.js` | Adhkar and duas, and their texts |
-| `js/focus-plus.js` | Distraction box, session log, useful breaks |
-| `js/focus-mode.js` | Full-screen focus mode |
-| `js/prayer-alerts.js` | Prayer alerts |
-| `js/report.js` | The report |
+| `js/clock.js`, `js/astro.js` | The clock; location, prayer times, moon and dates |
+| `js/look.js`, `fonts/` | Colours, backgrounds, text size and the interface fonts (`fonts/extra.css` from `tools/build_fonts.py`) |
+| `js/settings.js` | The Settings screen |
+| `js/views.js` | Tabs, shared helpers and the back-key handler |
 | `js/quran.js`, `js/quran-meta.js`, `quran/` | The Mushaf reader and its texts |
-| `js/sunnah.js`, `js/sunnah-data.js` | Hijri calendar, fasting and season reminders, and their evidence |
-| `js/qibla.js` | Qibla direction and compass |
-| `js/library.js`, `js/library-meta.js`, `js/salah-data.js` | The hadith library and the Prophet’s prayer |
-| `js/remind-card.js` | Reminder cards and sharing them as images |
-| `js/prayers.js` | My prayers: the five prayers, sunnah prayers and make-up count |
-| `js/tools.js`, `js/extras-data.js` | Zakat, Hajj and Umrah, the Names, istikhara, mosques, date converter, backup |
-| `sounds/adhan/` | Adhan recordings and their licences |
-| `js/config.js` | Supabase project settings |
-| `js/sync-core.js` | Rules for merging data between devices |
-| `js/sync.js` | Sign-in and sync |
-| `js/app.js` | Install button and home-screen shortcuts |
-| `js/native.js` | Prayer, focus and Sunnah notifications inside the Android app |
-| `js/vendor/supabase.js` | Supabase client (local copy, MIT license) |
-| `supabase/schema.sql` | Database table and its access rules |
-| `sounds/` | Sound recordings |
-| `manifest.webmanifest`, `icons/` | Installable-app metadata and icons |
-| `sw.js` | Offline support |
-| `tools/build_adhkar.py` | Builds the adhkar data from its sources |
-| `tools/build_quran.py` | Builds the Mushaf data from api.alquran.cloud (Tanzil) |
-| `tools/build_sunnah.py` | Cuts the hadith evidence out of the hadith collections |
-| `tools/build_salah.py` | Builds the prayer steps with their hadiths |
-| `tools/build_library.py` | Builds the index of the hadith library |
-| `tools/build_extras.py` | Builds the texts for the tools, Ramadan and the verse / hadith of the day |
-| `app/` | Android app project (Capacitor); it takes the site files as they are |
-| `fastlane/metadata/android/` | Store texts, icon and screenshots (Arabic and English) |
-| `docs/PUBLISHING.md` | How to list the app on F-Droid, Samsung, Huawei and Google Play |
-| `.github/workflows/android.yml` | Builds, signs, publishes and tests the APK |
-| `docs/` | Logo, screenshots and social preview |
+| `js/listen.js`, `live.json`, `tv.html`, `js/vendor/hls.light.min.js` | Radio, recitations, audio tafsir and live TV |
+| `js/library.js`, `js/library-meta.js`, `js/salah-data.js` | The hadith library and the Prophet's prayer |
+| `js/sunnah.js`, `js/sunnah-data.js` | Hijri calendar and Sunnah reminders |
+| `js/adhkar.js`, `js/adhkar-data.js` | Adhkar and duas |
+| `js/prayers.js`, `js/prayer-alerts.js`, `js/native.js` | My prayers, prayer alerts, and the Android notifications and adhan |
+| `js/tasks.js`, `js/notes.js`, `js/cards.js`, `js/habits.js`, `js/focus-*.js`, `js/report.js`, `js/sounds.js` | Tasks, notes, review cards, habits, focus, report, sounds |
+| `js/tools.js`, `js/qibla.js`, `js/remind-card.js` | Tools, Qibla, reminder cards |
+| `js/sync*.js`, `js/config.js`, `supabase/schema.sql` | Sync |
+| `app/` | The Android app (Capacitor); Java in `app/android/app/src/main/java/…/muslimtodo/` (`PlayerService`, `PlayerPlugin`, `Adhan*`, `PrayerWidget`, `MainActivity`) |
+| `app/scripts/smoke.mjs` | The emulator test |
+| `tools/build_*.py` | Build the Quran, adhkar, hadith, salah, extras and font data from their sources |
+| `tools/check_sources.mjs`, `tools/refresh_live.mjs` | The daily sources check and the live-video refresher |
+| `.github/workflows/` | `android.yml` (build, test, release), `pages.yml` (site), `sources.yml` (daily check) |
+| `fastlane/metadata/android/`, `docs/PUBLISHING.md` | Store texts and how to list the app in other stores |
 
 ## Contributing
 
-Bug reports and ideas are welcome.
-
-1. [Open an issue](https://github.com/micro4tricks-ai/muslim-todo-list/issues/new/choose) and describe the device, browser and what happened.
-2. For code changes: fork the repo, create a branch, run `node --check` on the scripts you changed, test in the browser, and open a pull request.
-3. New interface text needs an English entry in `js/i18n.js`.
-4. **Never type adhkar or Quran text by hand.** Regenerate `js/adhkar-data.js` with `python tools/build_adhkar.py`.
+Bug reports and ideas are welcome: [open an issue](https://github.com/micro4tricks-ai/muslim-todo-list/issues/new/choose) with the device and what happened. For code: fork, branch, run `node --check` on the scripts you changed, test in the browser, open a pull request. New interface text needs an English entry in `js/i18n.js`. **Never type Quran, hadith or adhkar text by hand** — regenerate it with the scripts in `tools/`.
 
 ## Privacy
 
-Without sync, everything stays in your browser's local storage and never leaves your device. If you turn on sync, your tasks and settings are stored in the project's Supabase database, protected by row-level security so each account can only read its own data. There are no ads and no analytics. Your music folder is played from your device and is never uploaded.
+Without sync, everything stays on your device. With sync, tasks and settings are stored in the project's Supabase database behind row-level security, so each account reads only its own data. **No ads, no analytics, no tracking.** Your music folder is played from your device and never uploaded.
 
 ## Sources and credits
 
-- **Adhkar:** texts from **Hisn al-Muslim** ([hisnmuslim.com](https://www.hisnmuslim.com)), and verses from the Mushaf through [api.alquran.cloud](https://alquran.cloud) (quran-simple and the Sahih International translation). `tools/build_adhkar.py` generates `js/adhkar-data.js` from them without any text typed by hand, except four well-known duas for students, cited with their sources in the script.
-- **Sounds:** from the [Moodist](https://github.com/remvze/moodist) project, under CC0 and the [Pixabay Content License](https://pixabay.com/service/license-summary/). If the `sounds` folder is missing, the same files load from jsDelivr, pinned to one commit.
-- **Prayer times:** calculations based on the [PrayTimes.org](http://praytimes.org) algorithm.
-- **To-do list:** inspired by [to-do-list-project](https://github.com/nagesh882/to-do-list-project); the focus and time-tracking ideas come from [Super Productivity](https://github.com/super-productivity/super-productivity).
+- **Quran:** Tanzil text through [api.alquran.cloud](https://alquran.cloud); recitations from [cdn.islamic.network](https://islamic.network) and [everyayah.com](https://everyayah.com); word by word from [quran.com](https://quran.com); tafsirs from [spa5k/tafsir_api](https://github.com/spa5k/tafsir_api) and alquran.cloud.
+- **Hadith:** [fawazahmed0/hadith-api](https://github.com/fawazahmed0/hadith-api) and [AhmedBaset/hadith-json](https://github.com/AhmedBaset/hadith-json).
+- **Radio, recitations and audio tafsir:** [mp3quran.net](https://www.mp3quran.net) (its open API); Quran Radio from Cairo through radiojar.
+- **Live TV:** the Quran and Sunnah channels of the Saudi Broadcasting Authority — their own platform [Aloula](https://aloula.sba.sa), their official YouTube channels, and Globecast.
+- **Adhkar:** [Hisn al-Muslim](https://www.hisnmuslim.com). **Adhan recordings:** Wikimedia Commons (see `sounds/adhan/CREDITS.md`).
+- **Fonts:** IBM Plex Sans Arabic, Amiri, Cairo, Tajawal, Almarai, Noto Kufi/Naskh Arabic, Readex Pro, El Messiri, Inter, Roboto, Nunito, Lato and Poppins — SIL Open Font License, from Google Fonts.
+- **Libraries:** Capacitor, Media3 (Apache 2.0), hls.js (Apache 2.0), Supabase JS (MIT).
+- **Sounds:** [Moodist](https://github.com/remvze/moodist) (CC0 and the Pixabay licence). **Prayer times:** the [PrayTimes.org](http://praytimes.org) algorithm.
 
 ## License
 
-The code is released under the [MIT License](LICENSE). Sounds, adhkar and Quran texts keep their original sources and licenses listed above.
+The code is released under the [MIT License](LICENSE). Texts, recordings, broadcasts and fonts keep their own sources and licences listed above.
 
 ---
 
@@ -224,33 +215,37 @@ The code is released under the [MIT License](LICENSE). Sounds, adhkar and Quran 
 
 <div dir="rtl">
 
-**قائمة مهام المسلم:** ساعة عقارب مع مواقيت الصلاة، وطور القمر، والشروق والغروب، والتاريخ الهجري والميلادي، ومؤقت تركيز، وقائمة مهام، ومكتبة أصوات للتركيز. الصفحة بالعربي افتراضياً، وزر **English** أعلى قائمة المهام يحوّلها للإنجليزي.
+**قائمة مهام المسلم** رفيق يومي هادئ مبني حول الصلوات الخمس، معمول **صدقة جارية: مجاني بالكامل، بلا إعلانات وبلا تتبّع**. ساعة عقارب تعرض الصلاة القادمة، والشروق والغروب، والقمر، والتاريخ الهجري والميلادي، وحولها كل ما يحتاجه المسلم في يومه.
+
+### الجديد في الإصدار ١٫٧
+
+- **إذاعات القرآن تعمل والشاشة مقفولة:** في تطبيق أندرويد صار الاستماع بمشغّل أندرويد أصلي، مع التحكم من الإشعارات وشاشة القفل، ويقف وقت المكالمات والأذان ويرجع بعدها. وإذاعة القرآن الكريم من **القاهرة** ومن **السعودية** تعملان الآن.
+- **البث المباشر بلا إعلانات:** قناة القرآن الكريم من المسجد الحرام وقناة السنة النبوية من المسجد النبوي، من البث الرسمي للهيئة بجودة حتى 1080p، ولو تعطّل يتحوّل وحده لمصدر آخر.
+- **صفحة إعدادات مثل تطبيقات أندرويد:** اللغة، والموقع والمواقيت، والأذان والتنبيهات، والألوان، والخطوط، والحساب، وحول التطبيق.
+- **الخطوط:** ٩ خطوط عربية (بلكس، القاهرة، تجوال، المراعي، نوتو كوفي، نوتو نسخ، ريدكس، المسيري، أميري) و٥ إنجليزية، مع معاينة حيّة، وتعمل دون إنترنت.
+- **كتب جديدة:** سنن الدارمي، ومسند الإمام أحمد (مسانيد الخلفاء الراشدين)، والأربعون لولي الله الدهلوي — ١٧ كتاباً في المكتبة.
+- **زر الرجوع:** يرجع خطوة بدل إغلاق التطبيق.
 
 ### الأقسام
 
-- **المهام:** مهام فرعية، ووقت متوقع، وتتبّع الوقت، وتقسيم اليوم حسب أوقات الصلاة (بعد الفجر، بعد الظهر…).
-- **ملاحظات لاصقة:** أوراق ملونة تُسحب لترتيبها وتُثبَّت، ويمكن تحويل أي ورقة إلى مهمة.
-- **كروت المراجعة:** مجموعات سؤال وجواب بمراجعة متباعدة (نظام لايتنر) للحفظ والمذاكرة.
-- **العادات والورد:** أذكار، وورد القرآن، واستغفار، وقيام، وصيام… مع أيام متتالية وتقويم ١٢ أسبوعاً.
-- **الأذكار والأدعية:** الصباح والمساء، وبعد الصلاة، وأدعية طالب العلم، والتوفيق والتيسير، والهم وصفاء الذهن، والرقية الشرعية، والنوم، والاستغفار؛ مع عدّاد وتلاوة صوتية ومسبحة.
-- **التركيز:** مؤقت بومودورو، ووضع تركيز بملء الشاشة، وصندوق المشتتات، واستراحات مفيدة (ذكر، حركة، ماء، تنفس)، وتنبيهات الصلاة.
-- **التقرير:** دقائق التركيز اليومية والأسبوعية، وأفضل وقت للتركيز، والأيام المتتالية.
+- **المصحف الشريف:** الرسم العثماني، و٩ تفاسير معتمدة تظهر تحت كل آية إن شئت، والتلاوة آية بآية لـ٩ قرّاء، ومصحف التجويد الملوّن، والمصحف المعلّم، واختبار الحفظ، ومعاني الكلمات، وخطة الختمة والورد اليومي.
+- **استماع:** ١٧٧ إذاعة، و٢٤١ قارئاً بكل الروايات، والتفسير الصوتي، والبث المباشر من الحرمين، والمفضلة، ومؤقت النوم.
+- **المكتبة:** الكتب الستة والموطأ بأحكام الألباني والأرناؤوط وغيرهما، ورياض الصالحين، وبلوغ المرام، والأدب المفرد، والشمائل، والمشكاة، والأربعينات، والدارمي، ومسند أحمد؛ وصفة صلاة النبي ﷺ على ترتيب كتاب الألباني بأدلتها.
+- **التقويم الهجري وتنبيهات السنن:** صيام الاثنين والخميس والأيام البيض وعرفة وعاشوراء والست من شوال، ورمضان والعشر، بالدليل والتخريج.
+- **صلواتي ورمضان والأدوات:** سجل الصلوات والسنن والقضاء، والإمساكية، وحاسبة الزكاة، ودليل الحج والعمرة، والأسماء الحسنى، والاستخارة، والمساجد القريبة، ومحوّل التاريخ، والقبلة.
+- **الأذكار والأدعية:** الصباح والمساء وبعد الصلاة وغيرها، مع العدّاد والتلاوة الصوتية والمسبحة.
+- **الأذان والتنبيهات:** أربعة أصوات أذان وأذان مستقل للفجر، يعمل والتطبيق مغلق، وتذكير الإقامة، وكروت تذكير تُشارَك صوراً، وويدجت للشاشة الرئيسية.
+- **المهام والتركيز:** مهام فرعية وتتبع الوقت وتقسيم اليوم حسب الصلاة، ومؤقت تركيز، وملاحظات، وكروت مراجعة، وعادات، وتقرير، ومكتبة أصوات للتركيز.
 
 ### التثبيت (مجاناً)
 
-- **أندرويد:** ملف APK من [الموقع مباشرة](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk) — تطبيق كامل تصل تنبيهات الصلاة فيه والتطبيق مغلق.
+- **أندرويد:** [حمّل التطبيق من الموقع مباشرة](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk). والتحديثات من: الإعدادات ← حول التطبيق ← «تحقق من وجود تحديث».
 - **آيفون وآيباد:** من Safari ← مشاركة ← «إضافة إلى الشاشة الرئيسية».
 - **الكمبيوتر:** زر «ثبّت التطبيق» أعلى قائمة المهام.
 
-خطوات كل جهاز بالتفصيل في [صفحة التثبيت](https://micro4tricks-ai.github.io/muslim-todo-list/install.html). الصفحة تعمل دون إنترنت بعد أول فتح.
+### الجودة والأمان
 
-### المزامنة
-
-زر **مزامنة** يسجّل الدخول بالبريد الإلكتروني (رابط دخول بدون كلمة مرور) ويزامن المهام والإعدادات بين أجهزتك. خطوات تجهيز Supabase في قسم [Sync between devices](#sync-between-devices-supabase) أعلاه.
-
-### المصادر
-
-نصوص الأذكار من **حصن المسلم** والآيات من المصحف عبر api.alquran.cloud، تولَّد آلياً بالسكربت `tools/build_adhkar.py` دون كتابة يدوية. الأصوات من مشروع Moodist (CC0 ورخصة Pixabay).
+كل إصدار يُجرَّب آلياً على محاكي أندرويد قبل نشره (كل الأقسام، والإذاعات، والبث، والإعدادات، وزر الرجوع، والأذان، والويدجت)، ولا يُنشر إلا إذا لم تظهر أي مشكلة. وكل يوم يُفحص كل مصدر خارجي يعتمد عليه التطبيق، وروابط البث في ملف `live.json` على الموقع تُصلَح دون تحديث التطبيق. لا تُكتب نصوص القرآن والحديث والأذكار يدوياً أبداً، بل تُولَّد آلياً من مصادرها.
 
 </div>
 
@@ -260,6 +255,6 @@ The code is released under the [MIT License](LICENSE). Sounds, adhkar and Quran 
 
 Designed and built by **Mahmoud Habashi · محمود حبشي** — [micro4tricks@gmail.com](mailto:micro4tricks@gmail.com)
 
-If this helps you, ⭐ star the repo so more people can find it.
+If this helps you, ⭐ star the repo so more people can find it — وإن نفعك فادعُ لنا.
 
 </div>
