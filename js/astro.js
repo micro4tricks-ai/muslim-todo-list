@@ -377,6 +377,7 @@
   selMethod.addEventListener('change', () => { P.method = selMethod.value; changed(); });
   selAsr.addEventListener('change', () => { P.asr = Number(selAsr.value) || 1; changed(); });
   $('placeChip').addEventListener('click', () => (panel.hidden ? openPanel() : closePanel()));
+  window.noonPlace = { open: openPanel }; // Settings › Location hosts this panel
   $('placeClose').addEventListener('click', closePanel);
   panel.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); closePanel(); } });
 

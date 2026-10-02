@@ -147,6 +147,29 @@ await phase('Listen: the Quran radios on the native player', async () => {
   if (!top.includes(pkg)) { adb(`shell am start -n ${pkg}/.MainActivity`); await sleep(3000); }
   await gesture("window.noonUI.go('tasks')");
 }, 4000);
+// Settings: every page opens, a font applies, and the phone's back key steps back out of it.
+await phase('Settings: every page, a font, the back key', async () => {
+  await gesture("document.getElementById('quickSettings').click()"); await sleep(1500);
+  report.settings = { pages: {} };
+  const ids = await js("[...document.querySelectorAll('.st-row[data-page]')].map((r) => r.dataset.page)");
+  for (const id of ids || []) {
+    await gesture(`document.querySelector('.st-row[data-page="${id}"]').click()`); await sleep(1200);
+    report.settings.pages[id] = await js("document.querySelector('.st-title').textContent + ' | ' + Math.round(document.querySelector('.st-body').scrollHeight) + 'px'");
+    adb('shell input keyevent BACK'); await sleep(1200);
+  }
+  await gesture("document.querySelector('.st-row[data-page=\"fonts\"]').click()"); await sleep(1200);
+  await gesture("[...document.querySelectorAll('.st-choice')][1].click()"); await sleep(2500);
+  report.settings.font = await js("getComputedStyle(document.body).fontFamily + ' | loaded: ' + [...document.fonts].some((f) => f.family === 'Cairo' && f.status === 'loaded')");
+  await gesture("[...document.querySelectorAll('.st-choice')][0].click()"); await sleep(800);
+  adb('shell input keyevent BACK'); await sleep(1000);
+  adb('shell input keyevent BACK'); await sleep(1500);
+  report.settings.closedByBack = await js("document.querySelector('.st').hidden");
+  report.settings.appStillOpen = alive() && (adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '').includes(pkg);
+  // The new books open.
+  await gesture("window.noonUI.go('library')"); await sleep(1200);
+  report.settings.books = await js("document.querySelectorAll('#view-library .lib-book').length");
+  console.log('settings:', JSON.stringify(report.settings));
+}, 3000);
 // The native adhan player: it must start (a foreground service), play, and stop cleanly.
 await phase('Adhan player: play, then stop', async () => {
   // Call the plugin directly, so any error is reported instead of swallowed.

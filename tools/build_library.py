@@ -33,6 +33,9 @@ EXTRA = [
     ('adab', 'other_books/aladab_almufrad', 'الأدب المفرد', 'Al-Adab al-Mufrad', 'الإمام البخاري', 'Imam al-Bukhari'),
     ('shamail', 'other_books/shamail_muhammadiyah', 'الشمائل المحمدية', 'Ash-Shama’il al-Muhammadiyah', 'الإمام الترمذي', 'Imam at-Tirmidhi'),
     ('mishkat', 'other_books/mishkat_almasabih', 'مشكاة المصابيح', 'Mishkat al-Masabih', 'الخطيب التبريزي', 'Al-Khatib at-Tabrizi'),
+    ('ahmad', 'the_9_books/ahmed', 'مسند الإمام أحمد: مسانيد الخلفاء الراشدين', 'Musnad Ahmad: the Rightly Guided Caliphs', 'الإمام أحمد بن حنبل', 'Imam Ahmad ibn Hanbal'),
+    ('darimi', 'the_9_books/darimi', 'سنن الدارمي', 'Sunan ad-Darimi', 'الإمام عبد الله بن عبد الرحمن الدارمي', 'Imam ad-Darimi'),
+    ('waliullah40', 'forties/shahwaliullah40', 'الأربعون لولي الله الدهلوي', 'Shah Waliullah’s Forty', 'الشيخ ولي الله الدهلوي', 'Shah Waliullah ad-Dihlawi'),
 ]
 AB = 'https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/{}.json'
 

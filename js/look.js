@@ -50,7 +50,19 @@
     ['black', 'أسود مطفي', 'linear-gradient(135deg, #6C727A, #1D2025 55%, #4B5057)']
   ];
 
-  let L = { bg: 'mist', dial: 'ceramic', metal: 'steel', mode: 'auto', scale: 1 };
+  // Interface fonts (fonts/extra.css, chosen in Settings › Fonts). The English font goes first in
+  // the stack, so Latin text takes it while Arabic letters and digits fall through to the Arabic one.
+  const AR_FONTS = [
+    ['plex', 'IBM Plex Sans Arabic', 'بلكس (الافتراضي)'], ['cairo', 'Cairo', 'القاهرة'], ['tajawal', 'Tajawal', 'تجوال'],
+    ['almarai', 'Almarai', 'المراعي'], ['kufi', 'Noto Kufi Arabic', 'نوتو كوفي'], ['naskh', 'Noto Naskh Arabic', 'نوتو نسخ'],
+    ['readex', 'Readex Pro', 'ريدكس'], ['messiri', 'El Messiri', 'المسيري'], ['amiri', 'Amiri', 'أميري']
+  ];
+  const EN_FONTS = [
+    ['same', '', 'مثل الخط العربي'], ['inter', 'Inter', 'Inter'], ['roboto', 'Roboto', 'Roboto'],
+    ['nunito', 'Nunito', 'Nunito'], ['lato', 'Lato', 'Lato'], ['poppins', 'Poppins', 'Poppins']
+  ];
+
+  let L = { bg: 'mist', dial: 'ceramic', metal: 'steel', mode: 'auto', scale: 1, fontAr: 'plex', fontEn: 'same' };
   try { Object.assign(L, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
   let customImage = null;
   try { customImage = localStorage.getItem(IMG_KEY); } catch (_) {}
@@ -67,6 +79,7 @@
     const dark = isDark();
     document.documentElement.dataset.mode = dark ? 'dark' : 'light';
     document.documentElement.style.setProperty('--ui-scale', String(L.scale || 1));
+    applyFont();
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = dark ? '#121417' : '#EFEFEC';
     applyBackground();
@@ -91,7 +104,17 @@
     b.backgroundColor = '';
   }
 
-  window.noonLook = { get: () => ({ dial: L.dial, metal: L.metal }) };
+  function applyFont() {
+    const ar = (AR_FONTS.find((f) => f[0] === L.fontAr) || AR_FONTS[0])[1];
+    const en = (EN_FONTS.find((f) => f[0] === L.fontEn) || EN_FONTS[0])[1];
+    document.documentElement.style.setProperty('--font', `${en ? `"${en}", ` : ''}"${ar}", "Segoe UI", Tahoma, Arial, sans-serif`);
+  }
+
+  window.noonLook = {
+    get: () => ({ dial: L.dial, metal: L.metal, mode: L.mode, fontAr: L.fontAr, fontEn: L.fontEn }),
+    fonts: { ar: AR_FONTS, en: EN_FONTS },
+    setFont(kind, id) { L[kind === 'en' ? 'fontEn' : 'fontAr'] = id; save(); applyFont(); }
+  };
   const announce = () => window.dispatchEvent(new CustomEvent('noon-look'));
 
   // ---- panel ----
@@ -157,6 +180,7 @@
     $('lookClose').focus();
   }
   function closePanel() { panel.hidden = true; $('lookChip').focus(); }
+  window.noonLook.open = openPanel; // Settings › Appearance hosts this panel
   $('lookChip').addEventListener('click', () => (panel.hidden ? openPanel() : closePanel()));
   $('lookClose').addEventListener('click', closePanel);
   panel.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); closePanel(); } });
