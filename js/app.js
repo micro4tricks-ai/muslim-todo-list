@@ -32,26 +32,58 @@
   // ---- version, and a check against the latest release ----
   // Only this button speaks for the app's updates: any other "security update" message
   // on the phone does not come from Muslim To-Do List.
-  const VERSION = '1.7.1';
+  const VERSION = '1.8.0';
   const T = window.noonUI.T;
   const verEl = $('appVersion'), upBtn = $('checkUpdate'), upMsg = $('updateMsg');
   verEl.textContent = `${T('الإصدار')} ${I.num(VERSION)}`;
   const newer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let k = 0; k < 3; k++) { if ((x[k] || 0) !== (y[k] || 0)) return (x[k] || 0) > (y[k] || 0); } return false; };
+  // version.json names the release whose APK the website serves (see the Website workflow).
+  async function latest() {
+    const r = await fetch(`https://micro4tricks-ai.github.io/muslim-todo-list/version.json?t=${Date.now()}`, { cache: 'no-store' });
+    const tag = String((await r.json()).version || '');
+    if (!tag) throw new Error('no tag');
+    return tag;
+  }
+  // In the app the update downloads and installs from here (js/device.js); on the website a reload is enough.
+  function offer(tag) {
+    upMsg.replaceChildren(`${T('يوجد إصدار أحدث:')} ${I.num(tag)} `);
+    if (native && window.noonDevice) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn btn-primary'; b.textContent = T('تحديث الآن');
+      const m = document.createElement('span'); m.className = 'hint';
+      b.addEventListener('click', () => window.noonDevice.update(m));
+      upMsg.append(b, ' ', m);
+      return;
+    }
+    const a = document.createElement('a');
+    if (native) { a.href = 'https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk'; a.textContent = T('تنزيل التحديث'); a.target = '_blank'; a.rel = 'noopener'; }
+    else { a.href = location.pathname + location.search; a.textContent = T('إعادة فتح الصفحة'); }
+    upMsg.append(a);
+  }
   upBtn.addEventListener('click', async () => {
     upMsg.textContent = T('جارٍ التحقق…');
     try {
-      // version.json names the release whose APK the website serves (see the Website workflow).
-      const r = await fetch(`https://micro4tricks-ai.github.io/muslim-todo-list/version.json?t=${Date.now()}`, { cache: 'no-store' });
-      const tag = String((await r.json()).version || '');
-      if (!tag) throw new Error('no tag');
+      const tag = await latest();
       if (!newer(tag, VERSION)) { upMsg.textContent = T('أنت على آخر إصدار.'); return; }
-      upMsg.replaceChildren(`${T('يوجد إصدار أحدث:')} ${I.num(tag)} `);
-      const a = document.createElement('a');
-      if (native) { a.href = 'https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk'; a.textContent = T('تنزيل التحديث'); a.target = '_blank'; a.rel = 'noopener'; }
-      else { a.href = location.pathname + location.search; a.textContent = T('إعادة فتح الصفحة'); }
-      upMsg.append(a);
+      offer(tag);
     } catch (_) { upMsg.textContent = T('تعذّر التحقق. تأكد من الاتصال بالإنترنت.'); }
   });
+  // In the app: a quiet check once a day; a newer version is offered with one tap.
+  if (native) {
+    let last = 0;
+    try { last = Number(localStorage.getItem('noon-update-check')) || 0; } catch (_) {}
+    if (Date.now() - last > 864e5) {
+      setTimeout(async () => {
+        try {
+          const tag = await latest();
+          try { localStorage.setItem('noon-update-check', String(Date.now())); } catch (_) {}
+          if (!newer(tag, VERSION)) return;
+          offer(tag);
+          window.noonUI.toast(`${T('يوجد إصدار أحدث:')} ${I.num(tag)}`, { label: T('تحديث'), sticky: true, run: () => window.noonSettings && window.noonSettings.open('about') });
+        } catch (_) { /* offline: next time */ }
+      }, 6000);
+    }
+  }
 
   // The language button in the quick bar under the clock.
   const quickLang = $('quickLang');

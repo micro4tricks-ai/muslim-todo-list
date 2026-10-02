@@ -19,6 +19,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AdhanPlugin.class);
         // ... and plays the Listen tab (radio, surahs, tafsir) through this one.
         registerPlugin(PlayerPlugin.class);
+        // ... and keeps the adhan reliable and installs updates through this one.
+        registerPlugin(DevicePlugin.class);
         super.onCreate(savedInstanceState);
         // When Android stops the page's renderer (usually to free memory), reopen the
         // screen instead of letting the whole app close. Tasks and settings are saved

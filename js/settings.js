@@ -63,7 +63,8 @@
   const PAGES = {
     lang: { title: 'اللغة', icon: 'globe', sub: () => (I.isEn ? 'English' : 'العربية'), build: buildLang },
     place: { title: 'الموقع ومواقيت الصلاة', icon: 'pin', sub: () => $('placeName').textContent, node: () => $('placePanel'), open: () => window.noonPlace && window.noonPlace.open() },
-    adhan: { title: 'الأذان والتنبيهات', icon: 'bell', sub: () => T($('paEnabled').checked ? 'مفعّلة' : 'متوقفة'), node: () => pa },
+    adhan: { title: 'الأذان والتنبيهات', icon: 'bell', node: () => pa,
+      sub: () => (window.noonDevice && window.noonDevice.status() && !window.noonDevice.ok() ? `⚠ ${T('يحتاج ضبطاً')}` : T($('paEnabled').checked ? 'مفعّلة' : 'متوقفة')) },
     look: { title: 'الألوان والخلفية', icon: 'palette', sub: lookName, node: () => $('lookPanel'), open: () => window.noonLook.open() },
     fonts: { title: 'الخطوط', icon: 'font', sub: fontNames, build: buildFonts },
     account: { title: 'الحساب والمزامنة', icon: 'cloud', sub: () => $('syncLabel').textContent, node: () => $('syncPanel') },

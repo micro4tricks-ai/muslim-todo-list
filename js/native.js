@@ -169,6 +169,7 @@
     } finally { sunnahBusy = false; }
   }
   window.addEventListener('noon-sunnah', () => scheduleSunnah(true));
+  window.addEventListener('noon-place', () => { schedulePrayers(true); scheduleSunnah(true); });
 
   // ---- focus: a notice when the running session ends ----
   let focusSig = '';

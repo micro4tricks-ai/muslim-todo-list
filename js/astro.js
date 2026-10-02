@@ -237,6 +237,14 @@
   const PRAYER_ORDER = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
   // ---- snapshot (cached per minute and per place change) ----
+  // The user's own minutes per prayer, to match the mosque nearby (Settings › Location).
+  const SHIFTABLE = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  function shifted(t) {
+    const o = P.offsets || {};
+    SHIFTABLE.forEach((k) => { const m = Number(o[k]) || 0; if (m && Number.isFinite(t[k])) t[k] += m / 60; });
+    return t;
+  }
+
   let snapCache = { key: '', val: null };
   function snapshot(epoch) {
     const key = Math.floor(epoch / 60000) + '|' + version;
@@ -248,7 +256,7 @@
     const y = local.getUTCFullYear(), m = local.getUTCMonth() + 1, d = local.getUTCDate();
     const nowH = local.getUTCHours() + local.getUTCMinutes() / 60 + local.getUTCSeconds() / 3600;
     const tzH = off / 3600000;
-    const today = prayerTimes(y, m, d, place.lat, place.lon, tzH, method, place.asr);
+    const today = shifted(prayerTimes(y, m, d, place.lat, place.lon, tzH, method, place.asr));
 
     let next = null;
     for (const k of PRAYER_ORDER) {
@@ -256,7 +264,7 @@
     }
     if (!next) {
       const tm = new Date(Date.UTC(y, m - 1, d + 1));
-      const tomorrow = prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate(), place.lat, place.lon, tzH, method, place.asr);
+      const tomorrow = shifted(prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate(), place.lat, place.lon, tzH, method, place.asr));
       next = { key: 'fajr', h: tomorrow.fajr, inH: tomorrow.fajr + 24 - nowH };
     }
     next.name = T(PRAYER_NAMES[next.key]);
@@ -316,10 +324,36 @@
     selAsr.value = String(P.asr);
     $('placeName').textContent = resolved().name;
   }
+  // Minutes added to or taken from each prayer, from -30 to +30.
+  function renderOffsets() {
+    const box = $('ppOffsets');
+    if (!box) return;
+    const o = P.offsets || {};
+    const h = document.createElement('h3');
+    h.textContent = T('ضبط المواعيد على مسجدك (بالدقائق)');
+    const rows = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((k) => {
+      const row = document.createElement('div'); row.className = 'pp-off';
+      const name = document.createElement('span'); name.textContent = T(PRAYER_NAMES[k]);
+      const out = document.createElement('output');
+      const v = Number(o[k]) || 0;
+      out.textContent = v ? `${v > 0 ? '+' : '−'}${ar(Math.abs(v))} ${T('د')}` : T('بدون');
+      out.classList.toggle('is-set', !!v);
+      const step = (d, label) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = d > 0 ? '+' : '−';
+        b.setAttribute('aria-label', `${T(label)} ${T(PRAYER_NAMES[k])}`);
+        b.addEventListener('click', () => { P.offsets = Object.assign({}, P.offsets, { [k]: Math.max(-30, Math.min(30, v + d)) }); changed(); });
+        return b;
+      };
+      row.append(name, step(-1, 'تقديم'), out, step(1, 'تأخير'));
+      return row;
+    });
+    box.replaceChildren(h, ...rows);
+  }
   function renderPanel() {
     const s = snapshot(Date.now());
     $('placeName').textContent = s.place.name;
     if (panel.hidden) return;
+    renderOffsets();
     const dates = $('ppDates');
     dates.replaceChildren();
     const line = (text, cls, dir) => {
@@ -367,6 +401,7 @@
     savePlace();
     syncForm();
     renderPanel();
+    window.dispatchEvent(new CustomEvent('noon-place'));
   }
 
   selCountry.addEventListener('change', () => { P.country = selCountry.value; P.city = 0; P.custom = null; P.method = ''; changed(); });

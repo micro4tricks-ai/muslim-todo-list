@@ -167,6 +167,20 @@ await phase('Settings: every page, a font, the back key', async () => {
   adb('shell input keyevent BACK'); await sleep(1500);
   report.settings.closedByBack = await js("document.querySelector('.st').hidden");
   report.settings.appStillOpen = alive() && (adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '').includes(pkg);
+  // Reliability: what the phone allows, as the adhan page shows it.
+  report.settings.device = await js("(async () => { try { return await Capacitor.Plugins.Device.status(); } catch (e) { return 'ERR ' + e.message; } })()");
+  report.settings.reliabilityCard = await js("(document.querySelector('.rel .rel-head b') || {}).textContent || 'none'");
+  // A minute added to Fajr moves Fajr by exactly one minute, then back.
+  report.settings.offset = await js(`(async () => {
+    const t = Date.now(), before = window.noonAstro.snapshot(t).today.fajr;
+    window.noonSettings.open('place'); await new Promise((r) => setTimeout(r, 800));
+    const plus = [...document.querySelectorAll('#ppOffsets .pp-off')][0].querySelectorAll('button')[1];
+    plus.click(); await new Promise((r) => setTimeout(r, 300));
+    const after = window.noonAstro.snapshot(t).today.fajr;
+    [...document.querySelectorAll('#ppOffsets .pp-off')][0].querySelectorAll('button')[0].click();
+    history.back(); await new Promise((r) => setTimeout(r, 300)); history.back();
+    return Math.round((after - before) * 60);
+  })()`);
   // The new books open.
   await gesture("window.noonUI.go('library')"); await sleep(1200);
   report.settings.books = await js("document.querySelectorAll('#view-library .lib-book').length");
@@ -239,6 +253,8 @@ if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== fal
 if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');
 if (!report.settings || report.settings.appStillOpen !== true) problems.push('the back key closed the app');
 if (report.adhanCall !== 'ok') problems.push(`adhan: ${report.adhanCall}`);
+if (!report.settings || !report.settings.device || typeof report.settings.device !== 'object') problems.push(`device status: ${report.settings && report.settings.device}`);
+if (!report.settings || report.settings.offset !== 1) problems.push(`a minute added to Fajr moved it by ${report.settings && report.settings.offset}`);
 if (!report.widgetHasTimes) problems.push('the widget has no prayer times');
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 report.problems = problems;

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- What the app may hand to other apps: only files it wrote to its own cache
+     (cards and the imsakiya shared as images, the backup file, the downloaded update). -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <cache-path name="cache" path="." />
 </paths>
