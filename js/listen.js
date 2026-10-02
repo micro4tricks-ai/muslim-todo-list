@@ -678,7 +678,9 @@
   const score = (m) => (S.riwaya && m.riwaya === S.riwaya ? 1000 : 0) + m.list.length * 4 + (m.riwaya === 1 ? 2 : 0) + (/مرتل|murattal/i.test(m.name) ? 1 : 0);
   function renderReciter() {
     const head = el('div', 'view-head');
-    head.append(button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('التلاوات')}`, () => go({ name: 'home' })));
+    const backBtn = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('التلاوات')}`, () => go({ name: 'home' }));
+    backBtn.dataset.back = '';
+    head.append(backBtn);
     root.append(head);
     const box = el('div', 'ls-body');
     root.append(box);

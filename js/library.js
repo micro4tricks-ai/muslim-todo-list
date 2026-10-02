@@ -84,7 +84,7 @@
     renderHome();
   }
   const go = (s) => { screen = s; render(); root.scrollIntoView({ block: 'start' }); };
-  const back = (label, to) => button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T(label)}`, () => go(to));
+  const back = (label, to) => { const b = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T(label)}`, () => go(to)); b.dataset.back = ''; return b; };
 
   function renderHome() {
     const head = el('div', 'view-head');

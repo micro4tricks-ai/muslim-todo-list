@@ -274,5 +274,5 @@
     else if (!ev.shiftKey && document.activeElement === f[f.length - 1]) { ev.preventDefault(); f[0].focus(); }
   });
   window.addEventListener('noon-prayer', (ev) => { if (!root.hidden) renderInfo(); });
-  window.noonFocusMode = { open, close };
+  window.noonFocusMode = { open, close, isOpen: () => !root.hidden };
 })();

@@ -80,19 +80,6 @@ jobs:
           name: muslim-todo-list-debug-apk
           path: muslim-todo-list-debug.apk
 
-      - name: Publish the release
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          notes="تطبيق أندرويد مجاني — Free Android app.
-          طريقة التثبيت / How to install: https://micro4tricks-ai.github.io/muslim-todo-list/install.html"
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" muslim-todo-list.apk --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" muslim-todo-list.apk --title "Muslim To-Do List $GITHUB_REF_NAME" --notes "$notes"
-          fi
-
   # Installs the APK on an Android emulator, opens it, and saves screenshots
   # and the app's console log, so a broken build shows up before anyone installs it.
   smoke-test:
@@ -141,3 +128,30 @@ jobs:
         with:
           name: smoke-test
           path: shots
+
+      - name: Fail when the app check found problems or did not finish
+        run: |
+          test -f shots/report.json || { echo "::error::The app check did not finish (see the screenshots)"; exit 1; }
+          node -e "const r=require('./shots/report.json'); const p=r.problems||['no problems list']; if (p.length) { p.forEach((x)=>console.log('::error::'+x)); process.exit(1); } console.log('No problems found');"
+
+  # Publishes the release only once the app check on the emulator found nothing wrong.
+  release:
+    needs: [build, smoke-test]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: muslim-todo-list-apk
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="تطبيق أندرويد مجاني — Free Android app.
+          طريقة التثبيت / How to install: https://micro4tricks-ai.github.io/muslim-todo-list/install.html"
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk --title "Muslim To-Do List $GITHUB_REF_NAME" --notes "$notes"
+          fi

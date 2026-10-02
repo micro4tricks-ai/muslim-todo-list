@@ -1008,7 +1008,8 @@
       try { localStorage.setItem(KEY, next); } catch (_) {}
       const p = new URLSearchParams(location.search);
       p.set('lang', next);
-      location.search = p.toString();
+      // Replace, so the back key doesn't return to the other language.
+      location.replace(location.pathname + '?' + p.toString() + location.hash);
     }
   };
   window.noonI18n = I;

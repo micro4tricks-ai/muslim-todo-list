@@ -88,6 +88,16 @@
     if (b && !b.closest('.qr')) go(b.dataset.go);
   });
   window.noonUI.show = show;
+  // The phone's back key (MainActivity in the app) asks here first: focus mode closes, and a screen
+  // inside a tab (a book, a reciter) steps back. Settings and the Mushaf use the page's history instead.
+  window.noonBack = () => {
+    if (document.body.classList.contains('st-open') || document.body.classList.contains('qr-open')) return false;
+    const fm = window.noonFocusMode;
+    if (fm && fm.isOpen && fm.isOpen()) { fm.close(); return true; }
+    const b = document.querySelector(`.view[data-view="${current}"]:not([hidden]) [data-back]`);
+    if (b) { b.click(); return true; }
+    return false;
+  };
   window.noonUI.go = go;
   window.noonUI.currentView = () => current;
   show(current);

@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
+import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 import com.getcapacitor.WebViewListener;
@@ -32,6 +33,20 @@ public class MainActivity extends BridgeActivity {
         // Capacitor sends every link outside the app to the browser, frames included. The live
         // broadcast (YouTube inside the website's tv.html) is a frame, so frames load in place;
         // links on the page itself still open outside.
+        // The phone's back key: first whatever the page has open (focus mode, a book, a reciter;
+        // window.noonBack), then the page's own history (Settings pages, the Mushaf), and only then
+        // leave, sending the app to the background so the radio and the adhan carry on.
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                WebView wv = bridge.getWebView();
+                wv.evaluateJavascript("(window.noonBack && window.noonBack()) ? 1 : 0", (handled) -> {
+                    if ("1".equals(handled)) return;
+                    if (wv.canGoBack()) wv.goBack();
+                    else moveTaskToBack(true);
+                });
+            }
+        });
         bridge.setWebViewClient(new BridgeWebViewClient(bridge) {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {

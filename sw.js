@@ -2,7 +2,7 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v16';
+const VERSION = 'v17';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched

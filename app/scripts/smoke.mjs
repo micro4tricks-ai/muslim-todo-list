@@ -24,7 +24,9 @@ ws.addEventListener('message', (e) => {
   if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') errors.push('console: ' + m.params.args.map((a) => a.value || a.description).join(' '));
 });
 const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
-const js = async (e) => { const r = await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true }); return r.result && r.result.value; };
+// Every call gives up after 20 s, so a page that went away fails the check instead of hanging it.
+const timed = (p) => Promise.race([p, sleep(20000).then(() => null)]);
+const js = async (e) => { const r = await timed(send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true })); return r && r.result && r.result.value; };
 await send('Runtime.enable');
 await send('Page.enable');
 // Record every task that blocks the page for more than 50 ms.
@@ -75,7 +77,7 @@ const memory = () => {
 };
 const alive = () => { try { return adb(`shell pidof ${pkg}`).trim() !== ''; } catch { return false; } };
 const lag = async () => { const t0 = Date.now(); await js('1'); return Date.now() - t0; };
-const gesture = (e) => send('Runtime.evaluate', { expression: e, userGesture: true, awaitPromise: true, returnByValue: true });
+const gesture = (e) => timed(send('Runtime.evaluate', { expression: e, userGesture: true, awaitPromise: true, returnByValue: true }));
 let seen = await js('__long.length');
 report.phases = [];
 async function phase(name, run, waitMs) {
@@ -228,6 +230,18 @@ if (pagesAfter.length) {
   w2.close();
 }
 report.afterRendererCrash = { appRunning: alive(), page: reopened };
+// What a person would call broken; the workflow fails when this list isn't empty.
+const problems = [];
+report.phases.forEach((p) => { if (!p.appRunning) problems.push(`app not running after "${p.name}"`); if (p.error) problems.push(`${p.name}: ${p.error}`); });
+((report.listen && report.listen.radios) || []).forEach((r) => { if (!/^playing/.test(r.state)) problems.push(`radio not playing: ${r.state}`); });
+if (!report.listen || !report.listen.radios) problems.push('the radio check did not run');
+if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== false) problems.push('live TV did not play');
+if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');
+if (!report.settings || report.settings.appStillOpen !== true) problems.push('the back key closed the app');
+if (report.adhanCall !== 'ok') problems.push(`adhan: ${report.adhanCall}`);
+if (!report.widgetHasTimes) problems.push('the widget has no prayer times');
+if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
+report.problems = problems;
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));
 ws.close();
