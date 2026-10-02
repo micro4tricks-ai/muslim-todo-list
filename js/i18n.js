@@ -815,6 +815,8 @@
     'إذا ظهر هذا الإشعار بصوت، فالتنبيهات تعمل.': 'If this arrived with a sound, notifications are working.',
     'سيصلك إشعار تجريبي بعد ٥ ثوانٍ.': 'A test notification will arrive in 5 seconds.',
     // v1.6: listen (mp3quran.net)
+    'الصورة لا تعمل؟ جرّب مصدراً آخر': 'Picture not working? Try another source',
+    'البث الرسمي لقناتي القرآن الكريم والسنة النبوية من منصة «الأولى» (هيئة الإذاعة والتلفزيون السعودية)، بجودة تصل إلى 1080p ودون إعلانات. للشاشة الكاملة استخدم زر التكبير في الفيديو.': 'The official broadcast of the Quran and Sunnah channels from Aloula (Saudi Broadcasting Authority), up to 1080p and without ads. For full screen, use the video’s full-screen button.',
     'بدون إعلانات (جودة أقل)': 'No ads (lower quality)',
     'جودة عالية (يوتيوب، قد تظهر إعلانات)': 'High quality (YouTube, may show ads)',
     'شاهد بجودة عالية وبدون إعلانات على منصة «الأولى» الرسمية': 'Watch in high quality without ads on the official Aloula platform',

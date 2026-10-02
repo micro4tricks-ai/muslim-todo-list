@@ -16,6 +16,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(WidgetBridge.class);
         // ... and books the adhan with the phone's alarm clock through this one.
         registerPlugin(AdhanPlugin.class);
+        // ... and plays the Listen tab (radio, surahs, tafsir) through this one.
+        registerPlugin(PlayerPlugin.class);
         super.onCreate(savedInstanceState);
         // When Android stops the page's renderer (usually to free memory), reopen the
         // screen instead of letting the whole app close. Tasks and settings are saved

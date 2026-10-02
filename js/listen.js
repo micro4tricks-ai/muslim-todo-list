@@ -75,9 +75,9 @@
   const BUILT_IN = {
     tv: [
       { id: 'quran', ar: 'قناة القرآن الكريم — من المسجد الحرام', en: 'Quran TV — live from al-Masjid al-Haram',
-        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8'], youtube: { video: 'eC4LfEVxvKg' }, official: 'https://aloula.sba.sa/ar/live/quran' },
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_quran/hls_roku/index.m3u8'], youtube: { video: 'eC4LfEVxvKg' }, official: 'https://aloula.sba.sa/ar/live/quran', aloula: 7 },
       { id: 'sunnah', ar: 'قناة السنة النبوية — من المسجد النبوي', en: 'Sunnah TV — live from the Prophet\'s Mosque',
-        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8'], youtube: { video: 'Rs7St51oDDc' }, official: 'https://aloula.sba.sa/ar/live/sunna' }
+        urls: ['https://cdn-globecast.akamaized.net/live/eds/saudi_sunnah/hls_roku/index.m3u8'], youtube: { video: 'Rs7St51oDDc' }, official: 'https://aloula.sba.sa/ar/live/sunna', aloula: 6 }
     ],
     radios: []
   };
@@ -129,6 +129,11 @@
   const partName = (x) => (x.from ? `${surahName(x.s)}: ${T('الآيات')} ${I.num(x.from)}–${I.num(x.to)}` : surahName(x.s));
 
   // ================= the player =================
+  // In the app the native player plays (PlayerPlugin, Media3): it keeps going with the screen off,
+  // shows the media notification and lock-screen controls, gives way to calls and the adhan, and
+  // follows the stations' https-to-http redirects, which the app's web view refuses.
+  // The <audio> element serves the website.
+  const NP = window.noonNative && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Player;
   const audio = new Audio();
   audio.preload = 'none';
   let Q = [], at = -1, state = 'off'; // off | loading | playing | paused
@@ -175,6 +180,15 @@
   function start(queue, i, pos) {
     Q = queue; at = i;
     const it = Q[at];
+    if (NP) {
+      state = 'loading'; paint();
+      NP.play({ items: Q.map((x) => ({ key: x.key, title: x.title, sub: x.sub, urls: x.urls, live: !!x.live })), index: i, position: pos || 0 })
+        .catch(() => failed());
+      window.dispatchEvent(new CustomEvent('noon-recitation', { detail: { from: 'listen' } }));
+      S.last = Object.assign({ pos: pos || 0, title: it.title, sub: it.sub }, it.last);
+      save();
+      return;
+    }
     it.tried = 0;
     audio.src = it.urls[0];
     if (pos) audio.addEventListener('loadedmetadata', () => { if (audio.src === it.urls[it.tried]) try { audio.currentTime = pos; } catch (_) {} }, { once: true });
@@ -195,6 +209,7 @@
   }
   function pause() {
     if (!Q[at]) return;
+    if (NP) { NP.pause(); state = 'paused'; paint(); return; }
     if (Q[at].live) { audio.removeAttribute('src'); audio.load(); } // a live stream resumes at "now", not where it stopped
     else audio.pause();
     state = 'paused'; paint();
@@ -202,6 +217,13 @@
   function resume() {
     const it = Q[at];
     if (!it) return;
+    if (NP) {
+      if (!nativeUp) { start(Q, at, it.live ? 0 : S.last && S.last.pos); return; } // the service has gone
+      state = 'loading'; paint();
+      NP.resume();
+      window.dispatchEvent(new CustomEvent('noon-recitation', { detail: { from: 'listen' } }));
+      return;
+    }
     if (it.live || !audio.src) { start(Q, at, it.live ? 0 : S.last && S.last.pos); return; }
     state = 'loading'; paint();
     tryPlay();
@@ -211,6 +233,7 @@
   const toggle = () => (state === 'playing' || state === 'loading' ? pause() : resume());
   function step(d) { const n = at + d; if (n >= 0 && n < Q.length) start(Q, n); }
   function stop(close) {
+    if (NP) NP.stop();
     audio.pause(); audio.removeAttribute('src'); audio.load();
     setSleep(0);
     state = close ? 'off' : 'paused';
@@ -239,8 +262,33 @@
     if (from !== 'listen' && (state === 'playing' || state === 'loading')) pause();
     if (from !== 'listen-tv') stopTv(); // the TV gives way to any other sound
   });
-  // In the app, the native adhan pauses the radio and resumes it after.
-  const Adhan = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Adhan;
+  // News from the native player.
+  let nativeUp = false;
+  if (NP && NP.addListener) {
+    try {
+      NP.addListener('state', (d) => {
+        if (!d) return;
+        nativeUp = d.state !== 'idle';
+        if (d.index >= 0 && d.index < Q.length && d.index !== at) { // moved on by itself or from the notification
+          at = d.index;
+          S.last = Object.assign({ pos: 0, title: Q[at].title, sub: Q[at].sub }, Q[at].last);
+          save();
+        }
+        const it = Q[at];
+        if (d.state === 'playing') state = 'playing';
+        else if (d.state === 'loading') state = 'loading';
+        else if (d.state === 'error') { failed(); return; }
+        else if (d.state === 'ended') { state = 'paused'; S.last = null; save(); }
+        else if (state !== 'off') state = 'paused';
+        progIn.style.width = it && !it.live && d.duration ? `${(d.position / d.duration) * 100}%` : '0';
+        if (S.last && it && !it.live && Date.now() - lastSave > 5000) { lastSave = Date.now(); S.last.pos = Math.floor(d.position); save(); }
+        paint();
+      });
+    } catch (_) {}
+  }
+  // On the website, the app's adhan pauses the radio and resumes it after; the native player
+  // does this by itself through Android's audio focus.
+  const Adhan = !NP && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Adhan;
   if (Adhan && Adhan.addListener) {
     try {
       Adhan.addListener('adhan', (d) => {
@@ -270,8 +318,10 @@
     bar.classList.toggle('has-sleep', !!min);
     const show = () => { sleepLbl.textContent = sleepAt ? I.num(Math.max(1, Math.ceil((sleepAt - Date.now()) / 60000))) : ''; };
     show();
+    if (NP) NP.sleep({ minutes: min || 0 }).catch(() => {});
     if (!min) return;
     sleepTick = setInterval(show, 20000);
+    if (NP) { sleepTimer = setTimeout(() => setSleep(0), min * 60000 + 5000); return; } // the player fades and pauses itself
     sleepTimer = setTimeout(() => {
       clearInterval(sleepTick);
       let v = 1;
@@ -499,10 +549,21 @@
         await attach(video, url);
         note.textContent = '';
         video.play().catch(() => { note.textContent = T('اضغط على زر التشغيل في الفيديو.'); });
-        return;
+        return true;
       } catch (_) { stopTv(); tvVideo = video; }
     }
     note.textContent = T('تعذّر تشغيل البث الآن. قد يكون متوقفاً مؤقتاً أو الاتصال ضعيف؛ جرّب بعد قليل.');
+    return false;
+  }
+  // In the app: the broadcaster's own stream on Aloula (up to 1080p, no ads). Aloula's player service
+  // signs the address for each viewer; it answers the app's native requests but not other websites.
+  const HTTP = window.noonNative && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+  async function aloulaUrl(id) {
+    const r = await HTTP.request({ url: `https://aloula.faulio.com/api/v1.1/channels/${id}/player/live`, method: 'GET', headers: { Accept: 'application/json' } });
+    const d = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+    const u = d && d.streams && d.streams.hls;
+    if (r.status !== 200 || !/^https:\/\//.test(u || '')) throw new Error('no stream');
+    return u;
   }
   function renderTv(box) {
     loading(box, async () => {
@@ -519,37 +580,66 @@
       const frame = el('div', 'tv-frame'); frame.append(video);
       const note = el('p', 'hint'); note.setAttribute('aria-live', 'polite');
       const chips = el('div', 'tv-chans');
-      // YouTube shows its own ads; the HLS link has none but lower quality. The choice is kept.
-      let cur = null, hd = !S.tvNoAds;
-      const hasHd = (c) => !!(c.youtube && /^[\w-]{11}$/.test(c.youtube.video || ''));
-      const swap = button('link-btn tv-swap', '', () => { hd = !hd; S.tvNoAds = !hd; save(); play(); });
+      // The sources, best first: in the app the broadcaster's own stream; then YouTube (HD, with
+      // YouTube's ads); then the lower-quality ad-free link. On the website the viewer may put the
+      // ad-free link first, and the choice is kept. Each one that fails hands over to the next.
+      let cur = null, order = [], pos = 0, run = 0;
+      const hasYt = (c) => !!(c.youtube && /^[\w-]{11}$/.test(c.youtube.video || ''));
+      const sources = (c) => {
+        const list = [];
+        if (HTTP && c.aloula) list.push('official');
+        if (hasYt(c)) list.push('yt');
+        if (c.urls.length) list.push('hls');
+        if (!HTTP && S.tvNoAds && list[0] === 'yt' && list.length > 1) list.reverse();
+        return list;
+      };
+      const swap = button('link-btn tv-swap', '', () => {
+        if (HTTP) { playAt((pos + 1) % order.length); return; }
+        S.tvNoAds = order[pos] === 'yt'; save();
+        order = sources(cur); playAt(0);
+      });
       swap.hidden = true;
-      // The broadcaster's own platform: full quality and no ads, in the browser.
+      // The broadcaster's own platform: full quality and no ads, in the browser (website only).
       const official = el('a', 'link-btn tv-swap');
       official.target = '_blank'; official.rel = 'noopener';
       official.textContent = T('شاهد بجودة عالية وبدون إعلانات على منصة «الأولى» الرسمية');
       official.hidden = true;
-      const play = () => {
-        const useHd = hd && hasHd(cur);
-        swap.hidden = !hasHd(cur) || !cur.urls.length;
-        swap.textContent = T(useHd ? 'بدون إعلانات (جودة أقل)' : 'جودة عالية (يوتيوب، قد تظهر إعلانات)');
-        official.hidden = !cur.official;
+      const playAt = async (k) => {
+        const mine = ++run;
+        pos = k;
+        const kind = order[k];
+        tvFail = null;
+        if (!kind) { stopTv(); note.textContent = T('تعذّر تشغيل البث الآن. قد يكون متوقفاً مؤقتاً أو الاتصال ضعيف؛ جرّب بعد قليل.'); return; }
+        swap.hidden = order.length < 2;
+        swap.textContent = HTTP ? T('الصورة لا تعمل؟ جرّب مصدراً آخر')
+          : T(kind === 'yt' ? 'بدون إعلانات (جودة أقل)' : 'جودة عالية (يوتيوب، قد تظهر إعلانات)');
+        official.hidden = !!HTTP || !cur.official;
         if (cur.official) official.href = I.isEn ? cur.official.replace('/ar/', '/en/') : cur.official;
-        tvFail = useHd && cur.urls.length ? () => { tvFail = null; hd = false; play(); toast(T('البث عالي الجودة غير متاح الآن، فشُغّل الرابط البديل.')); } : null;
-        if (useHd) playYoutube(cur, frame, video, note); else playHls(cur, video, note);
+        const next = () => { if (mine === run && k + 1 < order.length) { playAt(k + 1); if (order[k] !== 'official') toast(T('البث عالي الجودة غير متاح الآن، فشُغّل الرابط البديل.')); } };
+        if (kind === 'yt') { tvFail = next; playYoutube(cur, frame, video, note); return; }
+        let ch = cur;
+        if (kind === 'official') {
+          note.textContent = T('جارٍ التحميل…');
+          try { ch = { urls: [await aloulaUrl(cur.aloula)] }; } catch (_) { next(); return; }
+          if (mine !== run) return;
+        }
+        if (!(await playHls(ch, video, note)) && mine === run) next();
       };
       chans.forEach((c) => {
         const b = button('tv-chan', '', () => {
           chips.querySelectorAll('.tv-chan').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
           cur = c;
-          play();
+          order = sources(c);
+          playAt(0);
         });
         b.setAttribute('aria-pressed', 'false');
         b.append(icon('play'), el('span', '', I.isEn ? c.en : c.ar), el('span', 'ls-badge', T('بث مباشر')));
         chips.append(b);
       });
-      box.append(chips, frame, note, swap, official, el('p', 'hint', T('البث الرسمي لقناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية) بجودة تصل إلى 1080p. للشاشة الكاملة استخدم زر التكبير في الفيديو.')));
-      loadHls().catch(() => {}); // ready for the backup link
+      box.append(chips, frame, note, swap, official, el('p', 'hint', T(HTTP
+        ? 'البث الرسمي لقناتي القرآن الكريم والسنة النبوية من منصة «الأولى» (هيئة الإذاعة والتلفزيون السعودية)، بجودة تصل إلى 1080p ودون إعلانات. للشاشة الكاملة استخدم زر التكبير في الفيديو.'
+        : 'البث الرسمي لقناتي القرآن الكريم والسنة النبوية (هيئة الإذاعة والتلفزيون السعودية) بجودة تصل إلى 1080p. للشاشة الكاملة استخدم زر التكبير في الفيديو.')));
+      loadHls().catch(() => {}); // ready for the HLS sources
     });
   }
 

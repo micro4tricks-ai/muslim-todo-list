@@ -110,30 +110,41 @@ await phase('Library: Sahih al-Bukhari, first book', async () => {
   await js('scrollTo(0, document.documentElement.scrollHeight); true');
 }, 6000);
 // The Listen tab: the mp3quran.net lists load, a station plays, and the adhan can reach the page.
-await phase('Listen: radio list, play a station', async () => {
-  await gesture("window.noonUI.go('listen')"); await sleep(5000);
+await phase('Listen: the Quran radios on the native player', async () => {
+  await gesture("window.noonUI.go('listen')"); await sleep(1500);
+  await gesture("[...document.querySelectorAll('#view-listen .ls-tabs .chip')][0].click()"); await sleep(6000);
   report.listen = await js(`({ stations: document.querySelectorAll('#view-listen .ls-row').length,
-    adhanEvents: typeof (Capacitor.Plugins.Adhan && Capacitor.Plugins.Adhan.addListener) })`);
-  await gesture("document.querySelector('#view-listen .ls-live').click()"); await sleep(8000);
-  report.listen.player = await js("document.querySelector('.lp').dataset.state");
+    live: [...document.querySelectorAll('#view-listen .ls-live-t')].map((n) => n.textContent),
+    nativePlayer: !!Capacitor.Plugins.Player, nativeHttp: !!Capacitor.Plugins.CapacitorHttp })`);
+  report.listen.radios = [];
+  // The featured stations (Cairo, then Saudi Arabia: both on radiojar, which redirects to http),
+  // then the first reciter's station.
+  const picks = ["document.querySelectorAll('#view-listen .ls-live')[0]", "document.querySelectorAll('#view-listen .ls-live')[1]", "document.querySelector('#view-listen .ls-pick')"];
+  for (const p of picks) {
+    await gesture(`${p} && ${p}.click()`); await sleep(14000);
+    const st = await js("document.querySelector('.lp').dataset.state + ' | ' + document.querySelector('.lp-title').textContent");
+    const ms = adb('shell dumpsys media_session').split('\n').filter((l) => /state=PlaybackState|muslimtodo/.test(l)).slice(0, 2).map((x) => x.trim());
+    report.listen.radios.push({ state: st, mediaSession: ms });
+  }
+  report.listen.playerLog = adb('logcat -d -s NoonPlayer:*').split('\n').filter(Boolean).slice(-6);
   console.log('listen:', JSON.stringify(report.listen));
-  await gesture('window.noonListen.stop()');
-  // Live TV: the official YouTube broadcast must open inside the app (in tv.html from the website),
-  // not in the browser; then the HLS backup link must play in the WebView itself.
+  await gesture('window.noonListen.stop()'); await sleep(1500);
+  // Live TV: in the app the broadcaster's own stream (Aloula, HLS up to 1080p) plays first, in the
+  // WebView; the next source, YouTube, must open inside the app, not in the browser.
   await gesture("[...document.querySelectorAll('#view-listen .ls-tabs .chip')][1].click()"); await sleep(3000);
   await js("window.__tv = []; addEventListener('message', (e) => { if (e.data && e.data.noonTv) __tv.push(e.data.noonTv + (e.data.code !== undefined ? ':' + e.data.code : '')); }); true");
-  await gesture("document.querySelector('#view-listen .tv-chan').click()"); await sleep(15000);
+  const tvInfo = `(() => { const v = document.querySelector('#view-listen video');
+    return { video: v && !v.hidden ? { time: Math.round(v.currentTime), width: v.videoWidth, height: v.videoHeight, paused: v.paused, error: v.error && v.error.code } : 'hidden',
+      youtube: !!document.querySelector('#view-listen .tv-yt'), note: document.querySelector('#view-listen .tv-frame + .hint').textContent,
+      swap: document.querySelector('#view-listen button.tv-swap').textContent }; })()`;
+  await gesture("document.querySelector('#view-listen .tv-chan').click()"); await sleep(25000);
+  report.liveTv = await js(tvInfo);
+  console.log('live TV (official stream):', JSON.stringify(report.liveTv));
+  await gesture("document.querySelector('#view-listen button.tv-swap').click()"); await sleep(15000);
   const top = adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '';
-  let frames = [];
-  try { frames = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).filter((t) => /youtube|tv\.html/.test(t.url)).map((t) => `${t.type} ${t.url.slice(0, 80)}`); } catch { /* none */ }
-  report.liveTvHd = { iframe: await js("(document.querySelector('#view-listen .tv-yt') || {}).src || 'none'"), appInFront: top.includes(pkg), frames, said: await js('window.__tv') };
-  console.log('live TV (YouTube):', JSON.stringify(report.liveTvHd));
+  report.liveTvNext = Object.assign(await js(tvInfo), { appInFront: top.includes(pkg), said: await js('window.__tv') });
+  console.log('live TV (next source):', JSON.stringify(report.liveTvNext));
   if (!top.includes(pkg)) { adb(`shell am start -n ${pkg}/.MainActivity`); await sleep(3000); }
-  await gesture("document.querySelector('#view-listen .tv-swap').click()"); await sleep(15000);
-  report.liveTv = await js(`(() => { const v = document.querySelector('#view-listen video');
-    return v ? { time: Math.round(v.currentTime), width: v.videoWidth, paused: v.paused, error: v.error && v.error.code,
-      note: document.querySelector('#view-listen .tv-frame + .hint').textContent } : 'no video'; })()`);
-  console.log('live TV (HLS backup):', JSON.stringify(report.liveTv));
   await gesture("window.noonUI.go('tasks')");
 }, 4000);
 // The native adhan player: it must start (a foreground service), play, and stop cleanly.
