@@ -41,6 +41,15 @@ await send('Performance.enable');
 const metric = async () => (await send('Performance.getMetrics')).metrics.find((m) => m.name === 'TaskDuration').value;
 const m0 = await metric(); await sleep(5000);
 report.busyWhileIdlePercent = Math.round((await metric() - m0) / 5 * 100);
+// The welcome steps open by themselves on the first launch; go through them like a new user.
+report.welcome = await js(`(async () => {
+  const st = document.querySelector('.st');
+  if (!st || st.hidden || !st.classList.contains('is-wizard')) return 'not shown';
+  const seen = [];
+  for (let k = 0; k < 8 && !st.hidden; k++) { seen.push(st.dataset.page); document.querySelector('.st-next').click(); await new Promise((r) => setTimeout(r, 700)); }
+  return seen.join(' > ') + (st.hidden ? ' > done' : ' > STUCK');
+})()`);
+console.log('welcome:', report.welcome);
 report.page = await js(`({
   ua: navigator.userAgent.replace(/^.*(Chrome\/[0-9.]+).*$/, '$1'),
   classes: document.documentElement.className, native: !!window.noonNative,
@@ -252,6 +261,7 @@ if (!report.listen || !report.listen.radios) problems.push('the radio check did 
 if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== false) problems.push('live TV did not play');
 if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');
 if (!report.settings || report.settings.appStillOpen !== true) problems.push('the back key closed the app');
+if (!/> done$/.test(report.welcome || '')) problems.push(`welcome steps: ${report.welcome}`);
 if (report.adhanCall !== 'ok') problems.push(`adhan: ${report.adhanCall}`);
 if (!report.settings || !report.settings.device || typeof report.settings.device !== 'object') problems.push(`device status: ${report.settings && report.settings.device}`);
 if (!report.settings || report.settings.offset !== 1) problems.push(`a minute added to Fajr moved it by ${report.settings && report.settings.offset}`);

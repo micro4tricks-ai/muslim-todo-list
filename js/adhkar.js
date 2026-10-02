@@ -158,6 +158,6 @@
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view !== 'adhkar') stopAudio(); });
   setInterval(() => { if (S.day !== dayKey()) render(); }, 60000);
   onRemote(KEY, () => { S = load(KEY, blank()); render(); });
-  window.noonAdhkar = { open(cat) { open = cat; window.noonUI.show('adhkar'); render(); }, progress };
+  window.noonAdhkar = { open(cat) { open = cat; window.noonUI.show('adhkar'); render(); }, progress, period };
   render();
 })();

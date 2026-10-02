@@ -48,7 +48,7 @@
       row(st.notifications, 'الإشعارات', st.notifications ? 'مسموحة' : 'متوقفة: لن يظهر الأذان ولا التذكيرات', 'السماح', () => D.openNotifications()),
       row(st.exactAlarms, 'المنبّه في الوقت بالضبط', st.exactAlarms ? 'مسموح' : 'غير مسموح: قد يتأخر الأذان دقائق', 'السماح', () => D.openExactAlarms())
     ];
-    if (st.autostartScreen || /xiaomi|redmi|poco|oppo|realme|oneplus|vivo|iqoo|huawei|honor/.test(st.maker)) {
+    if (/xiaomi|redmi|poco|oppo|realme|oneplus|vivo|iqoo|huawei|honor|asus|letv|meizu/.test(st.maker)) {
       rows.push(row(false, 'التشغيل التلقائي', 'لا يستطيع التطبيق معرفته بنفسه؛ تأكد منه مرة واحدة', 'افتح', () => D.openAutostart()));
     }
     const steps = el('p', 'rel-steps', T((STEPS.find(([re]) => re.test(st.maker)) || STEPS[STEPS.length - 1])[1]));

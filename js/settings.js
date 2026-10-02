@@ -41,7 +41,13 @@
   bar.append(backBtn, barTitle);
   const body = el('div', 'st-body');
   const store = el('div'); store.hidden = true; // pages not on screen keep their panels here
-  root.append(bar, body, store);
+  // The welcome steps' footer: where you are, and the way on.
+  const foot = el('footer', 'st-foot'); foot.hidden = true;
+  const dots = el('span', 'st-dots');
+  const skip = button('link-btn st-skip', T('تخطي'), () => finishWizard());
+  const next = button('btn btn-primary st-next', T('التالي'), () => nextStep());
+  foot.append(skip, dots, next);
+  root.append(bar, body, foot, store);
   document.body.append(root);
 
   // The panels that move in. The adhan settings leave the location panel for a page of their own.
@@ -68,7 +74,8 @@
     look: { title: 'الألوان والخلفية', icon: 'palette', sub: lookName, node: () => $('lookPanel'), open: () => window.noonLook.open() },
     fonts: { title: 'الخطوط', icon: 'font', sub: fontNames, build: buildFonts },
     account: { title: 'الحساب والمزامنة', icon: 'cloud', sub: () => $('syncLabel').textContent, node: () => $('syncPanel') },
-    about: { title: 'حول التطبيق', icon: 'info', sub: () => $('appVersion').textContent, build: buildAbout }
+    about: { title: 'حول التطبيق', icon: 'info', sub: () => $('appVersion').textContent, build: buildAbout },
+    welcome: { title: 'أهلاً بك', icon: 'info', sub: () => '', build: buildWelcome }
   };
   const GROUPS = [['عام', ['lang', 'place', 'adhan']], ['المظهر', ['look', 'fonts']], ['الحساب', ['account']], ['', ['about']]];
 
@@ -95,6 +102,7 @@
       } else P.build(body);
     }
     body.scrollTop = 0;
+    paintWizard(id);
   }
   function renderHome() {
     const head = el('div', 'st-hero');
@@ -136,6 +144,7 @@
   }
   function go(id) { history.pushState({ st: id }, ''); depth++; show(id); }
   function close() {
+    wiz = null;
     show('home');
     [...body.children].forEach((n) => n.remove());
     page = null;
@@ -147,7 +156,7 @@
     if (page === null) return;
     depth--;
     const st = ev.state && ev.state.st;
-    if (depth <= 0) close(); else show(st && PAGES[st] ? st : 'home');
+    if (depth <= 0) { if (wiz) markDone(); close(); } else show(st && PAGES[st] ? st : 'home');
   });
   document.addEventListener('keydown', (ev) => {
     if (page !== null && ev.key === 'Escape') { ev.stopPropagation(); ev.preventDefault(); history.back(); }
@@ -177,8 +186,8 @@
   function buildLang(box) {
     const list = el('div', 'st-list');
     list.append(
-      choice('العربية', '', !I.isEn, () => { if (I.isEn) I.setLang('ar'); }),
-      choice('English', '', I.isEn, () => { if (!I.isEn) I.setLang('en'); })
+      choice('العربية', '', !I.isEn, () => { if (I.isEn) { keepStep(); I.setLang('ar'); } }),
+      choice('English', '', I.isEn, () => { if (!I.isEn) { keepStep(); I.setLang('en'); } })
     );
     box.append(list, el('p', 'st-note', T('تُعاد الصفحة بعد تغيير اللغة.')));
   }
@@ -228,5 +237,67 @@
     box.append(links);
     if (shortcuts && !matchMedia('(pointer: coarse)').matches) { shortcuts.hidden = false; box.append(shortcuts); }
   }
-  window.noonSettings = { open, close: () => { if (page !== null) history.back(); } };
+  // ---- the welcome steps, the first time the app opens ----
+  // The same pages as Settings, one after another, with "Next" at the bottom.
+  const STEPS = ['welcome', 'lang', 'place', 'adhan', 'fonts'];
+  const DONE = 'noon-onboarded', AT = 'noon-onboarding';
+  let wiz = null; // { at }
+  const store2 = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (_) {} };
+  const read2 = (k) => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  function wizard(at) {
+    at = Math.max(0, Math.min(STEPS.length - 1, at || 0));
+    if (page !== null) close();
+    wiz = { at };
+    root.hidden = false;
+    document.body.classList.add('st-open');
+    history.pushState({ st: STEPS[at] }, '');
+    depth = 1;
+    show(STEPS[at]);
+  }
+  function paintWizard(id) {
+    const i = wiz ? STEPS.indexOf(id) : -1;
+    root.classList.toggle('is-wizard', i >= 0);
+    foot.hidden = i < 0;
+    if (i < 0) return;
+    wiz.at = i;
+    dots.replaceChildren(...STEPS.map((_, k) => el('i', k === i ? 'on' : k < i ? 'done' : '')));
+    next.textContent = T(i === STEPS.length - 1 ? 'ابدأ الاستخدام' : i === 0 ? 'لنبدأ' : 'التالي');
+    barTitle.textContent = i === 0 ? T('أهلاً بك') : `${T(PAGES[id].title)} · ${I.num(i)}/${I.num(STEPS.length - 1)}`;
+  }
+  function nextStep() {
+    if (!wiz) return;
+    if (wiz.at >= STEPS.length - 1) { finishWizard(); return; }
+    go(STEPS[wiz.at + 1]);
+  }
+  function keepStep() { if (wiz) store2(AT, String(wiz.at + 1)); }
+  function markDone() { store2(DONE, '1'); store2(AT, null); }
+  function finishWizard() {
+    markDone();
+    const d = depth;
+    close();
+    if (d > 0) history.go(-d);
+    if (window.noonToday) window.noonToday.render();
+  }
+  function buildWelcome(box) {
+    const hero = el('div', 'st-welcome');
+    const logo = el('img', 'st-logo'); logo.src = 'icons/icon-192.png'; logo.alt = '';
+    hero.append(logo, el('b', 'st-welcome-salam', 'السلام عليكم ورحمة الله'), el('h3', '', T('أهلاً بك في مسلم تو دو')),
+      el('p', '', T('رفيقك اليومي حول الصلاة: مجاني بالكامل، دون إعلانات، صدقة جارية.')));
+    const feats = el('div', 'st-feats');
+    [['📖', 'المصحف بتسعة تفاسير'], ['🕌', 'الأذان في وقته'], ['📻', 'إذاعات القرآن والبث المباشر'], ['📿', 'الأذكار والأدعية'], ['📚', 'مكتبة الحديث'], ['✅', 'المهام والتركيز']]
+      .forEach(([e, t]) => { const f = el('span', 'st-feat'); f.append(el('span', '', e), el('span', '', T(t))); feats.append(f); });
+    box.append(hero, feats, el('p', 'st-note', T('نجهّز التطبيق معك في أقل من دقيقة: اللغة، ومدينتك، والأذان، والخط.')));
+  }
+  (() => {
+    const resume = read2(AT);
+    if (resume !== null) { setTimeout(() => wizard(Number(resume) || 0), 300); return; }
+    if (read2(DONE) === '1') return;
+    // Someone who has used the app already isn't shown the welcome.
+    const used = ['noon-sweep-place', 'noon-sweep-look', 'noon-native-asked', 'noon-sweep-sync-meta', 'noon-sweep-listen', 'noon-sweep-library']
+      .some((k) => read2(k) !== null);
+    if (used) markDone(); else setTimeout(() => wizard(0), 700);
+  })();
+
+  window.noonSettings = {
+    wizard: () => wizard(0), open, close: () => { if (page !== null) history.back(); } };
 })();

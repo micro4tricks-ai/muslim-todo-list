@@ -940,6 +940,6 @@
   onRemote(KEY, () => { S = Object.assign(blank(), load(KEY, {})); fresh(); if (!root.hidden) renderIndex(); });
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'quran') renderIndex(); });
   setInterval(() => { if (S.today.day !== dayKey()) { fresh(); if (!root.hidden) renderIndex(); } }, 60000);
-  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), pagesOn: (day) => ((S.log || {})[day] || 0) };
+  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), last: () => (S.last ? { i: S.last.i, label: refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
   renderIndex();
 })();

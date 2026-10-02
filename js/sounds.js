@@ -342,6 +342,7 @@
   }
   function setPlaying(on) {
     playing = on;
+    document.body.classList.toggle('snd-on', on); // phones show the sound bar only now (js/nav.js)
     if (on) Object.keys(S.selected).forEach(startSound);
     else Object.keys(live).forEach(stopSound);
     render();

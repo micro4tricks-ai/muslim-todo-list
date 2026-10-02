@@ -57,15 +57,6 @@ public class DevicePlugin extends Plugin {
         {"com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity"}
     };
 
-    private boolean hasAutostartScreen() {
-        PackageManager pm = getContext().getPackageManager();
-        for (String[] c : AUTOSTART) {
-            Intent i = new Intent().setComponent(new ComponentName(c[0], c[1]));
-            if (i.resolveActivity(pm) != null) return true;
-        }
-        return false;
-    }
-
     @PluginMethod
     public void status(PluginCall call) {
         Context ctx = getContext();
@@ -80,7 +71,6 @@ public class DevicePlugin extends Plugin {
         }
         r.put("exactAlarms", exact);
         r.put("maker", Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase());
-        r.put("autostartScreen", hasAutostartScreen());
         r.put("sdk", Build.VERSION.SDK_INT);
         try { r.put("version", ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName); } catch (Exception ignored) { }
         call.resolve(r);
@@ -111,11 +101,10 @@ public class DevicePlugin extends Plugin {
 
     @PluginMethod
     public void openAutostart(PluginCall call) {
-        PackageManager pm = getContext().getPackageManager();
+        // Android hides other apps from this one, so each maker's screen is simply tried in turn.
         boolean ok = false;
         for (String[] c : AUTOSTART) {
-            Intent i = new Intent().setComponent(new ComponentName(c[0], c[1]));
-            if (i.resolveActivity(pm) != null && open(i)) { ok = true; break; }
+            if (open(new Intent().setComponent(new ComponentName(c[0], c[1])))) { ok = true; break; }
         }
         if (!ok) ok = open(appDetails());
         JSObject r = new JSObject(); r.put("opened", ok); call.resolve(r);

@@ -80,8 +80,10 @@
   // Open a section and bring it on screen (from shortcuts, reminders and the quick bar).
   function go(view) {
     show(view);
+    // The tab bar when it shows; on phones it gives way to the bottom navigation, so the section itself.
     const nav = document.querySelector('.views');
-    if (nav) nav.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const target = nav && nav.offsetParent ? nav : $(`view-${view}`);
+    if (target) target.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-go]');

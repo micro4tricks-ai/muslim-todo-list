@@ -782,5 +782,5 @@
   });
   if (window.noonUI.currentView && window.noonUI.currentView() === 'listen') render();
 
-  window.noonListen = { playRadio, stop: () => stop(true), state: () => state, open: () => window.noonUI.go('listen') };
+  window.noonListen = { playRadio, stop: () => stop(true), state: () => state, open: () => window.noonUI.go('listen'), last: () => S.last, resume: resumeLast };
 })();
