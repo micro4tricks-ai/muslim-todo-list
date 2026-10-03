@@ -194,6 +194,8 @@
   }
   .btn-primary { background: var(--accent); color: var(--accent-ink); }
   .btn-primary:hover { background: var(--accent-deep); }
+  .btn-danger { background: #9C2A18; border-color: #9C2A18; color: #fff; }
+  .btn-danger:hover { background: #7E2112; }
   .btn-quiet { background: transparent; color: var(--ink-soft); border-color: var(--line); }
   .btn-quiet:hover { color: var(--ink); border-color: var(--ink-faint); }
 
@@ -1781,6 +1783,11 @@
             <button type="button" class="btn btn-quiet" id="syncSetPass">حفظ</button>
           </div>
         </details>
+        <details class="sync-pass sync-delete" id="syncDelBox">
+          <summary>حذف حسابي</summary>
+          <p class="hint">يُحذف الحساب نهائياً مع مهامك وإعداداتك المحفوظة على الخادم، والختمات التي بدأتها، وعضويتك في غيرها. ما على هذا الجهاز يبقى كما هو. <a href="privacy.html#delete" target="_blank" rel="noopener">التفاصيل</a></p>
+          <button type="button" class="btn btn-danger" id="syncDelete">احذف حسابي نهائياً</button>
+        </details>
       </div>
       <p class="hint" id="syncMsg" aria-live="polite"></p>
     </section>
@@ -1897,7 +1904,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.1.1"></script>
+<script src="js/i18n.js?v=2.1.2"></script>
 <script src="js/clock.js?v=2.1.1"></script>
 <script src="js/astro.js?v=2.1.1"></script>
 <script src="js/look.js?v=2.1.1"></script>
@@ -1933,8 +1940,8 @@
 <script src="js/config.js?v=2.1.1"></script>
 <script src="js/vendor/supabase.js?v=2.1.1" defer></script>
 <script src="js/sync-core.js?v=2.1.1" defer></script>
-<script src="js/sync.js?v=2.1.1" defer></script>
-<script src="js/app.js?v=2.1.1" defer></script>
+<script src="js/sync.js?v=2.1.2" defer></script>
+<script src="js/app.js?v=2.1.2" defer></script>
 <script src="js/settings.js?v=2.1.1" defer></script>
 <script src="js/today.js?v=2.1.1" defer></script>
 <script src="js/nav.js?v=2.1.1" defer></script>

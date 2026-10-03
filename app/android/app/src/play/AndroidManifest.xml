@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- The Google Play build. Play updates the app itself, and keeps some permissions for other kinds of apps:
+     - no self-update from the website (REQUEST_INSTALL_PACKAGES);
+     - no direct "ignore battery optimisation" request: the adhan card opens the battery settings instead;
+     - exact alarms through SCHEDULE_EXACT_ALARM, which the person allows from the adhan card
+       (USE_EXACT_ALARM is reserved on Play for alarm-clock and calendar apps). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+</manifest>

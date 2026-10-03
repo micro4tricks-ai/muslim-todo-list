@@ -60,15 +60,25 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease assembleDebug --no-daemon --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/muslim-todo-list.apk"
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/muslim-todo-list-debug.apk"
+          # "site": the APK on the website; "play": the bundle for Google Play (see app/android/app/build.gradle).
+          ./gradlew assembleSiteRelease assembleSiteDebug bundlePlayRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/site/release/app-site-release.apk "$GITHUB_WORKSPACE/muslim-todo-list.apk"
+          cp app/build/outputs/apk/site/debug/app-site-debug.apk "$GITHUB_WORKSPACE/muslim-todo-list-debug.apk"
+          cp app/build/outputs/bundle/playRelease/app-play-release.aab "$GITHUB_WORKSPACE/muslim-todo-list-play.aab"
 
       - name: Check the signature
         run: |
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
           "$apksigner" verify --print-certs "$GITHUB_WORKSPACE/muslim-todo-list.apk" | head -5
-          ls -l "$GITHUB_WORKSPACE/muslim-todo-list.apk"
+          ls -l "$GITHUB_WORKSPACE/muslim-todo-list.apk" "$GITHUB_WORKSPACE/muslim-todo-list-play.aab"
+          # The Play bundle must be signed with the same key, and leave out what Play does not allow.
+          jarsigner -verify "$GITHUB_WORKSPACE/muslim-todo-list-play.aab" | tail -1
+          unzip -p "$GITHUB_WORKSPACE/muslim-todo-list-play.aab" base/manifest/AndroidManifest.xml > play-manifest.pb
+          for perm in REQUEST_INSTALL_PACKAGES REQUEST_IGNORE_BATTERY_OPTIMIZATIONS USE_EXACT_ALARM; do
+            if grep -qa "android.permission.$perm" play-manifest.pb; then echo "::error::The Play bundle still asks for $perm"; exit 1; fi
+          done
+          grep -qa "android.permission.SCHEDULE_EXACT_ALARM" play-manifest.pb || { echo "::error::The Play bundle lacks SCHEDULE_EXACT_ALARM"; exit 1; }
+          echo "Play bundle permissions are as expected"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -79,6 +89,11 @@ jobs:
         with:
           name: muslim-todo-list-debug-apk
           path: muslim-todo-list-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: muslim-todo-list-play-aab
+          path: muslim-todo-list-play.aab
 
   # Installs the APK on an Android emulator, opens it, and saves screenshots
   # and the app's console log, so a broken build shows up before anyone installs it.
@@ -144,6 +159,10 @@ jobs:
         with:
           name: muslim-todo-list-apk
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: muslim-todo-list-play-aab
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -151,7 +170,7 @@ jobs:
           notes="تطبيق أندرويد مجاني — Free Android app.
           طريقة التثبيت / How to install: https://micro4tricks-ai.github.io/muslim-todo-list/install.html"
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk --clobber
+            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk muslim-todo-list-play.aab --clobber
           else
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk --title "Muslim To-Do List $GITHUB_REF_NAME" --notes "$notes"
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk muslim-todo-list-play.aab --title "Muslim To-Do List $GITHUB_REF_NAME" --notes "$notes"
           fi

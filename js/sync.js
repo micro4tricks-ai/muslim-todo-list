@@ -366,6 +366,29 @@
     });
   });
   $('syncNewPass').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); $('syncSetPass').click(); } });
+  // Delete the account and everything stored with it on the server (supabase/account.sql).
+  // Two presses: the first asks, the second (within 6 seconds) deletes. This device keeps its data.
+  let delArmed = 0;
+  $('syncDelete').addEventListener('click', () => {
+    const btn = $('syncDelete');
+    if (Date.now() - delArmed > 6000) {
+      delArmed = Date.now();
+      btn.textContent = T('اضغط مرة أخرى للتأكيد');
+      setTimeout(() => { if (Date.now() - delArmed >= 6000) btn.textContent = T('احذف حسابي نهائياً'); }, 6100);
+      return;
+    }
+    delArmed = 0;
+    busyWith(btn, 'جارٍ حذف الحساب…', async () => {
+      const { error } = await client.rpc('delete_my_account');
+      if (error) { renderUI(T('تعذّر حذف الحساب. تأكد من الاتصال وحاول مرة أخرى.')); return; }
+      await client.auth.signOut({ scope: 'local' });
+      meta = { ts: meta.ts, base: {}, tombs: {} };
+      saveMeta();
+      btn.textContent = T('احذف حسابي نهائياً');
+      $('syncDelBox').open = false;
+      renderUI(T('حُذف حسابك وكل ما حُفظ معه على الخادم. بياناتك على هذا الجهاز باقية.'));
+    });
+  });
   $('syncNow').addEventListener('click', () => syncNow());
   $('syncOut').addEventListener('click', async () => {
     await client.auth.signOut();

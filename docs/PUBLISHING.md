@@ -13,7 +13,7 @@ the layout F-Droid and most stores read.
    repository link, or submit a merge request to <https://gitlab.com/fdroid/fdroiddata> with
    `metadata/io.github.micro4tricks.muslimtodo.yml`.
 2. F-Droid builds from source. The build steps are the same as in `.github/workflows/android.yml`:
-   `cd app && npm ci && npm run copy-web && npx cap sync android`, then `./gradlew assembleRelease`
+   `cd app && npm ci && npm run copy-web && npx cap sync android`, then `./gradlew assembleSiteRelease`
    in `app/android`, with `APP_VERSION_NAME` / `APP_VERSION_CODE` set from the tag.
 3. Things the reviewers will ask about:
    - Network use: recitations, tafsirs, hadith chapters, word-by-word meanings and map search are

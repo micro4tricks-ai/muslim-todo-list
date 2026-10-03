@@ -20,7 +20,7 @@ public class AdhanReceiver extends BroadcastReceiver {
         } else if (ACTION_STOP.equals(action)) {
             ctx.stopService(new Intent(ctx, AdhanService.class));
         } else {
-            // Boot or time change: alarms are cleared, so book them again.
+            // Boot, an update, or exact alarms just allowed: book them all again.
             AdhanAlarms.bookAll(ctx);
         }
     }

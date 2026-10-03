@@ -17,6 +17,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Two builds from the same code: "site" is the APK on the website (it updates itself from there);
+    // "play" is the bundle for Google Play, which updates it, so it leaves out the self-update and the
+    // permissions Play reserves for other kinds of apps (src/play/AndroidManifest.xml).
+    buildFeatures { buildConfig = true }
+    flavorDimensions = ["store"]
+    productFlavors {
+        site {
+            dimension "store"
+            isDefault true
+            buildConfigField "String", "STORE", '"site"'
+        }
+        play {
+            dimension "store"
+            buildConfigField "String", "STORE", '"play"'
+        }
+    }
     // The release key lives in GitHub secrets (see .github/workflows/android.yml).
     // Every update must be signed with the same key, or phones refuse to install it.
     signingConfigs {

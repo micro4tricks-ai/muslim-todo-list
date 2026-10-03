@@ -39,6 +39,8 @@ public class DevicePlugin extends Plugin {
 
     // The only address the update ever comes from.
     private static final String APK_URL = "https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk";
+    // The Google Play build: Play does the updates, and some permissions are left out (see src/play).
+    private static final boolean PLAY = "play".equals(BuildConfig.STORE);
 
     // Each maker's own screen for starting apps on their own / running in the background.
     private static final String[][] AUTOSTART = {
@@ -72,6 +74,7 @@ public class DevicePlugin extends Plugin {
         r.put("exactAlarms", exact);
         r.put("maker", Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase());
         r.put("sdk", Build.VERSION.SDK_INT);
+        r.put("store", BuildConfig.STORE);
         try { r.put("version", ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName); } catch (Exception ignored) { }
         call.resolve(r);
     }
@@ -93,7 +96,8 @@ public class DevicePlugin extends Plugin {
     @PluginMethod
     public void openBattery(PluginCall call) {
         Context ctx = getContext();
-        boolean ok = open(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + ctx.getPackageName())))
+        // The Play build may not ask directly (no REQUEST_IGNORE_BATTERY_OPTIMIZATIONS): it opens the list instead.
+        boolean ok = (!PLAY && open(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + ctx.getPackageName()))))
             || open(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             || open(appDetails());
         JSObject r = new JSObject(); r.put("opened", ok); call.resolve(r);
@@ -131,6 +135,7 @@ public class DevicePlugin extends Plugin {
 
     @PluginMethod
     public void update(PluginCall call) {
+        if (PLAY) { call.reject("Updates come from Google Play", "STORE"); return; }
         Context ctx = getContext();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ctx.getPackageManager().canRequestPackageInstalls()) {
             // Android asks once to let this app install its own updates.
