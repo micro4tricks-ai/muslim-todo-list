@@ -79,6 +79,23 @@ def main():
             refused = True
         as_admin()
         check("B can't hand a juz to someone else", refused or con.run('select user_id from public.khatma_part where khatma = :k and juz = 3', k=kid)[0][0] is None)
+        # B can't mark a free juz read or put a name on it without taking it.
+        as_user(b)
+        con.run('savepoint t')
+        try:
+            con.run('update public.khatma_part set done = true, name = :n where khatma = :k and juz = 4', n='x', k=kid)
+            con.run('release savepoint t')
+            refused = False
+        except Exception:
+            con.run('rollback to savepoint t')
+            refused = True
+        as_admin()
+        check("B can't mark a free juz read without taking it", refused or con.run('select done from public.khatma_part where khatma = :k and juz = 4', k=kid)[0][0] is False)
+        # B gives his juz back: it is left blank.
+        as_user(b)
+        con.run('update public.khatma_part set user_id = null, name = null, done = false where khatma = :k and juz = 2', k=kid)
+        as_admin()
+        check('B gives his juz back', con.run('select user_id from public.khatma_part where khatma = :k and juz = 2', k=kid)[0][0] is None)
         # C, not a member, sees and changes nothing; can't delete it.
         as_user(c)
         check('C (not a member) sees no parts', con.run('select count(*) from public.khatma_part where khatma = :k', k=kid)[0][0] == 0)

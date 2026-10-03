@@ -815,6 +815,12 @@
     'إذا ظهر هذا الإشعار بصوت، فالتنبيهات تعمل.': 'If this arrived with a sound, notifications are working.',
     'سيصلك إشعار تجريبي بعد ٥ ثوانٍ.': 'A test notification will arrive in 5 seconds.',
     // v2.0: downloads, memorisation, widgets, khatma
+    'بانتظار تأكيدك': 'Waiting for you to confirm',
+    'فتحت رابط دخول لحساب': 'You opened a sign-in link for',
+    'هل تريد مزامنة بيانات هذا الجهاز (المهام والإعدادات) مع هذا الحساب؟': 'Sync this device’s data (tasks and settings) with that account?',
+    'نعم، هذا حسابي': 'Yes, it’s my account',
+    'ليس حسابي': 'Not my account',
+    'خرجنا من ذلك الحساب. بياناتك بقيت على هذا الجهاز ولم تُرسَل.': 'Signed out of that account. Your data stayed on this device and was not sent.',
     'دعوة لختمة جماعية': 'A group khatma invite',
     'اضغط للانضمام': 'Tap to join',
     'الختمة الجماعية': 'Group khatma',

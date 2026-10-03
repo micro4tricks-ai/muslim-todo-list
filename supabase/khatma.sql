@@ -54,11 +54,12 @@ create policy "leave khatma" on public.khatma_member for delete using (user_id =
 
 drop policy if exists "members read parts" on public.khatma_part;
 create policy "members read parts" on public.khatma_part for select using (public.khatma_is_member(khatma));
--- Take a free juz, or change only your own (mark done, give back).
+-- Take a free juz, or change only your own (mark done, give back). A juz left free must be left
+-- blank: nobody marks a free juz read or writes a name on it without taking it.
 drop policy if exists "members take parts" on public.khatma_part;
 create policy "members take parts" on public.khatma_part for update
   using (public.khatma_is_member(khatma) and (user_id is null or user_id = auth.uid()))
-  with check (public.khatma_is_member(khatma) and (user_id is null or user_id = auth.uid()));
+  with check (public.khatma_is_member(khatma) and (user_id = auth.uid() or (user_id is null and name is null and done = false)));
 
 -- Start a khatma: its share code, you as the first member, and its 30 free parts.
 create or replace function public.khatma_create(p_title text, p_name text) returns table (id uuid, code text)
@@ -91,6 +92,7 @@ end $$;
 
 revoke all on function public.khatma_create(text, text) from public, anon;
 revoke all on function public.khatma_join(text, text) from public, anon;
+revoke all on function public.khatma_is_member(uuid) from public, anon;
 grant execute on function public.khatma_create(text, text) to authenticated;
 grant execute on function public.khatma_join(text, text) to authenticated;
 grant execute on function public.khatma_is_member(uuid) to authenticated;

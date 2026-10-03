@@ -681,8 +681,9 @@
         swap.hidden = order.length < 2;
         swap.textContent = HTTP ? T('الصورة لا تعمل؟ جرّب مصدراً آخر')
           : T(kind === 'yt' ? 'بدون إعلانات (جودة أقل)' : 'جودة عالية (يوتيوب، قد تظهر إعلانات)');
-        official.hidden = !!HTTP || !cur.official;
-        if (cur.official) official.href = I.isEn ? cur.official.replace('/ar/', '/en/') : cur.official;
+        const safeOfficial = /^https:\/\//.test(cur.official || '') ? cur.official : ''; // links only to https pages
+        official.hidden = !!HTTP || !safeOfficial;
+        if (safeOfficial) official.href = I.isEn ? safeOfficial.replace('/ar/', '/en/') : safeOfficial;
         const next = () => { if (mine === run && k + 1 < order.length) { playAt(k + 1); if (order[k] !== 'official') toast(T('البث عالي الجودة غير متاح الآن، فشُغّل الرابط البديل.')); } };
         if (kind === 'yt') { tvFail = next; playYoutube(cur, frame, video, note); return; }
         let ch = cur;

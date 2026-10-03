@@ -45,11 +45,26 @@
   const SITE_URL = 'https://micro4tricks-ai.github.io/muslim-todo-list/';
   const btn = $('syncBtn'), panel = $('syncPanel');
   let state = 'off', lastSync = 0, user = null, client = null;
+  // A sign-in that arrives in the address (an email link) is synced only once the person agrees,
+  // unless this browser asked for that very link: otherwise anyone could send a link carrying their
+  // own account and collect the data of whoever opens it (login CSRF).
+  const PENDING = 'noon-sweep-auth-pending';
+  const UNSURE = 'noon-sweep-auth-unconfirmed'; // the account still waiting for an answer, across reloads
+  let confirmed = true;
+  const fromUrl = /(^|[#&])(access_token|error|error_description)=/.test(location.hash);
+  function expect(email) { try { localStorage.setItem(PENDING, JSON.stringify({ email: String(email).toLowerCase(), at: Date.now() })); } catch (_) {} }
+  function expected(email) {
+    try {
+      const p = JSON.parse(localStorage.getItem(PENDING) || 'null');
+      return !!(p && p.email === String(email || '').toLowerCase() && Date.now() - p.at < 2 * 864e5);
+    } catch (_) { return false; }
+  }
   const timeFmt = new Intl.DateTimeFormat(I.locale, { hour: 'numeric', minute: '2-digit' });
   function renderUI(msg) {
     btn.dataset.state = state;
     const label = !client ? T('مزامنة')
       : !user ? T('تسجيل الدخول للمزامنة')
+      : !confirmed ? T('بانتظار تأكيدك')
       : state === 'syncing' ? T('جارٍ المزامنة…')
       : state === 'error' ? T('تعذّرت المزامنة')
       : T('متزامن');
@@ -120,7 +135,7 @@
   }
 
   async function syncNow(allowReload = false) {
-    if (!user) return;
+    if (!user || !confirmed) return;
     if (busy) { again = true; return; }
     busy = true; state = 'syncing'; renderUI();
     try {
@@ -186,7 +201,7 @@
       const tracked = this === store && !applying && (k === TASKS_KEY || SETTINGS_KEYS.includes(k));
       const prev = tracked ? this.getItem(k) : null;
       original.call(this, k, v);
-      if (!tracked || !user) return;
+      if (!tracked || !user || !confirmed) return;
       if (k === TASKS_KEY) onTasksSaved();
       else if (prev !== v) { meta.ts[k] = Date.now(); saveMeta(); schedule(1500); }
     };
@@ -222,14 +237,45 @@
         renderUI(T('اكتب كلمة المرور الجديدة ثم اضغط «حفظ».'));
       }, 0);
     }
-    if (!user) { unsubscribe(); state = 'off'; renderUI(); return; }
+    if (!user) { unsubscribe(); confirmed = true; try { localStorage.removeItem(UNSURE); } catch (_) {} hideConfirm(); state = 'off'; renderUI(); return; }
     if (was !== user.id) {
       lastCore = null;
-      subscribe();
-      syncNow(true);
+      let unsure = null;
+      try { unsure = localStorage.getItem(UNSURE); } catch (_) {}
+      if ((fromUrl && !expected(user.email)) || unsure === user.id) {
+        confirmed = false;
+        try { localStorage.setItem(UNSURE, user.id); } catch (_) {}
+        askFirst(); renderUI(); return;
+      }
+      start();
     }
     renderUI();
   });
+  function start() {
+    confirmed = true;
+    try { localStorage.removeItem(PENDING); localStorage.removeItem(UNSURE); } catch (_) {}
+    hideConfirm();
+    subscribe();
+    syncNow(true);
+  }
+  // "You opened a sign-in link for … Sync this device with that account?"
+  let confirmBox = null;
+  function hideConfirm() { if (confirmBox) { confirmBox.remove(); confirmBox = null; } }
+  function askFirst() {
+    hideConfirm();
+    confirmBox = document.createElement('div');
+    confirmBox.className = 'sync-confirm';
+    const p = document.createElement('p');
+    p.textContent = `${T('فتحت رابط دخول لحساب')} ${user.email || ''}. ${T('هل تريد مزامنة بيانات هذا الجهاز (المهام والإعدادات) مع هذا الحساب؟')}`;
+    const yes = document.createElement('button'); yes.type = 'button'; yes.className = 'btn btn-primary'; yes.textContent = T('نعم، هذا حسابي');
+    const no = document.createElement('button'); no.type = 'button'; no.className = 'btn btn-quiet'; no.textContent = T('ليس حسابي');
+    yes.addEventListener('click', () => { start(); renderUI(); });
+    no.addEventListener('click', async () => { hideConfirm(); await client.auth.signOut(); renderUI(T('خرجنا من ذلك الحساب. بياناتك بقيت على هذا الجهاز ولم تُرسَل.')); });
+    const row = document.createElement('div'); row.className = 'form-actions'; row.append(yes, no);
+    confirmBox.append(p, row);
+    $('syncSignedIn').prepend(confirmBox);
+    setTimeout(() => { if (window.noonSettings) window.noonSettings.open('account'); else panel.hidden = false; }, 300);
+  }
 
   // Email + password works everywhere, including the Android app and the iPhone
   // home-screen app, where a link from the email opens the browser instead.
@@ -270,6 +316,7 @@
     const email = field('syncEmail'), password = $('syncPass').value;
     if (!needs(email, password)) return;
     busyWith($('syncSignup'), 'جارٍ إنشاء الحساب…', async () => {
+      expect(email);
       const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: SITE_URL } });
       if (error) { renderUI(authError(error)); return; }
       // An address that already has an account comes back with no identities.
@@ -284,6 +331,7 @@
     const email = field('syncEmail');
     if (!needs(email)) return;
     busyWith($('syncForgot'), 'جارٍ الإرسال…', async () => {
+      expect(email);
       const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: SITE_URL });
       renderUI(error ? authError(error)
         : T('أرسلنا رابطاً إلى بريدك. افتحه وستفتح صفحة الموقع لتكتب كلمة مرور جديدة، ثم استخدمها للدخول هنا.'));
@@ -294,6 +342,7 @@
     const email = field('syncEmail');
     if (!needs(email)) return;
     busyWith($('syncSend'), 'جارٍ الإرسال…', async () => {
+      expect(email);
       const { error } = await client.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: window.noonNative ? SITE_URL : location.origin + location.pathname }
@@ -326,6 +375,6 @@
   });
 
   // For the group khatma (js/khatma.js): the same client and the signed-in account.
-  window.noonSync = { client: () => client, user: () => user };
+  window.noonSync = { client: () => client, user: () => (confirmed ? user : null) };
   renderUI();
 })();
