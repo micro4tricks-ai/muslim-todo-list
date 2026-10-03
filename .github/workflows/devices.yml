@@ -10,6 +10,15 @@ on:
     workflows: ['Android app']
     types: [completed]
   workflow_dispatch:
+    inputs:
+      only:
+        description: 'Only these phones (samsung or xiaomi); empty = both'
+        required: false
+        default: ''
+      retry:
+        description: 'Retry a phone that fails (counts against the 5 tests a day)'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -59,14 +68,17 @@ jobs:
         id: devices
         env:
           PROJECT: ${{ secrets.FIREBASE_PROJECT }}
+          ONLY: ${{ github.event.inputs.only }}
         run: |
           gcloud firebase test android models list --project "$PROJECT" --filter="form=PHYSICAL" --format=json > models.json
           node -e '
             const m = JSON.parse(require("fs").readFileSync("models.json", "utf8"));
             const ok = m.filter((d) => (d.supportedVersionIds || []).some((v) => Number(v) >= 30));
             const pick = (re) => ok.find((d) => re.test(`${d.manufacturer} ${d.brand} ${d.name}`));
-            const chosen = [pick(/samsung/i), pick(/xiaomi|redmi|poco/i)].filter(Boolean);
-            for (const d of ok) { if (chosen.length >= 2) break; if (!chosen.includes(d)) chosen.push(d); }
+            const only = (process.env.ONLY || "").toLowerCase();
+            const want = only === "samsung" ? [/samsung/i] : only === "xiaomi" ? [/xiaomi|redmi|poco/i] : [/samsung/i, /xiaomi|redmi|poco/i];
+            const chosen = want.map(pick).filter(Boolean);
+            for (const d of ok) { if (only || chosen.length >= 2) break; if (!chosen.includes(d)) chosen.push(d); }
             const args = chosen.map((d) => `--device=model=${d.id},version=${Math.max(...d.supportedVersionIds.map(Number))}`).join(" ");
             console.log(chosen.map((d) => `${d.manufacturer} ${d.name}`).join(", "));
             require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `args=${args}\n`);
@@ -76,7 +88,27 @@ jobs:
         if: env.HAS_KEY == 'true'
         env:
           PROJECT: ${{ secrets.FIREBASE_PROJECT }}
+          RETRIES: ${{ github.event.inputs.retry == 'false' && '0' || '1' }}
         run: |
+          set -o pipefail
           gcloud firebase test android run --project "$PROJECT" --type robo \
             --app muslim-todo-list.apk ${{ steps.devices.outputs.args }} \
-            --timeout 5m --num-flaky-test-attempts 1
+            --timeout 5m --num-flaky-test-attempts "$RETRIES" 2>&1 | tee run.log
+
+      # When a phone fails, show why: the end of its log, and the result files Test Lab kept.
+      - name: What went wrong on the phone
+        if: failure() && env.HAS_KEY == 'true'
+        run: |
+          dir=$(grep -o 'storage/browser/[^]]*' run.log | head -1 | sed 's|storage/browser/|gs://|; s| *$||')
+          [ -n "$dir" ] || { echo "No results folder in the log"; exit 0; }
+          gcloud storage ls -r "$dir" | grep -v '/$' | head -60
+          for f in $(gcloud storage ls -r "$dir" | grep -E 'logcat$'); do
+            echo "::group::$f (errors and the last lines)"
+            gcloud storage cat "$f" | grep -E ' (E|F) |FATAL|ANR|Exception|INSTALL_|muslimtodo' | tail -80
+            gcloud storage cat "$f" | tail -40
+            echo "::endgroup::"
+          done
+          for f in $(gcloud storage ls -r "$dir" | grep -E '\.(xml|txt|json)$' | head -10); do
+            echo "::group::$f"; gcloud storage cat "$f" | head -60; echo "::endgroup::"
+          done
+
