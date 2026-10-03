@@ -48,6 +48,12 @@ jobs:
       - if: env.HAS_KEY == 'true'
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Turn on Test Lab's services in the project (does nothing when they are on)
+        if: env.HAS_KEY == 'true'
+        env:
+          PROJECT: ${{ secrets.FIREBASE_PROJECT }}
+        run: gcloud services enable testing.googleapis.com toolresults.googleapis.com --project "$PROJECT"
+
       - name: Pick the phones (a Samsung and a Xiaomi when Test Lab has them, else any two)
         if: env.HAS_KEY == 'true'
         id: devices
