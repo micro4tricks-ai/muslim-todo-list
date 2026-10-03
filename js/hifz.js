@@ -17,6 +17,9 @@
   const label = (it) => (it.from === 1 && it.to === count(it.s) ? name(it.s) : `${name(it.s)} ${I.num(it.from)}–${I.num(it.to)}`);
   const today = () => dayKey();
   const due = () => S.items.filter((it) => it.due <= today()).sort((a, b) => a.due.localeCompare(b.due) || a.s - b.s);
+  // A review day as people say it: today, tomorrow, or "6 October" (an ISO date reads backwards in RTL).
+  const when = (k) => (k === today() ? T('اليوم') : k === addDays(today(), 1) ? T('غداً')
+    : new Date(k.replace(/-/g, '/')).toLocaleDateString(I.locale, { day: 'numeric', month: 'long' }));
   const ayat = () => S.items.reduce((n, it) => n + (it.to - it.from + 1), 0);
 
   function add(s, from, to) {
@@ -76,7 +79,7 @@
       d.forEach((it) => {
         const r = el('div', 'hz-row');
         const txt = el('div', 'hz-text');
-        txt.append(el('b', '', label(it)), el('small', '', it.last ? `${T('آخر مراجعة')}: ${it.last}` : T('أول مراجعة')));
+        txt.append(el('b', '', label(it)), el('small', '', it.last ? `${T('آخر مراجعة')}: ${when(it.last)}` : T('أول مراجعة')));
         const read = button('btn btn-quiet', T('اقرأ'), () => { history.back(); setTimeout(() => window.noonQuran && window.noonQuran.openAyah(it.s + 1, it.from), 150); });
         const acts = el('div', 'hz-acts');
         acts.append(
@@ -125,7 +128,7 @@
       [...S.items].sort((x, y) => x.s - y.s || x.from - y.from).forEach((it) => {
         const r = el('div', 'hz-row');
         const txt = el('div', 'hz-text');
-        txt.append(el('b', '', label(it)), el('small', '', `${T('المراجعة القادمة')}: ${it.due}`));
+        txt.append(el('b', '', label(it)), el('small', '', `${T('المراجعة القادمة')}: ${when(it.due < today() ? today() : it.due)}`));
         const del = button('link-btn danger', T('حذف'), () => { S.items = S.items.filter((x) => x !== it); save(); render(); });
         r.append(txt, del);
         list.append(r);

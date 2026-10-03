@@ -1,0 +1,76 @@
+# Runs each released APK on real phones in Firebase Test Lab (free quota on the Spark plan:
+# 5 physical-device tests a day). A "robo" crawler opens the app and taps through it like a person;
+# a crash or an "app not responding" turns the run red.
+# Needs two repository secrets (see docs/DEVICE_TESTING.md): FIREBASE_SA_KEY (a service account's
+# JSON key) and FIREBASE_PROJECT (the project id). Without them the job says so and stops.
+name: Real devices
+
+on:
+  workflow_run:
+    workflows: ['Android app']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  robo:
+    # After a release build that passed, or by hand.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HAS_KEY: ${{ secrets.FIREBASE_SA_KEY != '' && secrets.FIREBASE_PROJECT != '' }}
+    steps:
+      - name: Without the Firebase secrets there is nothing to run
+        if: env.HAS_KEY != 'true'
+        run: echo "::notice::Add FIREBASE_SA_KEY and FIREBASE_PROJECT (docs/DEVICE_TESTING.md) to test on real phones."
+
+      - name: The released APK
+        if: env.HAS_KEY == 'true' && github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: muslim-todo-list-apk
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: The APK on the website (manual runs)
+        if: env.HAS_KEY == 'true' && github.event_name == 'workflow_dispatch'
+        run: curl -fsSL -o muslim-todo-list.apk https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk
+
+      - if: env.HAS_KEY == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SA_KEY }}
+
+      - if: env.HAS_KEY == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Pick the phones (a Samsung and a Xiaomi when Test Lab has them, else any two)
+        if: env.HAS_KEY == 'true'
+        id: devices
+        env:
+          PROJECT: ${{ secrets.FIREBASE_PROJECT }}
+        run: |
+          gcloud firebase test android models list --project "$PROJECT" --filter="form=PHYSICAL" --format=json > models.json
+          node -e '
+            const m = JSON.parse(require("fs").readFileSync("models.json", "utf8"));
+            const ok = m.filter((d) => (d.supportedVersionIds || []).some((v) => Number(v) >= 30));
+            const pick = (re) => ok.find((d) => re.test(`${d.manufacturer} ${d.brand} ${d.name}`));
+            const chosen = [pick(/samsung/i), pick(/xiaomi|redmi|poco/i)].filter(Boolean);
+            for (const d of ok) { if (chosen.length >= 2) break; if (!chosen.includes(d)) chosen.push(d); }
+            const args = chosen.map((d) => `--device=model=${d.id},version=${Math.max(...d.supportedVersionIds.map(Number))}`).join(" ");
+            console.log(chosen.map((d) => `${d.manufacturer} ${d.name}`).join(", "));
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `args=${args}\n`);
+          '
+
+      - name: Run the app on them
+        if: env.HAS_KEY == 'true'
+        env:
+          PROJECT: ${{ secrets.FIREBASE_PROJECT }}
+        run: |
+          gcloud firebase test android run --project "$PROJECT" --type robo \
+            --app muslim-todo-list.apk ${{ steps.devices.outputs.args }} \
+            --timeout 5m --num-flaky-test-attempts 1
