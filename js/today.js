@@ -53,6 +53,10 @@
     // Memorisation reviews due today.
     const H = window.noonHifz && window.noonHifz.summary();
     if (H && H.due) cards.push(card('td-hifz', T('مراجعة الحفظ'), H.next, `${I.num(H.due)} ${T('للمراجعة اليوم')}`, () => window.noonHifz.open()));
+    // Your next reminder, when it rings within a day.
+    const RM = window.noonReminders;
+    const nextRm = RM && RM.upcoming().find((x) => x.t - Date.now() < 864e5);
+    if (nextRm) cards.push(card('td-remind', T('التذكير القادم'), nextRm.r.title || T('تذكير'), RM.when(nextRm.t), () => RM.open()));
     // A group-khatma invite that is still waiting to be accepted.
     let invite = '';
     try { invite = localStorage.getItem('noon-khatma-code') || ''; } catch (_) {}
@@ -67,7 +71,7 @@
 
   render();
   setInterval(render, 60000);
-  ['noon-adhkar-done', 'noon-place', 'noon-storage', 'noon-view', 'noon-sunnah', 'noon-hifz'].forEach((e) => window.addEventListener(e, () => setTimeout(render, 50)));
+  ['noon-adhkar-done', 'noon-place', 'noon-storage', 'noon-view', 'noon-sunnah', 'noon-hifz', 'noon-reminders'].forEach((e) => window.addEventListener(e, () => setTimeout(render, 50)));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
   window.noonToday = { render };
 })();

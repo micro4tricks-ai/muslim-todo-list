@@ -12,19 +12,22 @@
   function addDistraction(text) {
     text = String(text || '').trim();
     if (!text) return false;
-    D.items.unshift({ id: uid(), text, at: Date.now(), done: false });
+    const item = { id: uid(), text, at: Date.now(), done: false };
+    D.items.unshift(item);
     D.items = D.items.slice(0, 200);
     saveD();
-    return true;
+    return item;
   }
   const form = $('distractForm'), input = $('distractInput');
   $('distractBtn').addEventListener('click', () => { form.hidden = !form.hidden; if (!form.hidden) input.focus(); });
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
-    if (addDistraction(input.value)) {
+    const item = addDistraction(input.value);
+    if (item) {
       input.value = '';
       form.hidden = true;
-      toast(T('حُفظت في صندوق المشتتات. أكمل تركيزك.'));
+      const RM = window.noonReminders;
+      toast(T('حُفظت في صندوق المشتتات. أكمل تركيزك.'), RM ? { label: `⏰ ${T('ذكّرني بها')}`, run: () => RM.ask({ kind: 'thought', ref: item.id, title: item.text }) } : null);
     }
   });
   form.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { form.hidden = true; ev.stopPropagation(); } });
@@ -94,8 +97,18 @@
   window.noonFocusPlus = {
     addDistraction,
     distractions: () => D.items,
-    setDistraction(id, patch) { const d = D.items.find((x) => x.id === id); if (d) { Object.assign(d, patch); saveD(); } },
-    removeDistraction(id) { D.items = D.items.filter((x) => x.id !== id); saveD(); },
+    setDistraction(id, patch) {
+      const d = D.items.find((x) => x.id === id);
+      if (!d) return;
+      Object.assign(d, patch);
+      saveD();
+      if (d.done && window.noonReminders) window.noonReminders.dropFor('thought', id);
+    },
+    removeDistraction(id) {
+      D.items = D.items.filter((x) => x.id !== id);
+      saveD();
+      if (window.noonReminders) window.noonReminders.dropFor('thought', id);
+    },
     sessions: () => L.sessions,
     tip: () => ({ tip: TIPS[tipIndex], count: tipCount })
   };

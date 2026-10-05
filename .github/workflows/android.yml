@@ -30,6 +30,9 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Reminder rules (when each reminder rings)
+        run: node --test tools/test_reminders.mjs
+
       - name: Version
         id: version
         run: |

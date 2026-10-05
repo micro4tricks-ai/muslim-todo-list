@@ -78,6 +78,7 @@ It runs in any browser, installs as an app on phones, tablets and computers, wor
 
 | | |
 |---|---|
+| ⏰ **Reminders on anything** | "Remind me" on any task, review card or stray thought, or a reminder of its own: in half an hour, tonight, tomorrow morning, after the next prayer or any time, once, daily or weekly. In the Android app it rings with the app closed, with "Done" and "In 10 minutes" buttons; on the website, while the site is open. (2.2) |
 | 🏠 **My day and a bottom bar** | On phones the app opens on "My day": the next prayer, today's wird, the morning or evening adhkar and the memorisation review, each one tap away. A bottom bar (Home, Mushaf, Listen, Adhkar, More) replaces the long scroll. New users get a few welcome steps: language, place, adhan, font. |
 | 🧠 **Memorisation reviews** | Add the surahs and passages you know by heart; each comes back for review on a growing schedule (1, 2, 4, 7, 15, 30, 60 days) — "well", "shaky" or "forgot" decides the next one. |
 | 👥 **Group khatma** | Start a khatma, share its link, and family or friends each take a juz' until the 30 are done. Behind row-level security: only members see it. |
@@ -119,6 +120,7 @@ It runs in any browser, installs as an app on phones, tablets and computers, wor
 | 📲 | **Widgets and shortcuts** | The next prayer with a live countdown, the verse of the day, a tasbih; long-press shortcuts; Android Auto. |
 | 🧠 | **Memorisation** | What you know by heart, with spaced reviews on "My day". |
 | 👥 | **Group khatma** | Share a khatma and split the 30 juz' between family and friends. |
+| ⏰ | **Reminders** | "Remind me" on tasks, review cards and stray thoughts, or on their own; once, daily or weekly; "My reminders" lists what is coming. |
 | ✅ | **Tasks and focus** | Tasks with subtasks and time tracking, the day split by prayer; a Pomodoro timer, full-screen focus mode, useful breaks, sticky notes, review cards with spaced repetition, habits with streaks, and a report with charts. |
 | 🎧 | **Focus sounds** | 32 recordings (rain, nature, places, noise…) to mix, plus your own music folder; fetched once and kept on the phone. |
 | ⚙️ | **Settings, fonts, dark mode** | One Settings screen; 9 Arabic and 5 English interface fonts; light, dark or following the device; four text sizes. |
@@ -191,6 +193,7 @@ The signing key lives in the repository secrets, and its original copy is kept o
 | `js/look.js`, `fonts/` | Colours, backgrounds, text size and the interface fonts (`fonts/extra.css` from `tools/build_fonts.py`) |
 | `js/settings.js`, `js/device.js` | The Settings screen; the adhan reliability card |
 | `js/nav.js`, `js/today.js` | The bottom bar and "My day" |
+| `js/reminders.js`, `js/reminders-core.js` | Your own reminders; when each rings (tested by `tools/test_reminders.mjs`) |
 | `js/hifz.js`, `js/khatma.js`, `supabase/khatma.sql` | Memorisation reviews; the group khatma and its row-level security |
 | `js/views.js` | Tabs, shared helpers and the back-key handler |
 | `js/quran.js`, `js/quran-meta.js`, `quran/` | The Mushaf reader and its texts |
@@ -243,6 +246,7 @@ The code is released under the [MIT License](LICENSE). Texts, recordings, broadc
 
 ### الجديد في الإصدار ٢
 
+- **«ذكّرني» على أي شيء (٢٫٢):** على أي مهمة أو كارت مراجعة أو فكرة مشتتة، أو تذكير مستقل: بعد نصف ساعة، الليلة، غداً صباحاً، بعد دخول وقت الصلاة القادمة، أو أي وقت، مرة أو كل يوم أو كل أسبوع. في تطبيق أندرويد يصل إشعاراً والتطبيق مغلق، بزرّي «تم» و«بعد ١٠ دقائق»، وعلى الموقع ما دام مفتوحاً.
 - **«يومي» وشريط سفلي:** على الموبايل يفتح التطبيق على الصلاة القادمة، وورد اليوم، والأذكار، ومراجعة الحفظ؛ وشريط سفلي للتنقل (الرئيسية، المصحف، استماع، الأذكار، المزيد)، وخطوات ترحيب للمستخدم الجديد.
 - **متابعة الحفظ:** أضف ما تحفظه، ويرجع لك للمراجعة على فترات تزداد كلما أتقنت (يوم، يومان، ٤، ٧، ١٥، ٣٠، ٦٠ يوماً).
 - **ختمة جماعية:** ابدأ ختمة وشارك رابطها، وكل واحد من الأهل والأصحاب يأخذ جزءاً حتى تكتمل الثلاثون.

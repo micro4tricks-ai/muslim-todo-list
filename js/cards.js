@@ -156,15 +156,22 @@
     const list = el('ul', 'card-list');
     for (const c of cards) {
       const li = el('li', 'card-row');
+      li.dataset.id = c.id;
       const txt = el('div', 'card-text');
       txt.append(el('p', 'card-front', c.front), el('p', 'card-back', c.back));
+      const RM = window.noonReminders;
+      const rmBadge = RM && RM.badge('card', c.id);
+      if (rmBadge) txt.append(rmBadge);
       const meta = el('span', 'card-box', `${T('صندوق')} ${I.num(c.box)} · ${c.due <= today() ? T('للمراجعة اليوم') : `${T('المراجعة')} ${dateLabel(c.due)}`}`);
       let armed = null;
       const del = button('link-btn danger', T('حذف'), () => {
         if (!armed) { del.textContent = T('تأكيد الحذف'); armed = setTimeout(() => { armed = null; del.textContent = T('حذف'); }, 3000); return; }
         S.cards = S.cards.filter((x) => x.id !== c.id); save(); render();
+        if (RM) RM.dropFor('card', c.id);
       });
-      li.append(txt, meta, del);
+      li.append(txt, meta);
+      if (RM) li.append(RM.button('card', c.id, c.front));
+      li.append(del);
       list.append(li);
     }
     if (!cards.length) root.append(el('p', 'empty', T('لا توجد كروت في هذه المجموعة بعد.')));
@@ -174,6 +181,7 @@
     const delDeck = button('link-btn danger', T('حذف المجموعة كلها'), () => {
       if (!armedDeck) { delDeck.textContent = T('تأكيد حذف المجموعة'); armedDeck = setTimeout(() => { armedDeck = null; delDeck.textContent = T('حذف المجموعة كلها'); }, 3000); return; }
       S.decks = S.decks.filter((x) => x.id !== d.id);
+      if (window.noonReminders) S.cards.filter((x) => x.deckId === d.id).forEach((x) => window.noonReminders.dropFor('card', x.id));
       S.cards = S.cards.filter((x) => x.deckId !== d.id);
       save(); screen = { name: 'decks' }; render();
     });
@@ -263,7 +271,23 @@
     const due = S.cards.filter((c) => c.due <= day).length;
     return due ? { time: r.time, due } : null;
   }
-  window.noonCards = { add: addCard, plan };
+  // Open the deck of a card and show the card (a reminder for it was tapped).
+  function openCard(id) {
+    const c = S.cards.find((x) => x.id === id);
+    window.noonUI.go('cards');
+    if (!c) return;
+    screen = { name: 'deck', id: c.deckId };
+    render();
+    setTimeout(() => {
+      const li = root.querySelector(`.card-row[data-id="${CSS.escape(id)}"]`);
+      if (!li) return;
+      li.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      li.classList.add('rm-flash');
+      setTimeout(() => li.classList.remove('rm-flash'), 2400);
+    }, 200);
+  }
+  window.noonCards = { add: addCard, plan, open: openCard };
+  window.addEventListener('noon-reminders', () => { if (screen.name === 'deck') render(); });
 
   onRemote(KEY, () => { if (screen.name === 'review') return; S = load(KEY, { decks: [], cards: [] }); render(); });
   render();

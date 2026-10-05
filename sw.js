@@ -2,7 +2,7 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v24';
+const VERSION = 'v25';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
@@ -17,7 +17,7 @@ const FILES = [
   'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
   'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js',
-  'js/extras-data.js', 'js/tools.js', 'js/prayers.js', 'js/listen.js', 'js/settings.js', 'js/device.js', 'js/today.js', 'js/nav.js', 'js/hifz.js', 'js/khatma.js',
+  'js/extras-data.js', 'js/tools.js', 'js/prayers.js', 'js/listen.js', 'js/settings.js', 'js/device.js', 'js/today.js', 'js/nav.js', 'js/hifz.js', 'js/khatma.js', 'js/reminders-core.js', 'js/reminders.js',
   'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',
   'fonts/Amiri-400-latin-ext.woff2',

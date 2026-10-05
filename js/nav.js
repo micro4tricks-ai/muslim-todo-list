@@ -11,6 +11,7 @@
     qibla: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/>',
     sounds: '<path d="M4 13v-1a8 8 0 0 1 16 0v1M4 13h3v6H4zM17 13h3v6h-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
     focus: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 13V9M9.5 3h5"/></g>',
+    bell: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></g>',
     gear: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l1.6 2.3 2.7-.6.6 2.7 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.6 2.7-2.7-.6L12 21.2l-1.6-2.3-2.7.6-.6-2.7-2.3-1.6L6 12.7 4.8 10.2l2.3-1.6.6-2.7 2.7.6z"/><circle cx="12" cy="12" r="3"/></g>'
   };
   // A tab's own icon, copied from the tab bar, so both always match.
@@ -74,6 +75,7 @@
   tool('qibla', 'القبلة', () => { const q = document.getElementById('qiblaBtn'); if (q) q.click(); });
   tool('sounds', 'أصوات التركيز', () => openSounds());
   tool('focus', 'وضع التركيز', () => window.noonFocusMode && window.noonFocusMode.open());
+  tool('bell', 'تذكيراتي', () => window.noonReminders && window.noonReminders.open());
   tool('gear', 'الإعدادات', () => window.noonSettings && window.noonSettings.open());
   const grab = el('span', 'more-grab');
   sheet.append(grab, el('h2', 'more-title', T('المزيد')), grid);

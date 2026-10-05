@@ -228,6 +228,9 @@
 
     const body = el('div', 'task-body');
     body.append(el('p', 'task-title', t.title));
+    const RM = window.noonReminders;
+    const rmBadge = RM && !t.completed && RM.badge('task', String(t.id));
+    if (rmBadge) body.append(rmBadge);
     if (t.description) body.append(el('p', 'task-desc', t.description));
 
     if (t.subtasks.length) {
@@ -277,6 +280,7 @@
       play.setAttribute('aria-label', T(tracking ? 'إيقاف تتبّع الوقت' : 'ابدأ تتبّع الوقت لهذه المهمة'));
       play.title = play.getAttribute('aria-label');
       actions.append(play);
+      if (RM) actions.append(RM.button('task', String(t.id), t.title));
     }
     const edit = el('button', 'link-btn', T('تعديل'));
     edit.type = 'button'; edit.dataset.act = 'edit';
@@ -468,6 +472,8 @@
     t.completed = done;
     t.completedAt = done ? Date.now() : null;
     if (done && S.track.taskId === t.id) clearCurrent();
+    // A finished task needs no more reminding.
+    if (done && window.noonReminders) window.noonReminders.dropFor('task', String(t.id));
   }
 
   $('addBtn').addEventListener('click', () => openForm(null));
@@ -529,6 +535,7 @@
       clearTimeout(confirmTimer);
       if (S.track.taskId === id) clearCurrent();
       S.tasks = S.tasks.filter((x) => x.id !== id);
+      if (window.noonReminders) window.noonReminders.dropFor('task', String(id));
       if (editingId === id) closeForm();
     }
     save(); render();
@@ -767,5 +774,7 @@
     }
   };
 
+  // Reminders (js/reminders.js) load after this file: draw the ⏰ buttons once they are there.
+  window.addEventListener('noon-reminders', () => render());
   render();
 })();

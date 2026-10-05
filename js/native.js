@@ -15,6 +15,8 @@
   const DAYS = 7;
   const PRAYER_IDS = [1000, 2000], FOCUS_ID = 2000, SUNNAH_IDS = [3000, 4000];
   const SUNNAH_DAYS = 21;
+  // Your own reminders (js/reminders.js): the rings of the next two weeks.
+  const REMIND_IDS = [5000, 5500], REMIND_DAYS = 14;
   const quiet = (p) => Promise.resolve(p).catch(() => {});
 
   // Channels carry their own sound (a chime bundled in res/raw), because Android keeps a
@@ -31,7 +33,10 @@
     await Promise.all([
       quiet(LN.createChannel({ id: 'alerts-v2', name: T('تنبيهات الصلاة'), importance: 5, visibility: 1, vibration: true, sound: CHIME })),
       quiet(LN.createChannel({ id: 'focus-v2', name: T('مؤقت التركيز'), importance: 4, visibility: 1, vibration: true, sound: CHIME })),
-      quiet(LN.createChannel({ id: 'sunnah-v2', name: T('الصيام والمواسم والأذكار'), importance: 4, visibility: 1, vibration: true, sound: CHIME }))
+      quiet(LN.createChannel({ id: 'sunnah-v2', name: T('الصيام والمواسم والأذكار'), importance: 4, visibility: 1, vibration: true, sound: CHIME })),
+      quiet(LN.createChannel({ id: 'reminders-v1', name: T('تذكيراتي'), importance: 5, visibility: 1, vibration: true, sound: CHIME })),
+      // The two buttons under each of your reminders.
+      quiet(LN.registerActionTypes({ types: [{ id: 'remind', actions: [{ id: 'done', title: T('تم') }, { id: 'snooze', title: T('بعد ١٠ دقائق') }] }] }))
     ]);
   })();
   // The adhan itself is played by the app's own player (AdhanService.java) through the
@@ -44,7 +49,8 @@
   quiet(LN.addListener('localNotificationActionPerformed', (a) => {
     const x = (a && a.notification && a.notification.extra) || {};
     setTimeout(() => {
-      if (x.key) window.dispatchEvent(new CustomEvent('noon-reminder-tap', { detail: x }));
+      if (x.rid) window.dispatchEvent(new CustomEvent('noon-my-reminder', { detail: Object.assign({ action: a.actionId }, x) }));
+      else if (x.key) window.dispatchEvent(new CustomEvent('noon-reminder-tap', { detail: x }));
       else if (x.view && window.noonUI.go) window.noonUI.go(x.view);
     }, 400);
   }));
@@ -194,6 +200,36 @@
     } finally { sunnahBusy = false; }
   }
   window.addEventListener('noon-sunnah', () => scheduleSunnah(true));
+
+  // ---- your reminders: booked with the phone, so they ring with the app closed ----
+  let remindSig = null, remindBusy = false, remindAgain = false;
+  async function scheduleReminders(force) {
+    if (!window.noonReminders) return;
+    if (remindBusy) { remindAgain = true; return; }
+    remindBusy = true;
+    try {
+      const now = Date.now();
+      const list = window.noonReminders.plan(now + 5000, now + REMIND_DAYS * 864e5)
+        .slice(0, REMIND_IDS[1] - REMIND_IDS[0])
+        .map((r, k) => ({ id: REMIND_IDS[0] + k, channelId: 'reminders-v1', actionTypeId: 'remind', title: r.title, body: r.body,
+          extra: { rid: r.rid, t: r.t }, schedule: { at: new Date(r.t), allowWhileIdle: true } }));
+      const sig = list.map((n) => n.extra.rid + '@' + n.extra.t + n.title).join('|');
+      if (sig === remindSig && !force) return;
+      if (list.length && !(await permit(false))) return;
+      await channels;
+      const pending = await LN.getPending();
+      const old = (pending.notifications || []).filter((n) => n.id >= REMIND_IDS[0] && n.id < REMIND_IDS[1]).map((n) => ({ id: n.id }));
+      if (old.length) await LN.cancel({ notifications: old });
+      if (list.length) await LN.schedule({ notifications: list });
+      remindSig = sig;
+    } catch (_) {
+      remindSig = null;
+    } finally {
+      remindBusy = false;
+      if (remindAgain) { remindAgain = false; scheduleReminders(); }
+    }
+  }
+  window.addEventListener('noon-reminders', () => scheduleReminders());
   window.addEventListener('noon-place', () => { schedulePrayers(true); scheduleSunnah(true); });
 
   // ---- focus: a notice when the running session ends ----
@@ -235,6 +271,10 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { schedulePrayers(); scheduleSunnah(); } });
   setInterval(() => schedulePrayers(), 60000);
   setInterval(() => scheduleSunnah(), 15 * 60000);
+  // Repeating reminders reach further than two weeks: top the list up now and then.
+  setInterval(() => scheduleReminders(), 15 * 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleReminders(); });
+  setTimeout(() => scheduleReminders(true), 2500);
 
   // Hear the adhan now through the app's player (from the prayer settings), or silence it.
   const adhanTest = (sound) => (Adhan ? quiet(Adhan.test({ sound: `adhan_${sound}`, title: T('الأذان'), body: T('تجربة صوت الأذان'), stop: T('إيقاف الأذان') })) : null);
@@ -249,5 +289,5 @@
     scheduleSunnah(true);
     return true;
   }
-  window.noonNative = { permit, schedulePrayers, scheduleSunnah, adhanTest, adhanStop, testNotify };
+  window.noonNative = { permit, schedulePrayers, scheduleSunnah, scheduleReminders, adhanTest, adhanStop, testNotify };
 })();

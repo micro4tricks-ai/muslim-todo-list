@@ -78,6 +78,26 @@ report.alerts = await js(`(async () => {
   return { pending: n.length, exactAlarms: exact, first: n.slice(0, 3).map((x) => x.title + ' @ ' + new Date(x.schedule.at).toISOString()) };
 })()`);
 
+// Your own reminder ("remind me" on a task, an hour from now): booked with the phone, so it rings with the app closed.
+report.reminder = await js(`(async () => {
+  const RM = window.noonReminders, LN = Capacitor.Plugins.LocalNotifications;
+  if (!RM) return 'no reminders module';
+  const t = window.noonTasks.add('Smoke test reminder');
+  RM.ask({ kind: 'task', ref: String(t.id), title: t.title });
+  await new Promise((r) => setTimeout(r, 400));
+  const sheet = document.querySelector('.rm-sheet');
+  const hour = [...sheet.querySelectorAll('.rm-chips .chip')].find((c) => /^(بعد ساعة|In an hour)$/.test(c.textContent));
+  if (!hour) return 'no "in an hour" choice';
+  hour.click();
+  sheet.querySelector('.form-actions .btn-primary').click();
+  await new Promise((r) => setTimeout(r, 4000));
+  const booked = ((await LN.getPending()).notifications || []).filter((n) => n.id >= 5000 && n.id < 5500);
+  const mine = booked.find((n) => n.title === 'Smoke test reminder');
+  RM.dropFor('task', String(t.id));
+  return mine ? { booked: true, inMinutes: Math.round((new Date(mine.schedule.at) - Date.now()) / 60000), rid: !!(mine.extra && mine.extra.rid) } : { booked: false, pending: booked.length };
+})()`);
+console.log('reminder:', JSON.stringify(report.reminder));
+
 // ---- A few minutes of normal use, measuring memory, freezes and crashes ----
 const pkg = 'io.github.micro4tricks.muslimtodo';
 const memory = () => {
@@ -286,6 +306,7 @@ if (!report.widgetHasTimes) problems.push('the widget has no prayer times');
 if (!(report.soundsKept > 0)) problems.push(`focus sounds were not downloaded and kept: ${report.soundsKept}`);
 if (!report.verseWidget) problems.push('the verse widget got no verse');
 if (!report.autoCatalog) problems.push('Android Auto got no station list');
+if (!report.reminder || report.reminder.booked !== true || !(report.reminder.inMinutes >= 55 && report.reminder.inMinutes <= 61)) problems.push(`a reminder was not booked with the phone: ${JSON.stringify(report.reminder)}`);
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 report.problems = problems;
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));

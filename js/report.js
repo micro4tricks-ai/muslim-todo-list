@@ -166,8 +166,13 @@
     const ul = el('ul', 'distract-list');
     for (const x of items.slice(0, 30)) {
       const li = el('li', x.done ? 'is-done' : '');
+      li.dataset.id = x.id;
       li.append(el('span', 'distract-text', x.text));
+      const RM = window.noonReminders;
+      const rmBadge = RM && !x.done && RM.badge('thought', x.id);
+      if (rmBadge) li.append(rmBadge);
       const acts = el('span', 'distract-acts');
+      if (!x.done && RM) acts.append(RM.button('thought', x.id, x.text));
       if (!x.done) {
         acts.append(button('link-btn', T('اجعلها مهمة'), () => {
           if (window.noonTasks && window.noonTasks.add(x.text)) {
@@ -245,6 +250,6 @@
   }
 
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'report') render(); });
-  ['noon-focuslog', 'noon-distractions'].forEach((e) => window.addEventListener(e, render));
+  ['noon-focuslog', 'noon-distractions', 'noon-reminders'].forEach((e) => window.addEventListener(e, render));
   render();
 })();
