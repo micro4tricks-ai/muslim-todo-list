@@ -8,6 +8,7 @@ const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
 const LIBRARY = 'library-v1'; // hadith chapters and tafsirs, kept once read
 const LISTEN = 'listen-v1'; // the station and reciter lists, kept by js/listen.js itself
+const OURS = /^(shell|media|quran|library|listen|sounds)-v\d+$/; // every cache name this app uses
 const FILES = [
   './', 'index.html', 'install.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png',
@@ -45,7 +46,10 @@ self.addEventListener('install', (ev) => {
 });
 self.addEventListener('activate', (ev) => {
   ev.waitUntil((async () => {
-    for (const k of await caches.keys()) if (![SHELL, MEDIA, QURAN, LIBRARY, LISTEN].includes(k)) await caches.delete(k);
+    // Only this app's own old caches go. Other sites on micro4tricks-ai.github.io share this
+    // origin's cache storage (e.g. learn-n8n-english's site-*), so their caches are left alone.
+    const KEEP = [SHELL, MEDIA, QURAN, LIBRARY, LISTEN, 'sounds-v1']; // sounds-v1: js/sounds.js
+    for (const k of await caches.keys()) if (OURS.test(k) && !KEEP.includes(k)) await caches.delete(k);
     await self.clients.claim();
   })());
 });
