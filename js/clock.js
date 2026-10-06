@@ -592,7 +592,7 @@
   // ---------- Complications: next prayer, sun dial, date window, moon phase ----------
   const CFONT = '"IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif';
   const cfont = (k, w = 500, min = 9) => `${w} ${Math.max(min, k * R).toFixed(1)}px ${CFONT}`;
-  let compLayer = null, compKey = '';
+  let compLayer = null, compKey = '', keySec = -1, slotKey = '';
 
   // Recessed look: clip to the shape, then fill everything *outside* it so only
   // the soft shadow spills in along the upper-left edge.
@@ -621,7 +621,7 @@
   const I18 = window.noonI18n;
   const tr = (x) => (I18 ? I18.t(x) : x);
   const num = (n) => (I18 && I18.num ? I18.num(n) : String(n));
-  const POINTS = ['شمال', 'شمال شرق', 'شرق', 'جنوب شرق', 'جنوب', 'جنوب غرب', 'غرب', 'شمال غرب'];
+  const POINTS = window.noonClockCore.POINTS;
   // noonQibla.bearing() gives { bearing, km } for the chosen place.
   const qiblaDeg = () => { const q = window.noonQibla && window.noonQibla.bearing(); return q && Number.isFinite(q.bearing) ? q.bearing : null; };
   // round: the modern face's small round slots, which need shorter labels.
@@ -704,7 +704,7 @@
       case 'focus': if (window.noonFocusToggle) window.noonFocusToggle(); break;
       default: if (window.noonSettings) window.noonSettings.open('place'); else if (window.noonAstro) window.noonAstro.open();
     }
-    compKey = '';
+    compKey = ''; keySec = -1;
   }
 
   // Classic and minimal: the slot is a band above the centre, three lines like the old next-prayer text.
@@ -909,8 +909,9 @@
     gauge(g, startSide, towards, A);
     gauge(g, Math.PI - startSide, wird, M.light ? '#C08A1E' : '#E8C064');
     // Sunrise and sunset along the bottom edge.
-    curvedText(g, `↑ ${snap.fmtHM(snap.today.sunrise, false)}`, Math.PI * 0.66, R * 0.87);
-    curvedText(g, `↓ ${snap.fmtHM(snap.today.sunset, false)}`, Math.PI * 0.34, R * 0.87);
+    const morningSide = TEXT_DIR === 'rtl' ? 0.34 : 0.66;
+    curvedText(g, `↑ ${snap.fmtHM(snap.today.sunrise, false)}`, Math.PI * morningSide, R * 0.87);
+    curvedText(g, `↓ ${snap.fmtHM(snap.today.sunset, false)}`, Math.PI * (1 - morningSide), R * 0.87);
   }
   function prevPrayerH(snap) {
     const hs = PRAYER_KEYS.map((k) => snap.today[k]).filter((h) => Number.isFinite(h) && h <= snap.nowH);
@@ -1038,7 +1039,7 @@
     if (window.noonAstro) window.noonAstro.open();
   });
   canvas.style.cursor = 'pointer';
-  ['noon-tasbeeh', 'noon-reminders'].forEach((e) => window.addEventListener(e, () => { compKey = ''; }));
+  ['noon-tasbeeh', 'noon-reminders', 'noon-look'].forEach((e) => window.addEventListener(e, () => { compKey = ''; keySec = -1; }));
 
   // Focus-session ring: like a dive-watch bezel, marks the running session on the
   // minute track (faded = elapsed, bright = remaining, dot = end time).
@@ -1080,8 +1081,7 @@
     ctx.fillStyle = col;
     ctx.beginPath(); ctx.arc(CX + Math.cos(aEnd) * rEnd, CY + Math.sin(aEnd) * rEnd, R * 0.024, 0, TAU); ctx.fill();
     // Two time labels inside the dial; pushed apart when the session is short.
-    const gap = ((aEnd - a0) % TAU + TAU) % TAU;
-    const push = gap < 0.6 && laps.length === 1 ? (0.6 - gap) / 2 : 0;
+    const [aStartLabel, aEndLabel] = window.noonClockCore.spreadLabels(a0, aEnd, 0.6);
     const label = (a, rr, t) => {
       const txt = cityTime(t);
       const lx = CX + Math.cos(a) * rr, ly = CY + Math.sin(a) * rr;
@@ -1093,8 +1093,8 @@
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
       ctx.fillText(txt, lx, ly + 0.5);
     };
-    label(a0 - push, R * 0.82, f.startEpoch);
-    label(aEnd + push, R * 0.82 - last.lap * R * 0.06, f.endEpoch);
+    label(aStartLabel, R * 0.82, f.startEpoch);
+    label(aEndLabel, R * 0.82 - last.lap * R * 0.06, f.endEpoch);
     ctx.restore();
   }
 
@@ -1106,6 +1106,7 @@
     if (!want && unwatch) { unwatch(); unwatch = null; heading = null; }
   }
   function drawQiblaNeedles() {
+    if (!currentSlots().some((x) => x.id === 'qibla')) return;
     const b = qiblaDeg();
     if (b === null) return;
     for (const x of currentSlots()) {
@@ -1185,8 +1186,13 @@
     ctx.drawImage(staticLayer, 0, 0);
     const snap = window.noonAstro && window.noonAstro.snapshot(Date.now());
     if (snap) {
-      const fr = window.noonFocus && window.noonFocus();
-      const key = snap.key + '|' + canvas.width + 'x' + canvas.height + '|' + T.face + '|' + (fr && fr.running ? 'F' : '') + '|' + currentSlots().map((x) => slotData(x.id, snap).key).join(',');
+      const sec = Math.floor(Date.now() / 1000);
+      if (sec !== keySec || !compLayer) {
+        keySec = sec;
+        const fr = window.noonFocus && window.noonFocus();
+        slotKey = snap.key + '|' + canvas.width + 'x' + canvas.height + '|' + T.face + '|' + (fr && fr.running ? 'F' : '') + '|' + currentSlots().map((x) => slotData(x.id, snap).key).join(',');
+      }
+      const key = slotKey;
       if (key !== compKey || !compLayer) { compLayer = buildComplications(snap); compKey = key; }
       ctx.drawImage(compLayer, 0, 0);
     }

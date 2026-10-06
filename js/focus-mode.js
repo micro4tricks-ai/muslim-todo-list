@@ -12,6 +12,11 @@
   const pad = (n) => String(n).padStart(2, '0');
   const fmtTime = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return I.num(`${pad(Math.floor(s / 60))}:${pad(s % 60)}`); };
   const clockFmt = new Intl.DateTimeFormat(I.locale, { hour: 'numeric', minute: '2-digit' });
+  // In the chosen city's time zone, like the clock's focus ring.
+  const cityFmt = (t) => {
+    const tz = window.noonAstro && window.noonAstro.snapshot(Date.now()).place.tz;
+    try { return new Intl.DateTimeFormat(I.locale, { hour: 'numeric', minute: '2-digit', timeZone: tz }).format(t); } catch (_) { return clockFmt.format(t); }
+  };
 
   const root = el('div', 'fm');
   root.id = 'focusOverlay';
@@ -130,7 +135,7 @@
     root.classList.toggle('is-running', st.running);
     modeBtns.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === st.mode)));
     label.textContent = st.label;
-    span.textContent = f && f.running ? `${clockFmt.format(f.startEpoch)} – ${clockFmt.format(f.endEpoch)}` : '';
+    span.textContent = f && f.running ? `${cityFmt(f.startEpoch)} – ${cityFmt(f.endEpoch)}` : '';
     dots.replaceChildren(...Array.from({ length: st.every }, (_, i) => el('i', i < (st.count % st.every || (st.count ? st.every : 0)) ? 'on' : '')));
     playBtn.setAttribute('aria-label', st.running ? T('إيقاف مؤقت') : T('ابدأ'));
     playBtn.innerHTML = st.running

@@ -305,7 +305,7 @@
     // Once only: "choose myself" can be tapped while the browser still asks about the location;
     // a late answer then neither changes the city chosen by hand nor reopens the welcome.
     let finished = false;
-    const done = () => { if (finished) return; finished = true; veil.remove(); card.remove(); wizard(0); };
+    const done = () => { if (finished) return; finished = true; veil.remove(); card.remove(); store2(AT, '0'); wizard(0); };
     const allow = button('btn btn-primary', T('السماح'), async () => {
       allow.disabled = true;
       msg.textContent = T('جارٍ تحديد موقعك…');
@@ -318,6 +318,7 @@
       done();
     });
     card.append(logo, el('h3', '', T('نحتاج إذنين')), list, msg, allow, button('link-btn', T('اختيار المدينة يدوياً'), done));
+    card.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); done(); } });
     document.body.append(veil, card);
     setTimeout(() => allow.focus(), 50);
   }

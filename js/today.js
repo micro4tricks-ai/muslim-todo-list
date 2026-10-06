@@ -35,7 +35,7 @@
     // The qibla direction, with a small needle.
     const q = window.noonQibla && window.noonQibla.bearing();
     if (q && Number.isFinite(q.bearing) && window.noonClockCore) {
-      const POINTS = ['شمال', 'شمال شرق', 'شرق', 'جنوب شرق', 'جنوب', 'جنوب غرب', 'غرب', 'شمال غرب'];
+      const POINTS = window.noonClockCore.POINTS;
       const needle = el('span', 'td-needle');
       needle.style.setProperty('--qibla', `${Math.round(q.bearing)}deg`);
       cards.push(card('td-qibla', T('القبلة'), `${I.num(Math.round(q.bearing))}°`, T(POINTS[window.noonClockCore.compassPoint(q.bearing)]), () => window.noonQibla.open(), needle));

@@ -70,8 +70,22 @@
     return best;
   }
 
+  // Two labels around a circle (angles in radians): when they are closer than `min` along the
+  // short way round, both move apart from their midpoint until they are exactly `min` apart.
+  function spreadLabels(a0, a1, min) {
+    const TAU = Math.PI * 2;
+    const gap = (((a1 - a0) % TAU) + TAU) % TAU;
+    if (Math.min(gap, TAU - gap) >= min) return [a0, a1];
+    if (gap <= Math.PI) { const mid = a0 + gap / 2; return [mid - min / 2, mid + min / 2]; }
+    const mid = a0 - (TAU - gap) / 2;
+    return [mid + min / 2, mid - min / 2];
+  }
+
+  // The eight compass points, for the qibla's direction in words.
+  const POINTS = ['شمال', 'شمال شرق', 'شرق', 'جنوب شرق', 'جنوب', 'جنوب غرب', 'غرب', 'شمال غرب'];
+
   // 0 = north … 7 = north-west.
   const compassPoint = (deg) => Math.round((((deg % 360) + 360) % 360) / 45) % 8;
 
-  root.noonClockCore = { focusLaps, sunCountdown, slotRects, hitSlot, compassPoint, ellipsize };
+  root.noonClockCore = { focusLaps, sunCountdown, slotRects, hitSlot, compassPoint, ellipsize, spreadLabels, POINTS };
 })(typeof window !== 'undefined' ? window : globalThis);

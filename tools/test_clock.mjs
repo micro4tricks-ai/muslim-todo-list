@@ -69,3 +69,15 @@ test('ellipsize: text that fits is kept, longer text is cut to fit with an ellip
   assert.equal(C.ellipsize('abc', 5, mono), '');
   assert.equal(C.ellipsize('', 50, mono), '');
 });
+
+// The focus ring's start and end labels never sit on top of each other (sessions of about one,
+// two or three hours end where they started).
+test('spreadLabels: far-apart labels stay put, close ones are pushed apart to the minimum gap', () => {
+  assert.deepEqual(C.spreadLabels(0, 2, 0.6), [0, 2]);
+  const [a, b] = C.spreadLabels(1, 1.1, 0.6);
+  assert.ok(Math.abs(Math.abs(b - a) - 0.6) < 1e-9);
+  assert.ok(Math.abs((a + b) / 2 - 1.05) < 1e-9);
+  // An end exactly a full turn after the start (a 60- or 120-minute session) counts as close.
+  const [c, d] = C.spreadLabels(0, Math.PI * 2, 0.6);
+  assert.ok(Math.abs(Math.abs(d - c) % (Math.PI * 2) - 0.6) < 1e-9);
+});

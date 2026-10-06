@@ -134,6 +134,7 @@
   function open() {
     if (!box) build();
     box.hidden = false;
+    if (listening) enableBtn.hidden = true;
     draw();
     box.querySelector('.btn').focus();
     // Android asks for nothing, so the compass starts by itself there.

@@ -1377,14 +1377,16 @@
   .st-next { min-width: 120px; padding: 11px 20px; font-size: 15px; border-radius: 12px; }
   .st.is-wizard .st-back { visibility: hidden; }
   .st.is-wizard[data-page="lang"] .st-back, .st.is-wizard[data-page="place"] .st-back, .st.is-wizard[data-page="adhan"] .st-back, .st.is-wizard[data-page="fonts"] .st-back { visibility: visible; }
-  /* First launch: location and notifications, before the welcome steps (js/settings.js). */
+  /* Clock settings (js/look.js), the qibla card (js/today.js), focus-mode times (js/focus-mode.js). */
+  #clock { touch-action: manipulation; }
   .look-slots { display: grid; gap: 8px; }
   .td-qibla { position: relative; }
   .td-needle { position: absolute; inset-inline-end: 14px; top: 14px; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--paper); }
-  .td-needle::after { content: ""; position: absolute; left: 50%; top: 3px; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent; border-bottom: 10px solid var(--accent); transform-origin: 4px 12px; transform: rotate(var(--qibla, 0deg)); }
+  .td-needle::after { content: ""; position: absolute; left: 50%; top: 3px; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent; border-bottom: 10px solid var(--accent); transform-origin: 4px 13.5px; transform: rotate(var(--qibla, 0deg)); }
   .fm-span { font-size: 14px; opacity: 0.75; direction: ltr; unicode-bidi: isolate; min-height: 1.2em; }
   .look-slots label { display: flex; align-items: center; gap: 10px; justify-content: space-between; font-size: 14px; }
   .look-slots select { flex: 0 1 60%; }
+  /* First launch: location and notifications, before the welcome steps (js/settings.js). */
   .st-perm-veil { position: fixed; inset: 0; z-index: 70; background: rgba(10, 12, 16, 0.5); }
   .st-perm { position: fixed; z-index: 71; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; padding: 24px 22px; border-radius: 22px; background: var(--paper); color: var(--ink); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; gap: 12px; text-align: center; }
   .st-perm h3 { margin: 0; font-size: 20px; }
@@ -1627,7 +1629,7 @@
 <body>
 <div class="left-pane">
   <div class="clock-pane" id="clockPane">
-    <canvas id="clock" aria-label="ساعة عقارب تعرض الوقت، والتاريخ الهجري والميلادي، وطور القمر، والشروق والغروب، والصلاة القادمة. اضغط لتغيير الموقع" role="img" title="اضغط لتغيير الموقع"></canvas>
+    <canvas id="clock" aria-label="الساعة: الوقت والتاريخ والقمر والشروق والغروب والصلاة القادمة. اضغط على أي خانة لتنفيذها، أو في مكان آخر لتغيير الموقع" role="img" title="اضغط على خانة لتنفيذها، أو في مكان آخر لتغيير الموقع"></canvas>
     <button type="button" class="place-chip" id="placeChip" dir="rtl" lang="ar" aria-label="تغيير الموقع">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a5 5 0 0 0-5 5c0 3.6 5 9 5 9s5-5.4 5-9a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
       <span id="placeName">القاهرة</span>
