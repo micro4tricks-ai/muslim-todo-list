@@ -297,7 +297,7 @@
       dateEnFull: new Intl.DateTimeFormat('en-US', opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(epoch),
       dateArFull: new Intl.DateTimeFormat('ar-EG', opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(epoch),
       timeHere: new Intl.DateTimeFormat(I.locale, opt({ hour: 'numeric', minute: '2-digit' })).format(epoch),
-      hijri, hijriFull, fmtHM
+      hijri, hijriFull, fmtHM, fmtIn
     };
     snapCache = { key, val };
     return val;
@@ -412,15 +412,19 @@
   selMethod.addEventListener('change', () => { P.method = selMethod.value; changed(); });
   selAsr.addEventListener('change', () => { P.asr = Number(selAsr.value) || 1; changed(); });
   $('placeChip').addEventListener('click', () => (panel.hidden ? openPanel() : closePanel()));
-  window.noonPlace = { open: openPanel }; // Settings › Location hosts this panel
+  window.noonPlace = { open: openPanel, locate: (stale) => locate(stale) }; // Settings › Location hosts this panel
   $('placeClose').addEventListener('click', closePanel);
   panel.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); closePanel(); } });
 
-  $('pLocate').addEventListener('click', () => {
+  // Location from the device (GPS on phones): the nearest listed city gives the country, the
+  // coordinates and time zone are your own. Used by the button and by the first-launch card.
+  // `stale()` (optional) says the answer is no longer wanted: someone chose a city meanwhile.
+  function locate(stale) {
     const msg = $('pLocateMsg');
-    if (!navigator.geolocation) { msg.textContent = T('المتصفح لا يدعم تحديد الموقع. اختر المدينة من القائمة.'); return; }
+    if (!navigator.geolocation) { msg.textContent = T('المتصفح لا يدعم تحديد الموقع. اختر المدينة من القائمة.'); return Promise.resolve('unsupported'); }
     msg.textContent = T('جارٍ تحديد موقعك…');
-    navigator.geolocation.getCurrentPosition((pos) => {
+    return new Promise((resolve) => navigator.geolocation.getCurrentPosition((pos) => {
+      if (stale && stale()) { resolve('cancelled'); return; }
       const { latitude: lat, longitude: lon } = pos.coords;
       let best = null;
       for (const c of COUNTRIES) c.cities.forEach((ct, i) => {
@@ -434,10 +438,13 @@
       P.custom = { name: `موقعي (قرب ${best.c.cities[best.i][0]})`, near: best.c.cities[best.i][0], lat, lon, tz };
       msg.textContent = T('تم تحديد موقعك.');
       changed();
+      resolve('ok');
     }, () => {
       msg.textContent = T('تعذّر الوصول إلى موقعك. اختر الدولة والمدينة من القائمة.');
-    }, { timeout: 10000, maximumAge: 600000 });
-  });
+      resolve('denied');
+    }, { timeout: 10000, maximumAge: 600000 }));
+  }
+  $('pLocate').addEventListener('click', () => locate());
 
   setInterval(renderPanel, 15000);
 

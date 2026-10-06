@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Muslim To-Do List",
-  "short_name": "Muslim To-Do",
+  "name": "مهام المسلم · Muslim Activity",
+  "short_name": "مهام المسلم",
   "description": "مهامك ومواقيت الصلاة والمصحف الشريف والأذكار وتقويم الصيام ومؤقت التركيز في مكان واحد.",
   "start_url": "./",
   "scope": "./",

@@ -32,6 +32,14 @@
       cards.push(card('td-prayer', T('الصلاة القادمة'), `${snap.next.name} ${snap.next.time}`, snap.next.inText,
         () => window.noonSettings && window.noonSettings.open('place')));
     }
+    // The qibla direction, with a small needle.
+    const q = window.noonQibla && window.noonQibla.bearing();
+    if (q && Number.isFinite(q.bearing) && window.noonClockCore) {
+      const POINTS = ['شمال', 'شمال شرق', 'شرق', 'جنوب شرق', 'جنوب', 'جنوب غرب', 'غرب', 'شمال غرب'];
+      const needle = el('span', 'td-needle');
+      needle.style.setProperty('--qibla', `${Math.round(q.bearing)}deg`);
+      cards.push(card('td-qibla', T('القبلة'), `${I.num(Math.round(q.bearing))}°`, T(POINTS[window.noonClockCore.compassPoint(q.bearing)]), () => window.noonQibla.open(), needle));
+    }
     // Tomorrow's fast or season (announced from the evening before).
     try {
       const eve = N && N.plan(Date.now() - 864e5, 1).find((r) => /^eve-/.test(r.key) && r.at <= Date.now() + 864e5 && r.at > Date.now() - 864e5);

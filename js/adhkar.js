@@ -158,6 +158,18 @@
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view !== 'adhkar') stopAudio(); });
   setInterval(() => { if (S.day !== dayKey()) render(); }, 60000);
   onRemote(KEY, () => { S = load(KEY, blank()); render(); });
-  window.noonAdhkar = { open(cat) { open = cat; window.noonUI.show('adhkar'); render(); }, progress, period };
+  // The clock's tasbih slot counts on the same free counter.
+  function tasbeehTap() {
+    fresh();
+    S.tasbeeh.n++;
+    if (navigator.vibrate) navigator.vibrate(S.tasbeeh.n % 33 === 0 ? [30, 60, 30] : 10);
+    save();
+    window.dispatchEvent(new CustomEvent('noon-tasbeeh'));
+    const shown = document.querySelector('.tasbeeh-n');
+    if (shown) shown.textContent = I.num(S.tasbeeh.n);
+    return S.tasbeeh.n;
+  }
+  const tasbeeh = () => ({ n: S.day === dayKey() ? S.tasbeeh.n : 0, phrase: (TASBEEH[S.tasbeeh.phrase] || TASBEEH[0])[0] });
+  window.noonAdhkar = { open(cat) { open = cat; window.noonUI.show('adhkar'); render(); }, progress, period, tasbeeh, tasbeehTap };
   render();
 })();

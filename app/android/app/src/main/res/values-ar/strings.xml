@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="app_name">مهام المسلم</string>
+    <string name="title_activity_main">مهام المسلم</string>
     <string name="widget_description">مواقيت الصلاة وعدّ تنازلي للصلاة القادمة</string>
     <string name="verse_widget_description">آية اليوم</string>
     <string name="tasbih_widget_description">مسبحة: اضغط للعدّ</string>

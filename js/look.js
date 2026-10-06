@@ -5,6 +5,7 @@
   const IMG_KEY = 'noon-sweep-look-image';
   const $ = (id) => document.getElementById(id);
   const T = window.noonI18n.t;
+  const I = window.noonI18n;
 
   const svg = (w, h, body) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>${body}</svg>`)}")`;
   const NOISE = svg(220, 220, "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .1 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/>");
@@ -41,7 +42,8 @@
   ];
   const DIAL_OPTS = [
     ['ceramic', 'سيراميك أبيض', '#F4F4F0'], ['navy', 'أزرق ليلي', '#1E3A5F'], ['emerald', 'أخضر زمردي', '#1E4B39'],
-    ['black', 'أسود', '#17191D'], ['salmon', 'سلموني', '#E6B09A'], ['champagne', 'شامبانيا', '#E4D3AC'], ['ice', 'أزرق ثلجي', '#CFE2EE']
+    ['black', 'أسود', '#17191D'], ['salmon', 'سلموني', '#E6B09A'], ['champagne', 'شامبانيا', '#E4D3AC'], ['ice', 'أزرق ثلجي', '#CFE2EE'],
+    ['sage', 'أخضر زيتوني فاتح', '#C9D6C3'], ['lavender', 'لافندر', '#D9D2EA'], ['sand', 'رملي', '#E8DCC4'], ['blush', 'وردي فاتح', '#F1D9D6']
   ];
   const METAL_OPTS = [
     ['steel', 'ستانلس ستيل', 'linear-gradient(135deg, #FBFBFC, #9DA2A8 55%, #E6E8EA)'],
@@ -62,11 +64,28 @@
     ['nunito', 'Nunito', 'Nunito'], ['lato', 'Lato', 'Lato'], ['poppins', 'Poppins', 'Poppins']
   ];
 
-  let L = { bg: 'mist', dial: 'ceramic', metal: 'steel', mode: 'auto', scale: 1, fontAr: 'plex', fontEn: 'same' };
+  // Clock faces (js/clock.js), the modern face's colour, and what each interactive slot shows.
+  const FACE_OPTS = [['classic', 'كلاسيكي'], ['modern', 'حديث'], ['minimal', 'بسيط']];
+  // The modern face's themes: background and accent together (light, medium, and dark but not black).
+  const THEME_OPTS = [
+    ['pearl', 'لؤلؤي وفيروزي', '#F4F6F7', '#DDE5E8', '#0E9AA0'], ['sand', 'رملي ومرجاني', '#F6EEE2', '#E6D5BD', '#D9603B'],
+    ['rose', 'وردي وعنابي', '#F8E8EA', '#ECCBD0', '#9C2F4A'], ['ocean', 'أزرق محيطي', '#1F5F86', '#123E5E', '#7FE0F2'],
+    ['emerald', 'زمردي ونعناعي', '#1F6150', '#123F34', '#8EF0C4'], ['plum', 'بنفسجي ووردي', '#4A2F6B', '#2E1C47', '#F59AC8'],
+    ['graphite', 'رمادي جرافيت', '#3A404B', '#22262E', '#5FD7E0'], ['midnight', 'أزرق ليلي وذهبي', '#25345A', '#141D36', '#E8C064']
+  ];
+  const SLOT_OPTS = [['prayer', 'الصلاة القادمة'], ['qibla', 'القبلة'], ['radio', 'الإذاعة'], ['sun', 'الشروق والغروب'],
+    ['hijri', 'التاريخ الهجري'], ['gdate', 'التاريخ الميلادي'], ['moon', 'القمر'], ['tasbih', 'المسبحة'],
+    ['reminder', 'التذكير القادم'], ['focus', 'التركيز'], ['none', 'مخفية']];
+  const SLOT_DEFAULTS = { classic: { A: 'prayer' }, minimal: { A: 'prayer', B: 'hijri', C: 'moon', D: 'none' }, modern: { A: 'qibla', B: 'prayer', C: 'sun' } };
+  const SLOT_NAMES = { minimal: ['الخانة العلوية', 'الخانة اليمنى', 'الخانة السفلية', 'الخانة اليسرى'] };
+
+  let L = { bg: 'mist', dial: 'ceramic', metal: 'steel', mode: 'auto', scale: 1, fontAr: 'plex', fontEn: 'same', face: 'classic', theme: 'pearl', slots: null };
   try { Object.assign(L, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
   let customImage = null;
   try { customImage = localStorage.getItem(IMG_KEY); } catch (_) {}
 
+  // Each face keeps its own slot choices.
+  const slotsFor = (face) => Object.assign({}, SLOT_DEFAULTS[face] || SLOT_DEFAULTS.classic, (L.slots || {})[face] || {});
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(L)); } catch (_) {}
   }
@@ -111,7 +130,10 @@
   }
 
   window.noonLook = {
-    get: () => ({ dial: L.dial, metal: L.metal, mode: L.mode, fontAr: L.fontAr, fontEn: L.fontEn }),
+    get: () => ({ dial: L.dial, metal: L.metal, mode: L.mode, fontAr: L.fontAr, fontEn: L.fontEn,
+      face: FACE_OPTS.some((f) => f[0] === L.face) ? L.face : 'classic', slots: slotsFor(L.face),
+      theme: (() => { const t = THEME_OPTS.find((x) => x[0] === L.theme) || THEME_OPTS[0]; return { id: t[0], bg1: t[2], bg2: t[3], accent: t[4] }; })() }),
+    SLOTS: SLOT_OPTS,
     fonts: { ar: AR_FONTS, en: EN_FONTS },
     setFont(kind, id) { L[kind === 'en' ? 'fontEn' : 'fontAr'] = id; save(); applyFont(); }
   };
@@ -138,6 +160,34 @@
     return b;
   }
   function renderPanel() {
+    $('lookFaces').replaceChildren(...FACE_OPTS.map(([id, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = T(label);
+      b.setAttribute('aria-pressed', String(L.face === id));
+      b.addEventListener('click', () => { L.face = id; save(); announce(); renderPanel(); });
+      return b;
+    }));
+    $('lookAccentBox').hidden = L.face !== 'modern';
+    $('lookAccents').replaceChildren(...THEME_OPTS.map(([id, label, bg1, bg2, accent]) =>
+      swatch(label, (L.theme || 'pearl') === id, { background: `radial-gradient(circle at 50% 50%, ${accent} 0 22%, transparent 24%), linear-gradient(160deg, ${bg1}, ${bg2})` },
+        () => { L.theme = id; save(); announce(); renderPanel(); }, 'sw sw-round')));
+    const cur = slotsFor(L.face);
+    const keys = Object.keys(cur);
+    $('lookSlots').replaceChildren(...keys.map((k, i) => {
+      const lab = document.createElement('label');
+      const sel = document.createElement('select');
+      sel.className = 'ls-select';
+      SLOT_OPTS.forEach(([id, name]) => sel.append(new Option(T(name), id)));
+      sel.value = cur[k];
+      sel.addEventListener('change', () => {
+        L.slots = Object.assign({}, L.slots);
+        L.slots[L.face] = Object.assign({}, slotsFor(L.face), { [k]: sel.value });
+        save(); announce();
+      });
+      const names = SLOT_NAMES[L.face];
+      lab.append(document.createTextNode(names ? T(names[i]) : keys.length > 1 ? `${T('الخانة')} ${I.num(i + 1)}` : T('الخانة العلوية')), sel);
+      return lab;
+    }));
     const modes = $('lookModes');
     if (modes) {
       modes.replaceChildren(...[['auto', 'تلقائي (حسب الجهاز)'], ['light', 'فاتح'], ['dark', 'داكن']].map(([id, label]) => {

@@ -97,6 +97,8 @@ report.reminder = await js(`(async () => {
   return mine ? { booked: true, inMinutes: Math.round((new Date(mine.schedule.at) - Date.now()) / 60000), rid: !!(mine.extra && mine.extra.rid) } : { booked: false, pending: booked.length };
 })()`);
 console.log('reminder:', JSON.stringify(report.reminder));
+// The clock's rules (js/clock-core.js) are in the app and load before the clock.
+report.clockCore = await js("window.noonClockCore && typeof window.noonClockCore.slotRects === 'function' ? window.noonClockCore.slotRects('modern', 100, 100, 100).length : 'missing'");
 
 // ---- A few minutes of normal use, measuring memory, freezes and crashes ----
 const pkg = 'io.github.micro4tricks.muslimtodo';
@@ -306,6 +308,7 @@ if (!report.widgetHasTimes) problems.push('the widget has no prayer times');
 if (!(report.soundsKept > 0)) problems.push(`focus sounds were not downloaded and kept: ${report.soundsKept}`);
 if (!report.verseWidget) problems.push('the verse widget got no verse');
 if (!report.autoCatalog) problems.push('Android Auto got no station list');
+if (report.clockCore !== 3) problems.push(`clock rules missing in the app: ${report.clockCore}`);
 if (!report.reminder || report.reminder.booked !== true || !(report.reminder.inMinutes >= 55 && report.reminder.inMinutes <= 61)) problems.push(`a reminder was not booked with the phone: ${JSON.stringify(report.reminder)}`);
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 report.problems = problems;

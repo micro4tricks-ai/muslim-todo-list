@@ -9,7 +9,7 @@ to the GitHub release, next to the website APK.
 
 | Field | Answer |
 |---|---|
-| App name | قائمة مهام المسلم - Muslim To-Do List |
+| App name | مهام المسلم - Muslim Activity |
 | Default language | Arabic – ar |
 | App or game | App |
 | Free or paid | Free |

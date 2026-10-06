@@ -2,7 +2,7 @@
   "name": "muslim-todo-list-app",
   "private": true,
   "version": "1.0.0",
-  "description": "Android app shell for Muslim To-Do List (Capacitor). The web files come from the repository root.",
+  "description": "Android app shell for Muslim Activity (Capacitor). The web files come from the repository root.",
   "scripts": {
     "copy-web": "node scripts/copy-web.mjs",
     "sync": "npm run copy-web && npx cap sync android"

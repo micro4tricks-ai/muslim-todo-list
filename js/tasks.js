@@ -130,6 +130,8 @@
 
   // Exposed to the clock script, which draws the session on the dial.
   window.noonFocus = () => ({ running: F.running, mode: F.mode === 'focus' ? 'focus' : 'break', startEpoch: F.startEpoch, endEpoch: F.endEpoch });
+  // The clock's focus slot starts and stops the timer.
+  window.noonFocusToggle = () => toggleFocus();
 
   let audio = null;
   function chime() {
@@ -577,8 +579,11 @@
     if (F.running) focusPause(); else focusStart();
     save(); render();
   }
+  // Sessions can be up to three hours ("+5" past the dial's hour); the clock's ring shows each
+  // hour after the first on its own ring further in (js/clock.js).
+  const MAX_FOCUS_MIN = 180;
   function setDuration(m) {
-    m = Math.min(60, Math.max(1, Math.round(m)));
+    m = Math.min(MAX_FOCUS_MIN, Math.max(1, Math.round(m)));
     F.durations[F.mode] = m;
     F.remainingMs = m * 60000;
     save(); renderFocus();
@@ -600,10 +605,10 @@
   function plusFive() {
     if (F.running) {
       F.endEpoch += 5 * 60000;
-      if (F.endEpoch - Date.now() > 3600000) F.endEpoch = Date.now() + 3600000;
+      if (F.endEpoch - Date.now() > MAX_FOCUS_MIN * 60000) F.endEpoch = Date.now() + MAX_FOCUS_MIN * 60000;
       save(); renderFocus();
     } else {
-      setDuration(Math.min(60, Math.round(F.remainingMs / 60000) + 5));
+      setDuration(Math.min(MAX_FOCUS_MIN, Math.round(F.remainingMs / 60000) + 5));
     }
   }
   $('focusSkip').addEventListener('click', skipFocus);

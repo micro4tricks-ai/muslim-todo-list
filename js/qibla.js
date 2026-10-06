@@ -92,7 +92,20 @@
     if (h === null) return;
     const turn = (screen.orientation && screen.orientation.angle) || 0;
     heading = (h + turn + 360) % 360;
-    if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (!box.hidden) draw(); });
+    watchers.forEach((cb) => cb(heading));
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (box && !box.hidden) draw(); });
+  }
+  // Watchers outside the panel (the clock's qibla slot) get the heading too. The sensor starts
+  // only where it needs no permission prompt (Android), and stops when nobody is watching.
+  const watchers = new Set();
+  const quietSensor = () => typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function' && matchMedia('(pointer: coarse)').matches;
+  function watch(cb) {
+    watchers.add(cb);
+    if (!listening && quietSensor()) {
+      listening = true;
+      addEventListener('ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation', onOrient);
+    }
+    return () => { watchers.delete(cb); if (!watchers.size && (!box || box.hidden)) stop(); };
   }
   let raf = 0;
   async function enable() {
@@ -129,11 +142,11 @@
   function close() {
     if (!box) return;
     box.hidden = true;
-    stop();
+    if (!watchers.size) stop();
     enableBtn.hidden = !('DeviceOrientationEvent' in window) || !matchMedia('(pointer: coarse)').matches;
     const b = $('qiblaBtn');
     if (b) b.focus();
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest('[data-qibla]')) open(); });
-  window.noonQibla = { open, bearing: () => { const p = place(); return p ? qibla(p.lat, p.lon) : null; } };
+  window.noonQibla = { open, watch, bearing: () => { const p = place(); return p ? qibla(p.lat, p.lon) : null; } };
 })();

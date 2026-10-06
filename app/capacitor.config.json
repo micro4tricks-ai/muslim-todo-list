@@ -1,6 +1,6 @@
 {
   "appId": "io.github.micro4tricks.muslimtodo",
-  "appName": "Muslim To-Do List",
+  "appName": "Muslim Activity",
   "webDir": "www",
   "android": {
     "backgroundColor": "#EFEFEC"

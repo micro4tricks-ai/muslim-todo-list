@@ -72,7 +72,7 @@
     place: { title: 'الموقع ومواقيت الصلاة', icon: 'pin', sub: () => $('placeName').textContent, node: () => $('placePanel'), open: () => window.noonPlace && window.noonPlace.open() },
     adhan: { title: 'الأذان والتنبيهات', icon: 'bell', node: () => pa,
       sub: () => (window.noonDevice && window.noonDevice.status() && !window.noonDevice.ok() ? `⚠ ${T('يحتاج ضبطاً')}` : T($('paEnabled').checked ? 'مفعّلة' : 'متوقفة')) },
-    look: { title: 'الألوان والخلفية', icon: 'palette', sub: lookName, node: () => $('lookPanel'), open: () => window.noonLook.open() },
+    look: { title: 'المظهر والساعة', icon: 'palette', sub: lookName, node: () => $('lookPanel'), open: () => window.noonLook.open() },
     fonts: { title: 'الخطوط', icon: 'font', sub: fontNames, build: buildFonts },
     account: { title: 'الحساب والمزامنة', icon: 'cloud', sub: () => $('syncLabel').textContent, node: () => $('syncPanel') },
     about: { title: 'حول التطبيق', icon: 'info', sub: () => $('appVersion').textContent, build: buildAbout },
@@ -107,7 +107,7 @@
   }
   function renderHome() {
     const head = el('div', 'st-hero');
-    head.append(icon('gear', 'st-hero-icon'), el('b', '', T('مسلم تو دو')), el('span', '', T('كل إعدادات التطبيق في مكان واحد')));
+    head.append(icon('gear', 'st-hero-icon'), el('b', '', T('مهام المسلم')), el('span', '', T('كل إعدادات التطبيق في مكان واحد')));
     body.append(head);
     GROUPS.forEach(([name, ids]) => {
       const g = el('section', 'st-group');
@@ -223,7 +223,7 @@
   function buildAbout(box) {
     const card = el('div', 'st-about');
     const logo = el('img', 'st-logo'); logo.src = 'icons/icon-192.png'; logo.alt = '';
-    card.append(logo, el('b', '', T('مسلم تو دو')), el('span', '', T('صدقة جارية: مجاني بالكامل، دون إعلانات ودون جمع بيانات.')));
+    card.append(logo, el('b', '', T('مهام المسلم')), el('span', '', T('صدقة جارية: مجاني بالكامل، دون إعلانات ودون جمع بيانات.')));
     box.append(card);
     const host = el('div', 'st-list st-pad');
     if (versionLine) { versionLine.hidden = false; host.append(versionLine); }
@@ -279,10 +279,52 @@
     if (d > 0) history.go(-d);
     if (window.noonToday) window.noonToday.render();
   }
+  // ---- before the welcome: location and notifications, asked once with a tap ----
+  // A tap is needed anyway: browsers ignore or hide a permission request that comes without one.
+  const PERM = 'noon-perm-asked';
+  function askPermissions() {
+    store2(PERM, '1');
+    const veil = el('div', 'st-perm-veil');
+    const card = el('div', 'st-perm');
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+    card.setAttribute('aria-label', T('نحتاج إذنين'));
+    card.dir = I.isEn ? 'ltr' : 'rtl';
+    const logo = el('img', 'st-logo'); logo.src = 'icons/icon-192.png'; logo.alt = '';
+    const list = el('ul', 'st-perm-list');
+    [['📍', 'موقعك', 'لمواقيت الصلاة واتجاه القبلة بدقة. يبقى على جهازك.'],
+      ['🔔', 'الإشعارات', 'للأذان وتذكيراتك في وقتها.']].forEach(([icon, title, why]) => {
+      const li = el('li');
+      const txt = el('span');
+      txt.append(el('b', '', T(title)), el('small', '', T(why)));
+      li.append(el('span', 'st-perm-icon', icon), txt);
+      list.append(li);
+    });
+    const msg = el('p', 'hint');
+    msg.setAttribute('aria-live', 'polite');
+    // Once only: "choose myself" can be tapped while the browser still asks about the location;
+    // a late answer then neither changes the city chosen by hand nor reopens the welcome.
+    let finished = false;
+    const done = () => { if (finished) return; finished = true; veil.remove(); card.remove(); wizard(0); };
+    const allow = button('btn btn-primary', T('السماح'), async () => {
+      allow.disabled = true;
+      msg.textContent = T('جارٍ تحديد موقعك…');
+      try { if (window.noonPlace && window.noonPlace.locate) await window.noonPlace.locate(() => finished); } catch (_) {}
+      if (finished) return;
+      try {
+        if (window.noonNative) await window.noonNative.permit(true);
+        else if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+      } catch (_) {}
+      done();
+    });
+    card.append(logo, el('h3', '', T('نحتاج إذنين')), list, msg, allow, button('link-btn', T('اختيار المدينة يدوياً'), done));
+    document.body.append(veil, card);
+    setTimeout(() => allow.focus(), 50);
+  }
   function buildWelcome(box) {
     const hero = el('div', 'st-welcome');
     const logo = el('img', 'st-logo'); logo.src = 'icons/icon-192.png'; logo.alt = '';
-    hero.append(logo, el('b', 'st-welcome-salam', 'السلام عليكم ورحمة الله'), el('h3', '', T('أهلاً بك في مسلم تو دو')),
+    hero.append(logo, el('b', 'st-welcome-salam', 'السلام عليكم ورحمة الله'), el('h3', '', T('أهلاً بك في مهام المسلم')),
       el('p', '', T('رفيقك اليومي حول الصلاة: مجاني بالكامل، دون إعلانات، صدقة جارية.')));
     const feats = el('div', 'st-feats');
     [['📖', 'المصحف بتسعة تفاسير'], ['🕌', 'الأذان في وقته'], ['📻', 'إذاعات القرآن والبث المباشر'], ['📿', 'الأذكار والأدعية'], ['📚', 'مكتبة الحديث'], ['✅', 'المهام والتركيز']]
@@ -296,7 +338,8 @@
     // Someone who has used the app already isn't shown the welcome.
     const used = ['noon-sweep-place', 'noon-sweep-look', 'noon-sweep-sync-meta']
       .some((k) => read2(k) !== null);
-    if (used) markDone(); else setTimeout(() => wizard(0), 700);
+    if (used) { markDone(); return; }
+    setTimeout(() => (read2(PERM) ? wizard(0) : askPermissions()), 700);
   })();
 
   window.noonSettings = {

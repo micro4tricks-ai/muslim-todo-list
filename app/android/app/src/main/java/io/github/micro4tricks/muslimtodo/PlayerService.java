@@ -159,7 +159,7 @@ public class PlayerService extends MediaLibraryService {
     private final class Library implements MediaLibrarySession.Callback {
         @Override
         public ListenableFuture<LibraryResult<MediaItem>> onGetLibraryRoot(@NonNull MediaLibrarySession s, @NonNull MediaSession.ControllerInfo browser, LibraryParams params) {
-            return Futures.immediateFuture(LibraryResult.ofItem(folder("root", "Muslim To-Do"), params));
+            return Futures.immediateFuture(LibraryResult.ofItem(folder("root", "Muslim Activity"), params));
         }
 
         @Override

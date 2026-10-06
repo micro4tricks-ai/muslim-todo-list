@@ -79,9 +79,11 @@
   const breath = el('div', 'fm-breath');
   const time = el('div', 'fm-time', '25:00');
   const label = el('div', 'fm-label');
+  // The running session's start and end, as on the clock's ring: 10:05 – 10:25.
+  const span = el('div', 'fm-span');
   const dots = el('div', 'fm-dots');
   const breathText = el('div', 'fm-breath-text');
-  center.append(breath, time, label, dots, breathText);
+  center.append(breath, time, label, span, dots, breathText);
   stage.append(svg, center);
 
   const controls = el('div', 'fm-controls');
@@ -120,13 +122,15 @@
   // ---- rendering ----
   let lastSig = '', raf = 0, lastMode = null, wasRunning = false, lastDash = '';
   function renderStatic(st) {
-    const sig = JSON.stringify([st.mode, st.running, st.count, st.task, I.lang]);
+    const f = window.noonFocus && window.noonFocus();
+    const sig = JSON.stringify([st.mode, st.running, st.count, st.task, I.lang, f && f.running ? f.endEpoch : 0]);
     if (sig === lastSig) return;
     lastSig = sig;
     root.dataset.mode = st.mode;
     root.classList.toggle('is-running', st.running);
     modeBtns.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === st.mode)));
     label.textContent = st.label;
+    span.textContent = f && f.running ? `${clockFmt.format(f.startEpoch)} – ${clockFmt.format(f.endEpoch)}` : '';
     dots.replaceChildren(...Array.from({ length: st.every }, (_, i) => el('i', i < (st.count % st.every || (st.count ? st.every : 0)) ? 'on' : '')));
     playBtn.setAttribute('aria-label', st.running ? T('إيقاف مؤقت') : T('ابدأ'));
     playBtn.innerHTML = st.running

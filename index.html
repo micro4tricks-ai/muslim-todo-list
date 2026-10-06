@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Muslim To-Do List</title>
+<title>مهام المسلم</title>
 <meta name="description" content="مهامك ومواقيت الصلاة والمصحف الشريف والأذكار وتقويم الصيام ومؤقت التركيز في مكان واحد.">
 <meta name="theme-color" content="#EFEFEC">
 <link rel="manifest" href="manifest.webmanifest">
@@ -11,10 +11,10 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Muslim To-Do">
+<meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.2.0">
-<link rel="stylesheet" href="fonts/extra.css?v=2.2.0">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.3.0">
+<link rel="stylesheet" href="fonts/extra.css?v=2.3.0">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -1377,6 +1377,24 @@
   .st-next { min-width: 120px; padding: 11px 20px; font-size: 15px; border-radius: 12px; }
   .st.is-wizard .st-back { visibility: hidden; }
   .st.is-wizard[data-page="lang"] .st-back, .st.is-wizard[data-page="place"] .st-back, .st.is-wizard[data-page="adhan"] .st-back, .st.is-wizard[data-page="fonts"] .st-back { visibility: visible; }
+  /* First launch: location and notifications, before the welcome steps (js/settings.js). */
+  .look-slots { display: grid; gap: 8px; }
+  .td-qibla { position: relative; }
+  .td-needle { position: absolute; inset-inline-end: 14px; top: 14px; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--paper); }
+  .td-needle::after { content: ""; position: absolute; left: 50%; top: 3px; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent; border-bottom: 10px solid var(--accent); transform-origin: 4px 12px; transform: rotate(var(--qibla, 0deg)); }
+  .fm-span { font-size: 14px; opacity: 0.75; direction: ltr; unicode-bidi: isolate; min-height: 1.2em; }
+  .look-slots label { display: flex; align-items: center; gap: 10px; justify-content: space-between; font-size: 14px; }
+  .look-slots select { flex: 0 1 60%; }
+  .st-perm-veil { position: fixed; inset: 0; z-index: 70; background: rgba(10, 12, 16, 0.5); }
+  .st-perm { position: fixed; z-index: 71; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; padding: 24px 22px; border-radius: 22px; background: var(--paper); color: var(--ink); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; gap: 12px; text-align: center; }
+  .st-perm h3 { margin: 0; font-size: 20px; }
+  .st-perm .st-logo { width: 64px; height: 64px; margin: 0 auto; border-radius: 16px; }
+  .st-perm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; text-align: start; }
+  .st-perm-list li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: var(--surface); }
+  .st-perm-list b { display: block; font-size: 15px; }
+  .st-perm-list small { color: var(--ink-soft); font-size: 13px; }
+  .st-perm-icon { font-size: 22px; line-height: 1.2; }
+  .st-perm .hint:empty { display: none; }
   .st-welcome { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 0 4px; text-align: center; }
   .st-welcome h3 { margin: 4px 0 0; font-size: 22px; }
   .st-welcome p { margin: 0; max-width: 340px; color: var(--ink-soft); }
@@ -1675,6 +1693,18 @@
       <button type="button" class="btn btn-quiet" id="lookClose">تم</button>
     </div>
     <div class="look-section">
+      <h3>وجه الساعة</h3>
+      <div class="sw-row" id="lookFaces"></div>
+    </div>
+    <div class="look-section" id="lookAccentBox">
+      <h3>ألوان الوجه الحديث</h3>
+      <div class="sw-row" id="lookAccents"></div>
+    </div>
+    <div class="look-section">
+      <h3>خانات الساعة</h3>
+      <div class="look-slots" id="lookSlots"></div>
+    </div>
+    <div class="look-section">
       <h3>وضع الألوان</h3>
       <div class="sw-row" id="lookModes"></div>
     </div>
@@ -1932,48 +1962,49 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.2.0"></script>
-<script src="js/clock.js?v=2.2.0"></script>
-<script src="js/astro.js?v=2.2.0"></script>
-<script src="js/look.js?v=2.2.0"></script>
-<script src="js/sounds.js?v=2.2.0"></script>
-<script src="js/tasks.js?v=2.2.0"></script>
-<script src="js/views.js?v=2.2.0"></script>
-<script src="js/remind-card.js?v=2.2.0"></script>
-<script src="js/reminders-core.js?v=2.2.0"></script>
-<script src="js/reminders.js?v=2.2.0"></script>
-<script src="js/notes.js?v=2.2.0"></script>
-<script src="js/cards.js?v=2.2.0"></script>
-<script src="js/adhkar-data.js?v=2.2.0"></script>
-<script src="js/adhkar.js?v=2.2.0"></script>
-<script src="js/habits.js?v=2.2.0"></script>
-<script src="js/prayers.js?v=2.2.0"></script>
-<script src="js/focus-plus.js?v=2.2.0"></script>
-<script src="js/native.js?v=2.2.0"></script>
-<script src="js/prayer-alerts.js?v=2.2.0"></script>
-<script src="js/device.js?v=2.2.0"></script>
-<script src="js/extras-data.js?v=2.2.0"></script>
-<script src="js/quran-meta.js?v=2.2.0"></script>
-<script src="js/hifz.js?v=2.2.0"></script>
-<script src="js/khatma.js?v=2.2.0"></script>
-<script src="js/quran.js?v=2.2.0"></script>
-<script src="js/sunnah-data.js?v=2.2.0"></script>
-<script src="js/sunnah.js?v=2.2.0"></script>
-<script src="js/qibla.js?v=2.2.0"></script>
-<script src="js/library-meta.js?v=2.2.0"></script>
-<script src="js/salah-data.js?v=2.2.0"></script>
-<script src="js/tools.js?v=2.2.0"></script>
-<script src="js/library.js?v=2.2.0"></script>
-<script src="js/listen.js?v=2.2.0"></script>
-<script src="js/report.js?v=2.2.0"></script>
-<script src="js/focus-mode.js?v=2.2.0"></script>
-<script src="js/config.js?v=2.2.0"></script>
-<script src="js/vendor/supabase.js?v=2.2.0" defer></script>
-<script src="js/sync-core.js?v=2.2.0" defer></script>
-<script src="js/sync.js?v=2.2.0" defer></script>
-<script src="js/app.js?v=2.2.0" defer></script>
-<script src="js/settings.js?v=2.2.0" defer></script>
-<script src="js/today.js?v=2.2.0" defer></script>
-<script src="js/nav.js?v=2.2.0" defer></script>
+<script src="js/i18n.js?v=2.3.0"></script>
+<script src="js/clock-core.js?v=2.3.0"></script>
+<script src="js/clock.js?v=2.3.0"></script>
+<script src="js/astro.js?v=2.3.0"></script>
+<script src="js/look.js?v=2.3.0"></script>
+<script src="js/sounds.js?v=2.3.0"></script>
+<script src="js/tasks.js?v=2.3.0"></script>
+<script src="js/views.js?v=2.3.0"></script>
+<script src="js/remind-card.js?v=2.3.0"></script>
+<script src="js/reminders-core.js?v=2.3.0"></script>
+<script src="js/reminders.js?v=2.3.0"></script>
+<script src="js/notes.js?v=2.3.0"></script>
+<script src="js/cards.js?v=2.3.0"></script>
+<script src="js/adhkar-data.js?v=2.3.0"></script>
+<script src="js/adhkar.js?v=2.3.0"></script>
+<script src="js/habits.js?v=2.3.0"></script>
+<script src="js/prayers.js?v=2.3.0"></script>
+<script src="js/focus-plus.js?v=2.3.0"></script>
+<script src="js/native.js?v=2.3.0"></script>
+<script src="js/prayer-alerts.js?v=2.3.0"></script>
+<script src="js/device.js?v=2.3.0"></script>
+<script src="js/extras-data.js?v=2.3.0"></script>
+<script src="js/quran-meta.js?v=2.3.0"></script>
+<script src="js/hifz.js?v=2.3.0"></script>
+<script src="js/khatma.js?v=2.3.0"></script>
+<script src="js/quran.js?v=2.3.0"></script>
+<script src="js/sunnah-data.js?v=2.3.0"></script>
+<script src="js/sunnah.js?v=2.3.0"></script>
+<script src="js/qibla.js?v=2.3.0"></script>
+<script src="js/library-meta.js?v=2.3.0"></script>
+<script src="js/salah-data.js?v=2.3.0"></script>
+<script src="js/tools.js?v=2.3.0"></script>
+<script src="js/library.js?v=2.3.0"></script>
+<script src="js/listen.js?v=2.3.0"></script>
+<script src="js/report.js?v=2.3.0"></script>
+<script src="js/focus-mode.js?v=2.3.0"></script>
+<script src="js/config.js?v=2.3.0"></script>
+<script src="js/vendor/supabase.js?v=2.3.0" defer></script>
+<script src="js/sync-core.js?v=2.3.0" defer></script>
+<script src="js/sync.js?v=2.3.0" defer></script>
+<script src="js/app.js?v=2.3.0" defer></script>
+<script src="js/settings.js?v=2.3.0" defer></script>
+<script src="js/today.js?v=2.3.0" defer></script>
+<script src="js/nav.js?v=2.3.0" defer></script>
 </body>
 </html>

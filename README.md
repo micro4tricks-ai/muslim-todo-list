@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/logo.svg" width="96" height="96" alt="Muslim To-Do List logo">
+<img src="docs/logo.svg" width="96" height="96" alt="Muslim Activity logo">
 
-# Muslim To-Do List · قائمة مهام المسلم
+# Muslim Activity · مهام المسلم
 
 **Plan your day around the prayers — the Quran, hadith, Quran radio and live TV from Makkah and Madinah, adhkar, tasks and focus, in Arabic and English.**
 
@@ -22,7 +22,7 @@
 ![Last commit](https://img.shields.io/github/last-commit/micro4tricks-ai/muslim-todo-list?style=flat-square)
 [![Downloads](https://img.shields.io/github/downloads/micro4tricks-ai/muslim-todo-list/total?style=flat-square&label=APK%20downloads)](https://github.com/micro4tricks-ai/muslim-todo-list/releases)
 
-<a href="https://micro4tricks-ai.github.io/muslim-todo-list/"><img src="docs/screenshot.png" alt="Muslim To-Do List: the prayer-times clock, the quick bar and the Listen tab with Quran radio" width="860"></a>
+<a href="https://micro4tricks-ai.github.io/muslim-todo-list/"><img src="docs/screenshot.png" alt="Muslim Activity: the prayer-times clock, the quick bar and the Listen tab with Quran radio" width="860"></a>
 
 [**Open the app**](https://micro4tricks-ai.github.io/muslim-todo-list/) · [English version](https://micro4tricks-ai.github.io/muslim-todo-list/en/) · [**Download for Android**](https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk) · [Install on any device](https://micro4tricks-ai.github.io/muslim-todo-list/install.html) · [Report a problem](https://github.com/micro4tricks-ai/muslim-todo-list/issues/new/choose) · [**بالعربي**](#بالعربي)
 
@@ -242,7 +242,7 @@ The code is released under the [MIT License](LICENSE). Texts, recordings, broadc
 
 <div dir="rtl">
 
-**قائمة مهام المسلم** رفيق يومي هادئ مبني حول الصلوات الخمس، معمول **صدقة جارية: مجاني بالكامل، بلا إعلانات وبلا تتبّع**. ساعة عقارب تعرض الصلاة القادمة، والشروق والغروب، والقمر، والتاريخ الهجري والميلادي، وحولها كل ما يحتاجه المسلم في يومه.
+**مهام المسلم** رفيق يومي هادئ مبني حول الصلوات الخمس، معمول **صدقة جارية: مجاني بالكامل، بلا إعلانات وبلا تتبّع**. ساعة عقارب تعرض الصلاة القادمة، والشروق والغروب، والقمر، والتاريخ الهجري والميلادي، وحولها كل ما يحتاجه المسلم في يومه.
 
 ### الجديد في الإصدار ٢
 

@@ -30,8 +30,8 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Reminder rules (when each reminder rings)
-        run: node --test tools/test_reminders.mjs
+      - name: Reminder and clock rules
+        run: node --test tools/test_reminders.mjs tools/test_clock.mjs
 
       - name: Version
         id: version
@@ -175,5 +175,5 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk muslim-todo-list-play.aab --clobber
           else
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk muslim-todo-list-play.aab --title "Muslim To-Do List $GITHUB_REF_NAME" --notes "$notes"
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" muslim-todo-list.apk muslim-todo-list-play.aab --title "Muslim Activity $GITHUB_REF_NAME" --notes "$notes"
           fi

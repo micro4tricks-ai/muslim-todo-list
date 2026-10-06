@@ -137,7 +137,7 @@
     ctx.direction = I.isEn ? 'ltr' : 'rtl';
     if (c.ref) { ctx.fillStyle = P.muted; ctx.font = '500 30px "IBM Plex Sans Arabic", sans-serif'; wrap(ctx, c.ref, W - 240).slice(0, 2).forEach((l, k) => ctx.fillText(l, W / 2, H - 170 + k * 42)); }
     ctx.fillStyle = P.frame; ctx.font = '600 26px "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText('Muslim To-Do List', W / 2, H - 88);
+    ctx.fillText('Muslim Activity', W / 2, H - 88);
     return cv;
   }
   async function shareImage(c) {

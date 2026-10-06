@@ -344,7 +344,7 @@
       c.fillStyle = '#F7F1E1';
       r.forEach((x, k) => c.fillText(x, cols[k], y));
     });
-    c.fillStyle = '#D4AF37'; c.font = '600 24px "IBM Plex Sans Arabic", sans-serif'; c.fillText('Muslim To-Do List', W / 2, H - 60);
+    c.fillStyle = '#D4AF37'; c.font = '600 24px "IBM Plex Sans Arabic", sans-serif'; c.fillText('Muslim Activity', W / 2, H - 60);
     const blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
     const name = 'imsakiya.png';
     const C = window.Capacitor, P = C && C.isNativePlatform && C.isNativePlatform() && C.Plugins;
