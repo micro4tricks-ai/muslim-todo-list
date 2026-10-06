@@ -41,7 +41,18 @@ await send('Performance.enable');
 const metric = async () => (await send('Performance.getMetrics')).metrics.find((m) => m.name === 'TaskDuration').value;
 const m0 = await metric(); await sleep(5000);
 report.busyWhileIdlePercent = Math.round((await metric() - m0) / 5 * 100);
-// The welcome steps open by themselves on the first launch; go through them like a new user.
+// The first launch asks for location and notifications first (a card), then the welcome steps
+// open; choose the city by hand here, since "Allow" opens Android's own permission dialog.
+report.permCard = await js(`(async () => {
+  for (let k = 0; k < 20 && !document.querySelector('.st-perm'); k++) await new Promise((r) => setTimeout(r, 300));
+  const card = document.querySelector('.st-perm');
+  if (!card) return 'not shown';
+  card.querySelectorAll('button')[1].click();
+  await new Promise((r) => setTimeout(r, 900));
+  return document.querySelector('.st-perm') ? 'stuck' : 'shown, closed';
+})()`);
+console.log('permission card:', report.permCard);
+// Then the welcome steps; go through them like a new user.
 report.welcome = await js(`(async () => {
   const st = document.getElementById('settingsScreen');
   if (!st || st.hidden || !st.classList.contains('is-wizard')) return 'not shown';
@@ -300,6 +311,7 @@ if (!report.listen || !report.listen.download || !report.listen.download.listed 
 if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== false) problems.push('live TV did not play');
 if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');
 if (!report.settings || report.settings.appStillOpen !== true) problems.push('the back key closed the app');
+if (report.permCard !== 'shown, closed') problems.push(`first-launch permission card: ${report.permCard}`);
 if (!/> done$/.test(report.welcome || '')) problems.push(`welcome steps: ${report.welcome}`);
 if (report.adhanCall !== 'ok') problems.push(`adhan: ${report.adhanCall}`);
 if (!report.settings || !report.settings.device || typeof report.settings.device !== 'object') problems.push(`device status: ${report.settings && report.settings.device}`);
