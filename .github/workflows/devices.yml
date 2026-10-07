@@ -74,15 +74,17 @@ jobs:
           node -e '
             const m = JSON.parse(require("fs").readFileSync("models.json", "utf8"));
             const ok = m.filter((d) => (d.supportedVersionIds || []).some((v) => Number(v) >= 30));
-            // Xiaomi 14 ("houji") failed to start the test in the lab three times (the app was never installed:
-            // a lab-side fault), so any other Xiaomi/Redmi/POCO model goes first.
+            // Xiaomi 14 ("houji") failed to start the test in the lab four times (the app was never installed:
+            // a lab-side fault) and is the only recent Xiaomi there, so it is skipped; another maker common
+            // in the region (Oppo, Vivo, Realme, OnePlus, Motorola…) takes its place.
             const AVOID = ["houji"];
             const match = (re, d) => re.test(`${d.manufacturer} ${d.brand} ${d.name}`);
-            const pick = (re) => ok.find((d) => match(re, d) && !AVOID.includes(d.id)) || ok.find((d) => match(re, d));
+            const pick = (re) => ok.find((d) => match(re, d) && !AVOID.includes(d.id));
             const only = (process.env.ONLY || "").toLowerCase();
-            const want = only === "samsung" ? [/samsung/i] : only === "xiaomi" ? [/xiaomi|redmi|poco/i] : [/samsung/i, /xiaomi|redmi|poco/i];
+            const OTHER = /xiaomi|redmi|poco|oppo|vivo|realme|oneplus|motorola|honor|huawei/i;
+            const want = only === "samsung" ? [/samsung/i] : only === "xiaomi" ? [OTHER] : [/samsung/i, OTHER];
             const chosen = want.map(pick).filter(Boolean);
-            for (const d of ok) { if (only || chosen.length >= 2) break; if (!chosen.includes(d)) chosen.push(d); }
+            for (const d of ok) { if (only || chosen.length >= 2) break; if (!chosen.includes(d) && !AVOID.includes(d.id)) chosen.push(d); }
             const args = chosen.map((d) => `--device=model=${d.id},version=${Math.max(...d.supportedVersionIds.map(Number))}`).join(" ");
             console.log(chosen.map((d) => `${d.manufacturer} ${d.name}`).join(", "));
             require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `args=${args}\n`);
