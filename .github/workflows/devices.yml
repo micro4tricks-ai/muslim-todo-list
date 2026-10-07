@@ -74,7 +74,11 @@ jobs:
           node -e '
             const m = JSON.parse(require("fs").readFileSync("models.json", "utf8"));
             const ok = m.filter((d) => (d.supportedVersionIds || []).some((v) => Number(v) >= 30));
-            const pick = (re) => ok.find((d) => re.test(`${d.manufacturer} ${d.brand} ${d.name}`));
+            // Xiaomi 14 ("houji") failed to start the test in the lab three times (the app was never installed:
+            // a lab-side fault), so any other Xiaomi/Redmi/POCO model goes first.
+            const AVOID = ["houji"];
+            const match = (re, d) => re.test(`${d.manufacturer} ${d.brand} ${d.name}`);
+            const pick = (re) => ok.find((d) => match(re, d) && !AVOID.includes(d.id)) || ok.find((d) => match(re, d));
             const only = (process.env.ONLY || "").toLowerCase();
             const want = only === "samsung" ? [/samsung/i] : only === "xiaomi" ? [/xiaomi|redmi|poco/i] : [/samsung/i, /xiaomi|redmi|poco/i];
             const chosen = want.map(pick).filter(Boolean);
