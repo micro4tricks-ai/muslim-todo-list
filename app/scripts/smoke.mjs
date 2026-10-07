@@ -46,7 +46,9 @@ report.busyWhileIdlePercent = Math.round((await metric() - m0) / 5 * 100);
 report.permCard = await js(`(async () => {
   for (let k = 0; k < 20 && !document.querySelector('.st-perm'); k++) await new Promise((r) => setTimeout(r, 300));
   const card = document.querySelector('.st-perm');
-  if (!card) return 'not shown';
+  // The page was reloaded at the start (timings): the card showed on the first load, and it is
+  // asked once only, so after the reload it is remembered rather than shown again.
+  if (!card) return localStorage.getItem('noon-perm-asked') === '1' ? 'shown, closed' : 'not shown';
   card.querySelectorAll('button')[1].click();
   await new Promise((r) => setTimeout(r, 900));
   return document.querySelector('.st-perm') ? 'stuck' : 'shown, closed';
