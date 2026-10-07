@@ -298,17 +298,6 @@
       g.fillStyle = base;
       g.fillRect(CX - R, CY - R, R * 2, R * 2);
       g.restore();
-      // Minute ticks; every fifth is longer.
-      g.strokeStyle = M.faint;
-      g.lineCap = 'round';
-      for (let i = 0; i < 60; i++) {
-        const a = i * 6 * DEG - Math.PI / 2, long = i % 5 === 0;
-        g.lineWidth = Math.max(1, R * (long ? 0.012 : 0.007));
-        g.beginPath();
-        g.moveTo(CX + Math.cos(a) * R * (long ? 0.9 : 0.925), CY + Math.sin(a) * R * (long ? 0.9 : 0.925));
-        g.lineTo(CX + Math.cos(a) * R * 0.96, CY + Math.sin(a) * R * 0.96);
-        g.stroke();
-      }
       return c;
     }
 
@@ -862,74 +851,121 @@
   const PRAYER_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
   function drawModern(g, snap) {
     const M = T.theme, A = M.accent;
-    // Dates: Hijri, then the Gregorian day in the accent colour.
+    const loc = I18 ? I18.locale : 'en-GB';
+    const fmt = (o) => { try { return new Intl.DateTimeFormat(loc, Object.assign({ timeZone: snap.place.tz }, o)).format(Date.now()); } catch (_) { return new Intl.DateTimeFormat(loc, o).format(Date.now()); } };
+    // Date: the day's number, then the weekday in the accent colour ("28 SAT").
+    {
+      const dayNum = fmt({ day: 'numeric' }), wd = fmt({ weekday: 'long' });
+      g.font = cfont(0.075, 700);
+      const gap = R * 0.03, w1 = g.measureText(dayNum).width, w2 = g.measureText(wd).width;
+      const total = w1 + gap + w2, left = CX - total / 2, y = CY - R * 0.66;
+      const [first, second] = TEXT_DIR === 'rtl' ? [[wd, A], [dayNum, M.ink]] : [[dayNum, M.ink], [wd, A]];
+      g.textAlign = 'left';
+      g.direction = TEXT_DIR;
+      g.fillStyle = first[1]; g.fillText(first[0], left, y);
+      g.fillStyle = second[1]; g.fillText(second[0], left + g.measureText(first[0]).width + gap, y);
+      g.textAlign = 'center';
+    }
+    // The chart panel: header, then the sun's path over the day as bars, prayers as dots, an hour axis.
+    const px = CX - R * 0.62, pw = R * 1.24, hy = CY - R * 0.2, top = CY - R * 0.13, base = CY + R * 0.08;
+    const xOf = (h) => (TEXT_DIR === 'rtl' ? px + pw - pw * h / 24 : px + pw * h / 24);
     g.direction = TEXT_DIR;
-    g.fillStyle = M.ink;
-    g.fillText(fitText(g, snap.hijri, R * 0.8, 0.068, 600), CX, CY - R * 0.64);
-    g.direction = 'ltr';
+    g.textAlign = TEXT_DIR === 'rtl' ? 'right' : 'left';
     g.fillStyle = A;
-    g.fillText(fitText(g, snap.dateEn, R * 0.8, 0.054, 700), CX, CY - R * 0.53);
-    // Today's prayers: five marks on a line from midnight to midnight, a dot at now.
-    const lx = CX - R * 0.62, lw = R * 1.24, ly = CY + R * 0.06;
+    g.fillText(fitText(g, tr('مواقيت اليوم'), pw * 0.45, 0.05, 700), TEXT_DIR === 'rtl' ? px + pw : px, hy);
+    g.textAlign = TEXT_DIR === 'rtl' ? 'left' : 'right';
+    g.fillStyle = M.ink;
+    g.fillText(fitText(g, `${snap.next.name} ${snap.next.time}`, pw * 0.52, 0.05, 700), TEXT_DIR === 'rtl' ? px : px + pw, hy);
+    g.textAlign = 'center';
+    // Faint guide lines.
     g.strokeStyle = M.faint;
-    g.lineCap = 'round';
-    g.lineWidth = Math.max(2, R * 0.012);
-    g.beginPath(); g.moveTo(lx, ly); g.lineTo(lx + lw, ly); g.stroke();
-    const xOf = (h) => (TEXT_DIR === 'rtl' ? lx + lw - lw * h / 24 : lx + lw * h / 24);
-    // The part of the day already gone, in the accent colour.
-    g.strokeStyle = rgba(A, 0.55);
-    g.beginPath(); g.moveTo(xOf(0), ly); g.lineTo(xOf(snap.nowH), ly); g.stroke();
+    g.lineWidth = Math.max(1, R * 0.004);
+    [0, 0.5, 1].forEach((k) => { const y = top + (base - top) * k; g.beginPath(); g.moveTo(px, y); g.lineTo(px + pw, y); g.stroke(); });
+    // Bars: the sun's height through the day (low bars at night); the part of the day gone is in the accent colour.
+    const sr = snap.today.sunrise, ss = snap.today.sunset, N = 48, bw = Math.max(1.5, pw / N * 0.55);
+    for (let i = 0; i < N; i++) {
+      const h = (i + 0.5) * 24 / N;
+      const alt = Number.isFinite(sr) && Number.isFinite(ss) && h > sr && h < ss ? Math.sin(Math.PI * (h - sr) / (ss - sr)) : 0;
+      const bh = (0.08 + 0.92 * alt) * (base - top);
+      g.fillStyle = h <= snap.nowH ? A : M.soft;
+      g.globalAlpha = h <= snap.nowH ? 1 : 0.45;
+      g.fillRect(xOf(h) - bw / 2, base - bh, bw, bh);
+    }
+    g.globalAlpha = 1;
+    // The prayers as dots on the base line; the next one larger.
     PRAYER_KEYS.forEach((k) => {
       const h = snap.today[k];
       if (!Number.isFinite(h)) return;
-      const isNext = snap.next.key === k, tall = R * (isNext ? 0.075 : 0.045);
-      g.fillStyle = isNext ? A : M.soft;
-      roundRectPath(g, xOf(h) - R * 0.009, ly - tall - R * 0.01, R * 0.018, tall, R * 0.009);
-      g.fill();
+      const next = snap.next.key === k;
+      g.fillStyle = next ? A : M.ink;
+      g.beginPath(); g.arc(xOf(h), base + R * 0.025, R * (next ? 0.018 : 0.011), 0, TAU); g.fill();
     });
-    g.fillStyle = M.ink;
-    g.beginPath(); g.arc(xOf(snap.nowH), ly, R * 0.02, 0, TAU); g.fill();
-    g.fillStyle = A;
-    g.beginPath(); g.arc(xOf(snap.nowH), ly, R * 0.01, 0, TAU); g.fill();
-    g.direction = TEXT_DIR;
+    // Hour axis.
     g.fillStyle = M.soft;
-    const nextLine = `${snap.next.name} ${snap.next.time} · ${snap.next.inText}`;
-    g.fillText(fitText(g, nextLine, lw, 0.05, 600), CX, ly + R * 0.075);
-    // Round slots.
+    const axis = I18 && I18.isEn ? ['12AM', '6', '12PM', '6'] : ['١٢ص', '٦', '١٢م', '٦'];
+    g.font = cfont(0.04, 600);
+    axis.forEach((t, i) => g.fillText(t, xOf(i * 6) + (TEXT_DIR === 'rtl' ? -1 : 1) * R * 0.03, base + R * 0.075));
+    // Three round slots.
     const style = { fill: M.slot, ink: M.ink, soft: M.soft, accent: A, track: M.faint, edge: M.edge, sunk: false };
     for (const x of currentSlots()) drawSlotRound(g, x.rect, slotData(x.id, snap, true), x.id, style, snap);
     // While a focus session runs, the edge belongs to its rings (up to four, further in each hour).
     const fs = window.noonFocus && window.noonFocus();
     if (fs && fs.running) return;
-    // Side gauges: start side = how far through the wait for the next prayer, end side = today's wird.
-    const towards = prayerProgress(snap);
+    // Side gauges: left = how far through the wait for the next prayer (with %), right = today's wird (segments).
     const q = window.noonQuran && window.noonQuran.progress ? window.noonQuran.progress() : null;
-    const wird = q && q.goal ? Math.min(1, q.today / q.goal) : 0;
-    const startSide = TEXT_DIR === 'rtl' ? 0 : Math.PI;
-    gauge(g, startSide, towards, A);
-    gauge(g, Math.PI - startSide, wird, M.light ? '#C08A1E' : '#E8C064');
-    // Sunrise and sunset along the bottom edge.
-    const morningSide = TEXT_DIR === 'rtl' ? 0.34 : 0.66;
-    curvedText(g, `↑ ${snap.fmtHM(snap.today.sunrise, false)}`, Math.PI * morningSide, R * 0.87);
-    curvedText(g, `↓ ${snap.fmtHM(snap.today.sunset, false)}`, Math.PI * (1 - morningSide), R * 0.87);
+    sideGauge(g, Math.PI, prayerProgress(snap), A, 'prayer', `${num(Math.round(prayerProgress(snap) * 100))}%`, false);
+    sideGauge(g, 0, q && q.goal ? Math.min(1, q.today / q.goal) : 0, M.light ? '#C08A1E' : '#E8C064', 'wird', q && q.goal ? `${num(q.today)}/${num(q.goal)}` : '', true);
+    // Sunrise and sunset along the bottom edge (morning on the side where the day starts).
+    const morningSide = TEXT_DIR === 'rtl' ? 0.36 : 0.64;
+    curvedText(g, `↑ ${snap.fmtHM(snap.today.sunrise)}`, Math.PI * morningSide, R * 0.86);
+    curvedText(g, `↓ ${snap.fmtHM(snap.today.sunset)}`, Math.PI * (1 - morningSide), R * 0.86);
   }
   function prevPrayerH(snap) {
     const hs = PRAYER_KEYS.map((k) => snap.today[k]).filter((h) => Number.isFinite(h) && h <= snap.nowH);
     return hs.length ? hs[hs.length - 1] : (Number.isFinite(snap.today.isha) ? snap.today.isha - 24 : 0);
   }
   // A gauge on one side of the dial (centre angle `side`: 0 = right, π = left), filling upwards.
-  function gauge(g, side, p, col) {
-    const rr = R * 0.9, half = Math.PI * 0.2;
+  function sideGauge(g, side, p, col, icon, value, segments) {
+    const M = T.theme, rr = R * 0.9, half = Math.PI * 0.13;
     const right = Math.cos(side) > 0;
-    const a0 = right ? side + half : side - half, a1 = right ? side - half : side + half; // bottom → top
+    const bottom = right ? side + half : side - half, topA = right ? side - half : side + half;
+    const at = (a, r) => [CX + Math.cos(a) * r, CY + Math.sin(a) * r];
     g.lineCap = 'round';
-    g.lineWidth = R * 0.032;
-    g.strokeStyle = T.theme.faint;
-    g.beginPath(); g.arc(CX, CY, rr, Math.min(a0, a1), Math.max(a0, a1)); g.stroke();
-    if (p > 0.01) {
-      const end = a0 + (a1 - a0) * p;
-      g.strokeStyle = col;
-      g.beginPath(); g.arc(CX, CY, rr, Math.min(a0, end), Math.max(a0, end)); g.stroke();
+    if (segments) {
+      const n = 10, filled = Math.round(Math.min(1, p) * n);
+      for (let i = 0; i < n; i++) {
+        const a = bottom + (topA - bottom) * (i + 0.5) / n;
+        const [x0, y0] = at(a, rr - R * 0.035), [x1, y1] = at(a, rr + R * 0.02);
+        g.strokeStyle = i < filled ? col : M.faint;
+        g.lineWidth = Math.max(2, R * 0.022);
+        g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      }
+    } else {
+      g.lineWidth = R * 0.036;
+      g.strokeStyle = M.faint;
+      g.beginPath(); g.arc(CX, CY, rr, Math.min(bottom, topA), Math.max(bottom, topA)); g.stroke();
+      if (p > 0.01) {
+        const end = bottom + (topA - bottom) * Math.min(1, p);
+        g.strokeStyle = col;
+        g.beginPath(); g.arc(CX, CY, rr, Math.min(bottom, end), Math.max(bottom, end)); g.stroke();
+      }
+    }
+    // Icon above the top end, value below the bottom end.
+    const [ix, iy] = at(topA + (right ? -0.12 : 0.12), rr);
+    drawIcon(g, icon, ix, iy, R * 0.035, col);
+    if (value) {
+      // Written along the edge past the bar's lower end, like "30%" on the reference face, so it
+      // stays clear of the round slots.
+      const a = bottom + (right ? 0.15 : -0.15);
+      const [vx, vy] = at(a, rr);
+      g.save();
+      g.translate(vx, vy);
+      g.rotate(a - Math.PI / 2);
+      g.fillStyle = col;
+      g.direction = 'ltr';
+      g.font = cfont(0.045, 700);
+      g.fillText(value, 0, 0);
+      g.restore();
     }
   }
   // Text bent along the bottom of the dial, read left to right.
@@ -1023,6 +1059,11 @@
       case 'focus': // a timer
         g.arc(0, sz * 0.12, sz * 0.62, 0, TAU); g.stroke();
         g.beginPath(); g.moveTo(-sz * 0.22, -sz * 0.72); g.lineTo(sz * 0.22, -sz * 0.72); g.moveTo(0, sz * 0.12); g.lineTo(0, -sz * 0.22); g.stroke();
+        break;
+      case 'wird': // an open book
+        g.moveTo(0, -sz * 0.45); g.quadraticCurveTo(-sz * 0.4, -sz * 0.65, -sz * 0.85, -sz * 0.45); g.lineTo(-sz * 0.85, sz * 0.55); g.quadraticCurveTo(-sz * 0.4, sz * 0.35, 0, sz * 0.55); g.closePath();
+        g.moveTo(0, -sz * 0.45); g.quadraticCurveTo(sz * 0.4, -sz * 0.65, sz * 0.85, -sz * 0.45); g.lineTo(sz * 0.85, sz * 0.55); g.quadraticCurveTo(sz * 0.4, sz * 0.35, 0, sz * 0.55); g.closePath();
+        g.fill();
         break;
       default: // the next prayer: a small dome with its crescent
         g.moveTo(-sz * 0.6, sz * 0.5); g.lineTo(-sz * 0.6, sz * 0.05); g.quadraticCurveTo(0, -sz * 0.75, sz * 0.6, sz * 0.05); g.lineTo(sz * 0.6, sz * 0.5); g.closePath(); g.fill();
@@ -1198,7 +1239,6 @@
     }
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     if (T.face === 'modern') {
-      drawSecondsSweep();
       drawFocusArc();
       drawQiblaNeedles();
       drawDigitalTime();
@@ -1216,65 +1256,39 @@
     ctx.drawImage(glassLayer, 0, 0);
   }
 
-  // The modern face's seconds: the minute ticks light up one by one around the edge.
-  function drawSecondsSweep() {
-    const f = window.noonFocus && window.noonFocus();
-    if (f && f.running) return; // the edge shows the focus rings then
-    const e = Date.now() + offsetMs, sec = new Date(e).getUTCSeconds();
-    ctx.save();
-    ctx.strokeStyle = T.theme.accent;
-    ctx.lineCap = 'round';
-    for (let i = 0; i <= sec; i++) {
-      const a = i * 6 * DEG - Math.PI / 2, long = i % 5 === 0;
-      ctx.globalAlpha = i === sec ? 1 : 0.35 + 0.65 * (i / Math.max(1, sec));
-      ctx.lineWidth = Math.max(1.2, R * (long ? 0.014 : 0.009));
-      ctx.beginPath();
-      ctx.moveTo(CX + Math.cos(a) * R * (long ? 0.9 : 0.925), CY + Math.sin(a) * R * (long ? 0.9 : 0.925));
-      ctx.lineTo(CX + Math.cos(a) * R * 0.96, CY + Math.sin(a) * R * 0.96);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  // The modern face's time: hours and minutes drawn once a minute (soft glow, gentle gradient),
-  // the seconds in a small accent pill each frame. Canvas text does not make the browser fetch a
-  // web font, so the digits' font is asked for once.
-  let digitsFont = false, timeLayer = null, timeKey = '';
-  const DIGITS = '"Readex Pro", "Inter", "IBM Plex Sans Arabic", "Segoe UI", sans-serif';
+  // The modern face's time: HH:MM:SS on one line, all the same size (like the reference). Each digit
+  // sits in a fixed-width cell so nothing moves as the seconds tick. Canvas text does not make the
+  // browser fetch a web font, so the digits' font is asked for once.
+  let digitsFont = false;
+  const DIGITS = '"Inter", "Readex Pro", "IBM Plex Sans Arabic", "Segoe UI", sans-serif';
   function drawDigitalTime() {
-    if (!digitsFont && document.fonts && document.fonts.load) { digitsFont = true; document.fonts.load(`400 40px ${DIGITS}`, '0123456789:').then(() => { timeKey = ''; }).catch(() => {}); }
+    if (!digitsFont && document.fonts && document.fonts.load) { digitsFont = true; document.fonts.load(`400 40px ${DIGITS}`, '0123456789:').catch(() => {}); }
     const e = Date.now() + offsetMs, d = new Date(e + placeOffset(e));
     const pad = (n) => String(n).padStart(2, '0');
-    const hm = `${d.getUTCHours() % 12 || 12}:${pad(d.getUTCMinutes())}`;
+    const text = `${d.getUTCHours() % 12 || 12}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
     const M = T.theme;
-    const key = `${hm}|${canvas.width}x${canvas.height}|${M.bg1}${M.accent}`;
-    if (key !== timeKey || !timeLayer) {
-      const [c, g] = makeLayer();
-      g.textAlign = 'center'; g.textBaseline = 'middle'; g.direction = 'ltr';
-      g.font = `400 ${(R * 0.36).toFixed(1)}px ${DIGITS}`;
-      const grad = g.createLinearGradient(0, CY - R * 0.42, 0, CY - R * 0.08);
-      grad.addColorStop(0, M.ink);
-      grad.addColorStop(1, M.light ? shade(M.accent, -0.35) : shade(M.accent, 0.55));
-      setShadow(g, rgba(M.accent, M.light ? 0.18 : 0.35), R * 0.06, 0, 0);
-      g.fillStyle = grad;
-      g.fillText(hm, CX - R * 0.07, CY - R * 0.24);
-      clearShadow(g);
-      timeLayer = c; timeKey = key;
-      timeLayer.secX = CX - R * 0.07 + g.measureText(hm).width / 2 + R * 0.09;
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.drawImage(timeLayer, 0, 0);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    // Seconds in a pill.
-    const ss = pad(d.getUTCSeconds());
     ctx.save();
-    ctx.font = `600 ${(R * 0.1).toFixed(1)}px ${DIGITS}`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'ltr';
-    const w = ctx.measureText('00').width + R * 0.07, h = R * 0.13, x = timeLayer.secX, y = CY - R * 0.17;
-    ctx.fillStyle = M.accent;
-    roundRectPath(ctx, x - w / 2, y - h / 2, w, h, h / 2); ctx.fill();
-    ctx.fillStyle = M.light ? '#FFFFFF' : M.bg2;
-    ctx.fillText(ss, x, y + 0.5);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.direction = 'ltr';
+    let size = R * 0.3;
+    ctx.font = `400 ${size.toFixed(1)}px ${DIGITS}`;
+    let cell = Math.max(...'0123456789'.split('').map((c) => ctx.measureText(c).width)), colon = ctx.measureText(':').width * 1.1;
+    const widthOf = (t) => [...t].reduce((w, c) => w + (c === ':' ? colon : cell), 0);
+    const maxW = R * 1.42;
+    if (widthOf(text) > maxW) {
+      const k = maxW / widthOf(text);
+      size *= k; cell *= k; colon *= k;
+      ctx.font = `400 ${size.toFixed(1)}px ${DIGITS}`;
+    }
+    let x = CX - widthOf(text) / 2;
+    const y = CY - R * 0.43;
+    ctx.fillStyle = M.ink;
+    for (const c of text) {
+      const w = c === ':' ? colon : cell;
+      ctx.fillText(c, x + w / 2, c === ':' ? y - size * 0.04 : y);
+      x += w;
+    }
     ctx.restore();
   }
 

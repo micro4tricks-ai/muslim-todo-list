@@ -827,6 +827,7 @@
     'حتى الشروق': 'until sunrise',
     'وجه الساعة': 'Clock face',
     'المظهر والساعة': 'Appearance and clock',
+    'مواقيت اليوم': 'Today’s prayers',
     'الساعة: الوقت والتاريخ والقمر والشروق والغروب والصلاة القادمة. اضغط على أي خانة لتنفيذها، أو في مكان آخر لتغيير الموقع': 'The clock: time, dates, moon, sunrise and sunset, the next prayer. Tap a slot to use it, or anywhere else to change the location',
     'اضغط على خانة لتنفيذها، أو في مكان آخر لتغيير الموقع': 'Tap a slot to use it, or anywhere else to change the location',
     'ألوان الوجه الحديث': 'Modern face colours',
