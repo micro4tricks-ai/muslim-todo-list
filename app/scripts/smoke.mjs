@@ -126,6 +126,39 @@ report.mushafBook = await js(`(async () => {
   return { whole, after, books: (window.NOON_BOOKS || { books: [] }).books.length, rules: window.noonTajweedCore ? window.noonTajweedCore.rules('مِ[f:18[ن ق]َبْلِكَ').length : 0 };
 })()`);
 console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
+// The same by hand, with real touches (adb): open it from the Mushaf tab, drag a page, tap «next», tap the left edge.
+{
+  const at = async (sel, text) => js(`(() => { const n = [...document.querySelectorAll(${JSON.stringify(sel)})].find((x) => ${text ? `x.textContent.includes(${JSON.stringify(text)})` : 'true'} && x.offsetParent);
+    if (!n) return null; n.scrollIntoView({ block: 'center' }); const r = n.getBoundingClientRect(), d = devicePixelRatio;
+    return [Math.round((r.left + r.width / 2) * d), Math.round((r.top + r.height / 2 + (window.visualViewport ? visualViewport.offsetTop : 0)) * d)]; })()`);
+  // CSS px → screen px: the WebView may start below the status bar, by what is left of the screen's height.
+  const off = await js(`Math.max(0, Math.round(${h} - innerHeight * devicePixelRatio - (screen.height - innerHeight) * 0))`) || 0;
+  const tap = (p) => adb(`shell input tap ${p[0]} ${p[1] + Math.min(off, 200)}`);
+  const pageNow = () => js('window.noonMushafBook ? window.noonMushafBook.page() + (document.getElementById("mushafBook") && !document.getElementById("mushafBook").hidden ? "" : " closed") : "missing"');
+  const t = { steps: [] };
+  try {
+    await js("window.noonUI.go('quran'); true"); await sleep(1500);
+    const mode = await at('.q-mode', 'تقليب الصفحات');
+    t.modeAt = mode;
+    if (mode) { await sleep(600); tap(await at('.q-mode', 'تقليب الصفحات')); await sleep(3000); }
+    t.opened = await pageNow();
+    t.layout = await js(`(() => { const s = document.querySelector('#mushafBook .mb-stage'); const p = document.querySelector('#mushafBook .mb-slot .mb-page:last-child'); const b = document.querySelector('#mushafBook .mb-bar');
+      const r = (n) => n ? [Math.round(n.getBoundingClientRect().left), Math.round(n.getBoundingClientRect().top), Math.round(n.getBoundingClientRect().width), Math.round(n.getBoundingClientRect().height)] : null;
+      const hit = p ? document.elementFromPoint(innerWidth / 2, innerHeight / 2) : null;
+      return { stage: r(s), page: r(p), bar: r(b), dpr: devicePixelRatio, inner: [innerWidth, innerHeight], hit: hit ? hit.className || hit.tagName : null, lite: matchMedia('(pointer: coarse)').matches }; })()`);
+    adb(`shell input swipe ${Math.round(w * 0.15)} ${Math.round(h * 0.5)} ${Math.round(w * 0.85)} ${Math.round(h * 0.5)} 350`); await sleep(1500);
+    t.steps.push(['drag right', await pageNow()]);
+    const next = await at('#mushafBook .mb-bar button', 'التالية');
+    if (next) { tap(next); await sleep(1500); }
+    t.steps.push(['tap next', await pageNow(), next]);
+    adb(`shell input tap ${Math.round(w * 0.06)} ${Math.round(h * 0.5)}`); await sleep(1500);
+    t.steps.push(['tap left edge', await pageNow()]);
+    adb(`exec-out screencap -p > ${out}/3-mushaf-touch.png`);
+    await js('window.noonMushafBook.close(); true');
+  } catch (e) { t.error = String(e.message || e).slice(0, 200); }
+  report.mushafTouch = t;
+  console.log('page-turning Mushaf by touch:', JSON.stringify(t));
+}
 
 // ---- A few minutes of normal use, measuring memory, freezes and crashes ----
 const pkg = 'io.github.micro4tricks.muslimtodo';
