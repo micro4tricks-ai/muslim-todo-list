@@ -154,7 +154,18 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
     adb(`shell input tap ${Math.round(w * 0.06)} ${Math.round(h * 0.5)}`); await sleep(1500);
     t.steps.push(['tap left edge', await pageNow()]);
     adb(`exec-out screencap -p > ${out}/3-mushaf-touch.png`);
-    await js('window.noonMushafBook.close(); true');
+    await js('window.noonMushafBook.close(); true'); await sleep(800);
+    // From inside the scroll reader, its «تقليب الصفحات» chip (2.4.0 shipped with it broken).
+    await js('window.noonQuran.openSurah(2); true'); await sleep(3000);
+    const chip = await at('#quranReader .qr-tools .qr-chip', 'تقليب الصفحات');
+    if (chip) { tap(chip); await sleep(2500); }
+    t.fromReader = await pageNow();
+    await js('window.noonMushafBook.close(); true'); await sleep(800);
+    // The bottom bar's «الأذكار» brings its section to the top of the screen.
+    await js('scrollTo(0, 0); true'); await sleep(800);
+    const tab = await at('.bnav .bnav-item', 'الأذكار');
+    if (tab) { tap(tab); await sleep(2000); }
+    t.adhkarTop = await js("Math.round(document.getElementById('view-adhkar').getBoundingClientRect().top)");
   } catch (e) { t.error = String(e.message || e).slice(0, 200); }
   report.mushafTouch = t;
   console.log('page-turning Mushaf by touch:', JSON.stringify(t));
@@ -372,6 +383,10 @@ if (!report.autoCatalog) problems.push('Android Auto got no station list');
 if (report.clockCore !== 3) problems.push(`clock rules missing in the app: ${report.clockCore}`);
 const mb = report.mushafBook || {};
 if (mb.whole !== true || mb.after !== 4 || !(mb.books >= 100) || mb.rules !== 1) problems.push(`page-turning Mushaf, books or tajweed rules: ${JSON.stringify(report.mushafBook)}`);
+const mt = report.mushafTouch || {}, st = (k) => ((mt.steps || []).find((x) => x[0] === k) || [])[1];
+if (!/^\d+$/.test(String(mt.opened)) || Number(st('drag right')) !== Number(mt.opened) + 1 || Number(st('tap next')) !== Number(mt.opened) + 2) problems.push(`page-turning Mushaf by touch: ${JSON.stringify(mt)}`);
+if (!/^\d+$/.test(String(mt.fromReader))) problems.push(`the reader's «تقليب الصفحات» button did not open the page-turning Mushaf: ${mt.fromReader}`);
+if (!(Math.abs(mt.adhkarTop) <= 12)) problems.push(`the bottom bar's «الأذكار» left its section at ${mt.adhkarTop}px from the top`);
 if (!report.reminder || report.reminder.booked !== true || !(report.reminder.inMinutes >= 55 && report.reminder.inMinutes <= 61)) problems.push(`a reminder was not booked with the phone: ${JSON.stringify(report.reminder)}`);
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 report.problems = problems;

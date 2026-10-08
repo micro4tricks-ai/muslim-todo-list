@@ -266,12 +266,13 @@
     B.book.append(leaf);
     return leaf;
   }
-  // A tap near the left edge turns forward, near the right edge back; the middle selects nothing.
+  // A tap on the left quarter turns forward, on the right quarter back (wide enough to stay clear of
+  // the phone's own back gesture at the very edge); the middle does nothing.
   function tapTurn(ev) {
     const r = B.stage.getBoundingClientRect();
     const x = (ev.clientX - r.left) / r.width;
-    if (x < 0.18) turn(1);
-    else if (x > 0.82) turn(-1);
+    if (x < 0.25) turn(1);
+    else if (x > 0.75) turn(-1);
   }
 
   // ---- pages read count toward the daily wird and the khatma (20 seconds on screen each) ----

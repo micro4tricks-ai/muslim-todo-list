@@ -83,7 +83,13 @@
     // The tab bar when it shows; on phones it gives way to the bottom navigation, so the section itself.
     const nav = document.querySelector('.views');
     const target = nav && nav.offsetParent ? nav : $(`view-${view}`);
-    if (target) target.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    if (!target) return;
+    // A jump, then a check that it got there: on phones a smooth scroll was cut short by the section
+    // filling in below the clock, and the page stayed where it was.
+    target.scrollIntoView({ block: 'start' });
+    [250, 800].forEach((ms) => setTimeout(() => {
+      if (current === view && Math.abs(target.getBoundingClientRect().top) > 8) target.scrollIntoView({ block: 'start' });
+    }, ms));
   }
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-go]');

@@ -422,7 +422,7 @@
     const qRules = quick('الأحكام', 'tajRules', () => { tjr.checked = S.tajRules; });
     qRules.title = T('أحكام التجويد مكتوبة تحت كل آية، فوق التفسير');
     // To the page-turning Mushaf, at the page being read.
-    const qBook = button('qr-chip', T('تقليب الصفحات'), () => { if (window.noonMushafBook) { const p = pageOf(firstVisible()); hide(); window.noonMushafBook.open(p); } });
+    const qBook = button('qr-chip', T('تقليب الصفحات'), toBook);
     tools.append(minus, plus, qTafsir, qTrans, qTajweed, qRules, qBook);
 
     // Reading settings.
@@ -1018,6 +1018,14 @@
     setTimeout(() => root.scrollIntoView({ block: 'start' }), 60);
   }
   addEventListener('popstate', () => { if (R && !R.box.hidden) hide(); });
+  // From the reader to the page-turning Mushaf, at the page being read. (Inside build() "hide" is the
+  // memorisation checkbox, so the reader is closed from out here.)
+  function toBook() {
+    if (!window.noonMushafBook) return;
+    const p = pageOf(firstVisible());
+    hide();
+    window.noonMushafBook.open(p);
+  }
   async function keepAwake() {
     try { if ('wakeLock' in navigator && !lock) { lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => { lock = null; }); } } catch (_) {}
   }
