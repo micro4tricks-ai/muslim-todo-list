@@ -13,8 +13,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.3.0.2">
-<link rel="stylesheet" href="fonts/extra.css?v=2.3.0.2">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.4.0.1">
+<link rel="stylesheet" href="fonts/extra.css?v=2.4.0.1">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -914,6 +914,67 @@
   .ay-tf { margin: 8px 0 0; padding: 8px 12px; border-inline-start: 3px solid var(--qgold); border-radius: 8px; background: var(--qsel); }
   .ay-tf p { margin: 0 0 6px; font-family: "Amiri", serif; font-size: calc(var(--qf, 30px) * 0.62); line-height: 1.9; color: var(--qink); }
   .ay-tf:lang(en) p { font-family: var(--font); font-size: 15px; line-height: 1.7; }
+  /* The tajweed rules of a verse, above its tafsir: each rule in its colour, then the words it falls on. */
+  .ay-tj { margin: 8px 0 0; padding: 8px 12px 6px; border: 1px dashed var(--qline); border-radius: 8px; display: flex; flex-direction: column; gap: 6px; font-family: var(--font); }
+  .ay-tj-head { font-size: 12.5px; color: var(--qsoft); }
+  .ay-tj-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+  .ay-tj-name { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; padding: 2px 4px 2px 0; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .ay-tj-name i { width: 10px; height: 10px; border-radius: 3px; background: currentColor; flex: none; }
+  .ay-tj-name::after { content: "؟"; font-weight: 400; opacity: 0.55; font-size: 12px; }
+  .ay-tj-word { border: 1px solid var(--qline); background: transparent; color: var(--qink); border-radius: 999px; padding: 1px 10px; font-family: "Amiri Quran", "Amiri", serif; font-size: 18px; line-height: 1.7; cursor: pointer; }
+  .ay-tj-word:hover { border-color: var(--qgold); }
+  .ay-tj-def { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.7; color: var(--qsoft); }
+  .qr [data-m].is-hit { background: var(--qsel); outline: 2px solid var(--qgold); border-radius: 4px; }
+  .qr-page.is-hide .ay-b:not(.is-shown) .ay-tj { display: none; }
+  /* ---- The page-turning Mushaf (js/mushaf-book.js) ---- */
+  .mb { --qbg: #FBF7EE; --qink: #2B2A26; --qsoft: #7A6F5C; --qgold: #A67C2E; --qline: #E8DFC9; --qsel: rgba(201, 164, 92, 0.24); --qmark: #B4542F; --mbdesk: #E9E2D2; --mbpaper: #FFFCF4;
+    position: fixed; inset: 0; z-index: 72; display: flex; flex-direction: column; background: var(--mbdesk); color: var(--qink); }
+  .mb[data-theme="sepia"] { --qbg: #F1E4C8; --qink: #3A2E1C; --qsoft: #7C6647; --qline: #DDCBA6; --mbdesk: #DCCBA8; --mbpaper: #F6EAD0; }
+  .mb[data-theme="night"] { --qbg: #101314; --qink: #E7E2D6; --qsoft: #9B968A; --qgold: #D2AE62; --qline: #2A2E30; --qsel: rgba(210, 174, 98, 0.2); --qmark: #E08A6A; --mbdesk: #08090A; --mbpaper: #15191A; }
+  .mb[hidden] { display: none; }
+  .mb:focus { outline: none; }
+  .mb-top { display: flex; align-items: center; gap: 8px; padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px; background: var(--qbg); border-bottom: 1px solid var(--qline); }
+  .mb-go { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; background: var(--qbg); border-bottom: 1px solid var(--qline); }
+  .mb-go[hidden] { display: none; }
+  .mb-go input, .mb-go select { font: inherit; font-size: 14px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--qline); background: transparent; color: var(--qink); min-width: 0; }
+  .mb-go input { width: 120px; }
+  .mb-go option { color: #222; background: #fff; }
+  .mb-stage { flex: 1; min-height: 0; display: grid; place-items: center; padding: 6px; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; perspective: 2200px; }
+  .mb-book { position: relative; display: flex; direction: ltr; transform-style: preserve-3d; }
+  .mb-book.is-two { filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.18)); }
+  .mb-slot { position: relative; display: grid; }
+  .mb-slot > .mb-page { grid-area: 1 / 1; }
+  .mb-page { box-sizing: border-box; position: relative; display: flex; flex-direction: column; background: var(--mbpaper); color: var(--qink); border-radius: 6px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14); padding: 10px 14px 6px; overflow: hidden; backface-visibility: hidden; }
+  .mb-book.is-two .mb-page { border-radius: 0; }
+  .mb-book.is-two .is-left .mb-page { border-radius: 8px 0 0 8px; background-image: linear-gradient(to left, rgba(0, 0, 0, 0.1), transparent 7%); }
+  .mb-book.is-two .is-right .mb-page { border-radius: 0 8px 8px 0; background-image: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent 7%); }
+  .mb-page::before { content: ""; position: absolute; inset: 6px; border: 1.5px solid var(--qgold); border-radius: 4px; box-shadow: inset 0 0 0 3px var(--mbpaper), inset 0 0 0 4px color-mix(in srgb, var(--qgold) 55%, transparent); pointer-events: none; opacity: 0.85; }
+  .mb-head { display: flex; justify-content: space-between; gap: 8px; padding: 4px 8px 2px; font-family: "Amiri", serif; font-size: 13px; color: var(--qsoft); }
+  .mb-text { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 0 8px; }
+  .mb-page.is-zoom .mb-text { flex: none; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .mb-flow { display: flow-root; font-family: "Amiri Quran", "Amiri", serif; line-height: 1.95; text-align: justify; text-align-last: center; }
+  .mb-para { margin: 0; }
+  .mb-sura { display: flex; align-items: center; justify-content: center; margin: 0.25em 0 0.1em; border: 1.5px solid var(--qgold); border-radius: 0.4em; background: linear-gradient(90deg, transparent, rgba(201, 164, 92, 0.16), transparent); box-shadow: inset 0 0 0 3px var(--mbpaper), inset 0 0 0 4px var(--qgold); font-size: 0.9em; line-height: 1.7; }
+  .mb-basmala { margin: 0; text-align: center; }
+  .mb-flow .ay-n { color: var(--qgold); }
+  .mb-page.is-short .mb-flow { margin-block: auto; text-align: center; }
+  .mb-foot { text-align: center; font-family: "Amiri", serif; font-size: 13px; color: var(--qsoft); padding: 2px 0 2px; }
+  .mb-more { position: absolute; inset-inline: 0; margin: auto; width: max-content; padding: 2px 12px; border-radius: 999px; background: var(--qgold); color: #fff; font-size: 12px; font-family: var(--font); pointer-events: none; z-index: 2; }
+  .mb-more[hidden] { display: none; }
+  .mb-more-up { top: 30px; }
+  .mb-more-down { bottom: 26px; }
+  .mb-page.is-moving { z-index: 2; will-change: transform; box-shadow: 0 6px 28px rgba(0, 0, 0, 0.28); }
+  .mb-page.is-under { filter: brightness(0.97); }
+  .mb-leaf { position: absolute; top: 0; bottom: 0; width: 50%; transform-style: preserve-3d; z-index: 3; will-change: transform; }
+  .mb-leaf.is-left { left: 0; transform-origin: right center; }
+  .mb-leaf.is-right { right: 0; transform-origin: left center; }
+  .mb-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .mb-face.is-back { transform: rotateY(180deg); }
+  .mb-measure { position: fixed; left: -10000px; top: 0; visibility: hidden; pointer-events: none; }
+  .mb-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--qbg); border-top: 1px solid var(--qline); }
+  .mb-bar .btn { padding: 6px 12px; font-size: 13.5px; }
+  .mb-hint { text-align: center; font-size: 12px; }
+  @media (max-width: 520px) { .mb-hint { display: none; } }
   .qr-settings { display: flex; flex-wrap: wrap; gap: 12px 22px; padding: 12px 16px; border-bottom: 1px solid var(--qline); font-size: 14px; }
   .qr-row { display: flex; align-items: center; gap: 10px; }
   .qr-row select { font: inherit; font-size: 14px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--qline); background: transparent; color: var(--qink); }
@@ -924,7 +985,8 @@
   .qr-theme-night { background: #101314; color: #E7E2D6; }
   .qr-theme[aria-pressed="true"] { outline: 2px solid var(--qgold); outline-offset: 1px; }
   .qr-body:focus { outline: none; }
-  .qr-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .qr-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), rgba(0, 0, 0, 0.18)); mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), rgba(0, 0, 0, 0.18)); }
   .qr-page { max-width: 780px; margin: 0 auto; padding: 18px clamp(14px, 4vw, 40px) 140px; }
   .qr-loading { text-align: center; color: var(--qsoft); padding: 60px 0; }
   .qr-head { text-align: center; margin: 6px 0; }
@@ -1148,8 +1210,8 @@
   .tj-n { color: #537FFF; } .tj-p { color: #4050FF; } .tj-m { color: #000EBC; } .tj-o { color: #2144C1; }
   .tj-q { color: #DD0008; } .tj-c { color: #D500B7; } .tj-f { color: #9400A8; } .tj-w { color: #58B800; }
   .tj-i { color: #26BFFD; } .tj-a { color: #169777; } .tj-u { color: #169200; } .tj-d, .tj-b { color: #A1A1A1; } .tj-g { color: #FF7E1E; }
-  .qr[data-theme="night"] .tj-m { color: #8C96FF; } .qr[data-theme="night"] .tj-o { color: #7E9BFF; } .qr[data-theme="night"] .tj-p { color: #8E9AFF; }
-  .qr[data-theme="night"] .tj-n { color: #8FB0FF; } .qr[data-theme="night"] .tj-h, .qr[data-theme="night"] .tj-s, .qr[data-theme="night"] .tj-l { color: #7C7C7C; }
+  .qr[data-theme="night"] .tj-m, .mb[data-theme="night"] .tj-m { color: #8C96FF; } .qr[data-theme="night"] .tj-o, .mb[data-theme="night"] .tj-o { color: #7E9BFF; } .qr[data-theme="night"] .tj-p, .mb[data-theme="night"] .tj-p { color: #8E9AFF; }
+  .qr[data-theme="night"] .tj-n, .mb[data-theme="night"] .tj-n { color: #8FB0FF; } .qr[data-theme="night"] .tj-h, .qr[data-theme="night"] .tj-s, .qr[data-theme="night"] .tj-l, .mb[data-theme="night"] .tj-h, .mb[data-theme="night"] .tj-s, .mb[data-theme="night"] .tj-l { color: #7C7C7C; }
   .qr-page.is-hide .ay:not(.is-shown), .qr-page.is-hide .ay-b:not(.is-shown) .ay-ar { color: transparent; text-shadow: 0 0 14px var(--qsoft); }
   .qr-page.is-hide .ay:not(.is-shown) [class^="tj-"], .qr-page.is-hide .ay-b:not(.is-shown) [class^="tj-"] { color: transparent; }
   .qr-page.is-hide .ay:not(.is-shown) .ay-n, .qr-page.is-hide .ay-b:not(.is-shown) .ay-n { color: var(--qgold); text-shadow: none; }
@@ -1584,6 +1646,37 @@
   .lib-book[data-book="muslim"] { border-inline-start-color: #2C5A5A; }
   .lib-book[data-book="abudawud"], .lib-book[data-book="tirmidhi"], .lib-book[data-book="nasai"], .lib-book[data-book="ibnmajah"] { border-inline-start-color: #A67C2E; }
   .lib-book[data-book="malik"] { border-inline-start-color: #7A2E1C; }
+  /* The full books from Shamela: shelves, a book's page and its reader. */
+  .lib-shelf { border: 1px solid var(--line); border-radius: 14px; background: var(--paper); padding: 0 12px; }
+  .lib-shelf > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 2px; cursor: pointer; list-style: none; }
+  .lib-shelf > summary::-webkit-details-marker { display: none; }
+  .lib-shelf > summary b { font-family: "Amiri", var(--font); font-size: 17px; }
+  .lib-shelf > summary::after { content: "⌄"; color: var(--ink-faint); margin-inline-start: auto; padding-inline-start: 8px; }
+  .lib-shelf[open] > summary::after { content: "⌃"; }
+  .lib-shelf[open] { padding-bottom: 12px; }
+  .lib-book.lib-full { background: var(--bg, var(--paper)); }
+  .lib-book.lib-full[data-cat="aqeedah"] { border-inline-start-color: #1F5A40; }
+  .lib-book.lib-full[data-cat="tafsir"] { border-inline-start-color: #2C5A7A; }
+  .lib-book.lib-full[data-cat="hadith"], .lib-book.lib-full[data-cat="shuruh"], .lib-book.lib-full[data-cat="mustalah"] { border-inline-start-color: #A67C2E; }
+  .lib-book.lib-full[data-cat="fiqh"], .lib-book.lib-full[data-cat="usul"] { border-inline-start-color: #7A2E1C; }
+  .lib-book.lib-full[data-cat="sira"] { border-inline-start-color: #5A3E7A; }
+  .lib-book.lib-full[data-cat="raqaiq"] { border-inline-start-color: #3E7A6B; }
+  .lib-book.lib-full[data-cat="lugha"] { border-inline-start-color: #6B6B2E; }
+  .lib-about { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); }
+  .lib-about p { margin: 0; }
+  .lib-toc { display: flex; flex-direction: column; gap: 2px; }
+  .lib-toc-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 10px; cursor: pointer; font-family: "Amiri", var(--font); font-size: 16.5px; }
+  .lib-toc-group > summary:hover { background: var(--paper); }
+  .lib-toc-group[open] { padding-inline-start: 12px; border-inline-start: 2px solid var(--line); }
+  .lib-sec.lib-toc-link { display: block; font-family: "Amiri", var(--font); font-size: 16.5px; line-height: 1.6; }
+  .lib-read-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .lib-read { display: flex; flex-direction: column; gap: 0; padding: 6px clamp(14px, 4vw, 34px); border-radius: 14px; background: var(--paper); border: 1px solid var(--line); }
+  .lib-pg { position: relative; padding: 10px 0 22px; border-bottom: 1px dashed var(--line); }
+  .lib-pg:last-child { border-bottom: none; }
+  .lib-pg p { margin: 0 0 10px; font-family: "Amiri", serif; font-size: 19.5px; line-height: 2; text-align: justify; color: var(--ink); }
+  .lib-read-h { margin: 12px 0 8px; font-family: "Amiri", serif; font-size: 22px; color: #8A6A24; scroll-margin-top: 80px; }
+  html[data-mode="dark"] .lib-read-h { color: #D8B46A; }
+  .lib-pg-n { position: absolute; inset-inline-end: 0; bottom: 4px; font-size: 12px; color: var(--ink-faint); }
   .lib-tools { display: flex; gap: 8px; }
   .lib-tools input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); }
   .lib-results { display: flex; flex-direction: column; gap: 6px; }
@@ -1964,49 +2057,55 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.3.0.2"></script>
-<script src="js/clock-core.js?v=2.3.0.2"></script>
-<script src="js/clock.js?v=2.3.0.2"></script>
-<script src="js/astro.js?v=2.3.0.2"></script>
-<script src="js/look.js?v=2.3.0.2"></script>
-<script src="js/sounds.js?v=2.3.0.2"></script>
-<script src="js/tasks.js?v=2.3.0.2"></script>
-<script src="js/views.js?v=2.3.0.2"></script>
-<script src="js/remind-card.js?v=2.3.0.2"></script>
-<script src="js/reminders-core.js?v=2.3.0.2"></script>
-<script src="js/reminders.js?v=2.3.0.2"></script>
-<script src="js/notes.js?v=2.3.0.2"></script>
-<script src="js/cards.js?v=2.3.0.2"></script>
-<script src="js/adhkar-data.js?v=2.3.0.2"></script>
-<script src="js/adhkar.js?v=2.3.0.2"></script>
-<script src="js/habits.js?v=2.3.0.2"></script>
-<script src="js/prayers.js?v=2.3.0.2"></script>
-<script src="js/focus-plus.js?v=2.3.0.2"></script>
-<script src="js/native.js?v=2.3.0.2"></script>
-<script src="js/prayer-alerts.js?v=2.3.0.2"></script>
-<script src="js/device.js?v=2.3.0.2"></script>
-<script src="js/extras-data.js?v=2.3.0.2"></script>
-<script src="js/quran-meta.js?v=2.3.0.2"></script>
-<script src="js/hifz.js?v=2.3.0.2"></script>
-<script src="js/khatma.js?v=2.3.0.2"></script>
-<script src="js/quran.js?v=2.3.0.2"></script>
-<script src="js/sunnah-data.js?v=2.3.0.2"></script>
-<script src="js/sunnah.js?v=2.3.0.2"></script>
-<script src="js/qibla.js?v=2.3.0.2"></script>
-<script src="js/library-meta.js?v=2.3.0.2"></script>
-<script src="js/salah-data.js?v=2.3.0.2"></script>
-<script src="js/tools.js?v=2.3.0.2"></script>
-<script src="js/library.js?v=2.3.0.2"></script>
-<script src="js/listen.js?v=2.3.0.2"></script>
-<script src="js/report.js?v=2.3.0.2"></script>
-<script src="js/focus-mode.js?v=2.3.0.2"></script>
-<script src="js/config.js?v=2.3.0.2"></script>
-<script src="js/vendor/supabase.js?v=2.3.0.2" defer></script>
-<script src="js/sync-core.js?v=2.3.0.2" defer></script>
-<script src="js/sync.js?v=2.3.0.2" defer></script>
-<script src="js/app.js?v=2.3.0.2" defer></script>
-<script src="js/settings.js?v=2.3.0.2" defer></script>
-<script src="js/today.js?v=2.3.0.2" defer></script>
-<script src="js/nav.js?v=2.3.0.2" defer></script>
+<script src="js/i18n.js?v=2.4.0.1"></script>
+<script src="js/clock-core.js?v=2.4.0.1"></script>
+<script src="js/clock.js?v=2.4.0.1"></script>
+<script src="js/astro.js?v=2.4.0.1"></script>
+<script src="js/look.js?v=2.4.0.1"></script>
+<script src="js/sounds.js?v=2.4.0.1"></script>
+<script src="js/tasks.js?v=2.4.0.1"></script>
+<script src="js/views.js?v=2.4.0.1"></script>
+<script src="js/remind-card.js?v=2.4.0.1"></script>
+<script src="js/reminders-core.js?v=2.4.0.1"></script>
+<script src="js/reminders.js?v=2.4.0.1"></script>
+<script src="js/notes.js?v=2.4.0.1"></script>
+<script src="js/cards.js?v=2.4.0.1"></script>
+<script src="js/adhkar-data.js?v=2.4.0.1"></script>
+<script src="js/adhkar.js?v=2.4.0.1"></script>
+<script src="js/habits.js?v=2.4.0.1"></script>
+<script src="js/prayers.js?v=2.4.0.1"></script>
+<script src="js/focus-plus.js?v=2.4.0.1"></script>
+<script src="js/native.js?v=2.4.0.1"></script>
+<script src="js/prayer-alerts.js?v=2.4.0.1"></script>
+<script src="js/device.js?v=2.4.0.1"></script>
+<script src="js/extras-data.js?v=2.4.0.1"></script>
+<script src="js/quran-meta.js?v=2.4.0.1"></script>
+<script src="js/hifz.js?v=2.4.0.1"></script>
+<script src="js/khatma.js?v=2.4.0.1"></script>
+<script src="js/tajweed-core.js?v=2.4.0.1"></script>
+<script src="js/tajweed-rules.js?v=2.4.0.1"></script>
+<script src="js/quran.js?v=2.4.0.1"></script>
+<script src="js/mushaf-core.js?v=2.4.0.1"></script>
+<script src="js/mushaf-book.js?v=2.4.0.1"></script>
+<script src="js/sunnah-data.js?v=2.4.0.1"></script>
+<script src="js/sunnah.js?v=2.4.0.1"></script>
+<script src="js/qibla.js?v=2.4.0.1"></script>
+<script src="js/library-meta.js?v=2.4.0.1"></script>
+<script src="js/salah-data.js?v=2.4.0.1"></script>
+<script src="js/tools.js?v=2.4.0.1"></script>
+<script src="js/library-books.js?v=2.4.0.1"></script>
+<script src="js/library-local.js?v=2.4.0.1"></script>
+<script src="js/library.js?v=2.4.0.1"></script>
+<script src="js/listen.js?v=2.4.0.1"></script>
+<script src="js/report.js?v=2.4.0.1"></script>
+<script src="js/focus-mode.js?v=2.4.0.1"></script>
+<script src="js/config.js?v=2.4.0.1"></script>
+<script src="js/vendor/supabase.js?v=2.4.0.1" defer></script>
+<script src="js/sync-core.js?v=2.4.0.1" defer></script>
+<script src="js/sync.js?v=2.4.0.1" defer></script>
+<script src="js/app.js?v=2.4.0.1" defer></script>
+<script src="js/settings.js?v=2.4.0.1" defer></script>
+<script src="js/today.js?v=2.4.0.1" defer></script>
+<script src="js/nav.js?v=2.4.0.1" defer></script>
 </body>
 </html>

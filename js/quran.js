@@ -62,7 +62,7 @@
   const blank = () => ({
     last: null, marks: [], goal: 5, today: { day: dayKey(), pages: [] },
     khatma: { pages: [], count: 0 }, font: 30, trans: I.isEn, reciter: 'ar.alafasy', theme: 'paper',
-    tajweed: false, repeat: 1, gap: 0, rate: 1, hide: false, tafsir: I.isEn ? 'en-ibnkathir' : 'muyassar', inlineTafsir: false
+    tajweed: false, tajRules: false, repeat: 1, gap: 0, rate: 1, hide: false, tafsir: I.isEn ? 'en-ibnkathir' : 'muyassar', inlineTafsir: false
   });
   let S = Object.assign(blank(), load(KEY, {}));
   // Today's goal: fixed, or worked out from a completion date (pages left ÷ days left).
@@ -233,6 +233,7 @@
       b.append(el('b', '', T(name)), el('span', '', T(note)));
       modes.append(b);
     };
+    if (window.noonMushafBook) mode(false, 'المصحف بتقليب الصفحات', '٦٠٤ صفحات كمصحف المدينة، تقلّبها بيدك', () => window.noonMushafBook.open());
     mode(S.tajweed, 'مصحف التجويد', 'أحكام التجويد ملوّنة في النص', () => { S.tajweed = !S.tajweed; save(); renderIndex(); });
     mode(S.reciter === 'muallim', 'المصحف المعلّم', 'الحصري المعلّم، تكرار الآية ٣ مرات ومهلة لترديدها', () => {
       const on = S.reciter !== 'muallim';
@@ -418,7 +419,11 @@
     const qTafsir = quick('التفسير', 'inlineTafsir');
     const qTrans = quick('الترجمة', 'trans', () => { trans.checked = S.trans; });
     const qTajweed = quick('التجويد', 'tajweed', () => { tj.checked = S.tajweed; legend.hidden = !S.tajweed; });
-    tools.append(minus, plus, qTafsir, qTrans, qTajweed);
+    const qRules = quick('الأحكام', 'tajRules', () => { tjr.checked = S.tajRules; });
+    qRules.title = T('أحكام التجويد مكتوبة تحت كل آية، فوق التفسير');
+    // To the page-turning Mushaf, at the page being read.
+    const qBook = button('qr-chip', T('تقليب الصفحات'), () => { if (window.noonMushafBook) { const p = pageOf(firstVisible()); hide(); window.noonMushafBook.open(p); } });
+    tools.append(minus, plus, qTafsir, qTrans, qTajweed, qRules, qBook);
 
     // Reading settings.
     const settings = el('div', 'qr-settings');
@@ -472,6 +477,9 @@
     TAJWEED.forEach(([k, a, e]) => { const x = el('span', `tj-${k}`); x.append(el('i'), I.isEn ? e : a); legend.append(x); });
     tj.addEventListener('change', () => { S.tajweed = tj.checked; legend.hidden = !S.tajweed; qTajweed.setAttribute('aria-pressed', String(S.tajweed)); save(); renderSurah(cur, firstVisible(), true); });
     const tjRow = el('label', 'qr-row qr-check'); tjRow.append(tj, el('span', '', T('مصحف التجويد (ألوان الأحكام)')));
+    const tjr = el('input'); tjr.type = 'checkbox'; tjr.checked = !!S.tajRules;
+    tjr.addEventListener('change', () => { S.tajRules = tjr.checked; qRules.setAttribute('aria-pressed', String(S.tajRules)); save(); renderSurah(cur, firstVisible(), true); });
+    const tjrRow = el('label', 'qr-row qr-check'); tjrRow.append(tjr, el('span', '', T('أحكام التجويد مكتوبة فوق التفسير')));
     const hide = el('input'); hide.type = 'checkbox'; hide.checked = S.hide;
     hide.addEventListener('change', () => { S.hide = hide.checked; save(); R.page.classList.toggle('is-hide', S.hide); R.page.querySelectorAll('.is-shown').forEach((n) => n.classList.remove('is-shown')); });
     const hideRow = el('label', 'qr-row qr-check'); hideRow.append(hide, el('span', '', T('التسميع: إخفاء الآيات حتى تضغط عليها')));
@@ -490,7 +498,7 @@
       pick('مهلة للترديد بعد الآية', 'gap', [[0, 'بدون'], [0.5, 'نصف مدة الآية'], [1, 'مثل مدة الآية'], [1.5, 'مرة ونصف']]),
       pick('سرعة التلاوة', 'rate', [[0.75, 'أبطأ'], [1, 'عادية'], [1.25, 'أسرع']], () => { audio.playbackRate = S.rate; }),
       hideRow);
-    settings.append(indexBtn, recRow, sizeBtns, tfRow, tfShowRow, transRow, tjRow, legend, themes, learn);
+    settings.append(indexBtn, recRow, sizeBtns, tfRow, tfShowRow, transRow, tjRow, legend, tjrRow, themes, learn);
 
     const body = el('div', 'qr-body');
     body.tabIndex = -1;
@@ -509,6 +517,7 @@
     const tafsir = el('div', 'qr-tafsir');
     tafsir.hidden = true;
     sheet.append(sheetHead, acts, tafsir);
+    tafsir.addEventListener('click', (ev) => { if (ev.target.closest('.ay-tj')) rulesClick(ev); });
 
     box.append(top, tools, settings, body, sheet);
     document.body.append(box);
@@ -516,6 +525,7 @@
     box.dataset.theme = S.theme;
 
     body.addEventListener('click', (ev) => {
+      if (ev.target.closest('.ay-tj')) return rulesClick(ev); // the rules under a verse: highlight, explain
       const a = ev.target.closest('[data-i]');
       // In memorisation mode the first tap only reveals the verse.
       if (a && S.hide && !a.classList.contains('is-shown')) { a.classList.add('is-shown'); return; }
@@ -530,7 +540,7 @@
     // Options can also change from the index (tajweed, teaching Mushaf, memorisation): refresh on open.
     const sync = () => {
       size.value = String(S.font); trans.checked = S.trans; tSel.value = transLang(); rec.value = S.reciter; topRec.value = S.reciter;
-      tj.checked = S.tajweed; legend.hidden = !S.tajweed; hide.checked = S.hide; tfSel.value = S.tafsir; tfShow.checked = !!S.inlineTafsir;
+      tj.checked = S.tajweed; legend.hidden = !S.tajweed; tjr.checked = !!S.tajRules; qRules.setAttribute('aria-pressed', String(!!S.tajRules)); hide.checked = S.hide; tfSel.value = S.tafsir; tfShow.checked = !!S.inlineTafsir;
       qTafsir.setAttribute('aria-pressed', String(!!S.inlineTafsir)); qTrans.setAttribute('aria-pressed', String(!!S.trans)); qTajweed.setAttribute('aria-pressed', String(!!S.tajweed));
       learn.querySelectorAll('select').forEach((x, k) => { x.value = String(S[['repeat', 'gap', 'rate'][k]]); });
       box.style.setProperty('--qf', S.font + 'px'); box.dataset.theme = S.theme;
@@ -541,8 +551,8 @@
   // at: the verse to show; keep: put it at the top without a flash (after a layout change).
   function renderSurah(s, at, keep) {
     // The tajweed text and the translations are fetched the first time they are switched on.
-    if (S.tajweed && !txt.tajweed) {
-      data('tajweed').then(() => renderSurah(s, at, keep)).catch(() => { S.tajweed = false; renderSurah(s, at, keep); });
+    if ((S.tajweed || S.tajRules) && !txt.tajweed) {
+      data('tajweed').then(() => renderSurah(s, at, keep)).catch(() => { S.tajweed = false; S.tajRules = false; renderSurah(s, at, keep); });
       return;
     }
     if (S.inlineTafsir && !surahTafsirs[`${S.tafsir}:${s}`]) {
@@ -583,7 +593,7 @@
       frag.append(b);
       if (S.trans && transLang() === 'en') { const e = el('p', 'qr-basmala-en', M.basmalaEn); e.dir = 'ltr'; e.lang = 'en'; frag.append(e); }
     }
-    const blocks = S.trans || S.inlineTafsir; // one verse per block, with its translation / tafsir
+    const blocks = S.trans || S.inlineTafsir || S.tajRules; // one verse per block, with its rules / translation / tafsir
     let pg = null, flow = null, p = 0;
     for (let i = first; i < first + count; i++) {
       const pi = pageOf(i);
@@ -605,6 +615,7 @@
         a.append(verse(i), ' ', n);
         if (sajda.has(i)) a.append(el('span', 'ay-sajda', '۩'));
         blk.append(a);
+        if (S.tajRules && txt.tajweed) blk.append(rulesBlock(i));
         if (S.trans) {
           const e = el('p', 'ay-en');
           e.dir = 'auto'; e.lang = transLang().split('.')[0];
@@ -646,19 +657,66 @@
     updateMeta(at !== null && at !== undefined ? at : first);
     if (playing >= 0) highlight(playing);
   }
-  // A verse's text: plain, or with its tajweed rules coloured ([code[letters] or [code:id[letters]).
+  // A verse's text: plain, or from the tajweed edition, its rules coloured (S.tajweed) and each
+  // marked run tagged with its marks (data-m), so a rule listed under the verse can light it up.
+  const TJ = window.noonTajweedCore, RULES = window.NOON_TAJWEED_RULES || {};
   function verse(i) {
-    if (!S.tajweed || !txt.tajweed) return txt.uthmani[i];
-    const f = document.createDocumentFragment(), t = txt.tajweed[i];
-    const re = /\[([a-z])(?::\d+)?\[([^\]]*)\]/g;
-    let last = 0, m;
-    while ((m = re.exec(t))) {
-      if (m.index > last) f.append(t.slice(last, m.index));
-      f.append(el('span', `tj-${m[1]}`, m[2]));
-      last = re.lastIndex;
-    }
-    if (last < t.length) f.append(t.slice(last));
+    if (!(S.tajweed || S.tajRules) || !txt.tajweed || !TJ) return txt.uthmani[i];
+    const f = document.createDocumentFragment();
+    TJ.segments(txt.tajweed[i]).forEach((g) => {
+      if (!g.code) { f.append(g.text); return; }
+      const sp = el('span', S.tajweed ? `tj-${g.code}` : '', g.text);
+      sp.dataset.m = g.m.join(' ');
+      f.append(sp);
+    });
     return f;
+  }
+  // «أحكام التجويد» for one verse: each rule in its colour with the words it falls on.
+  function rulesBlock(i) {
+    const box = el('div', 'ay-tj');
+    box.dataset.v = String(i);
+    box.append(el('b', 'ay-tj-head', T('أحكام التجويد')));
+    const groups = TJ.rules(txt.tajweed[i]);
+    if (!groups.length) box.append(el('span', 'hint', T('لا أحكام معلَّمة في هذه الآية.')));
+    groups.forEach((g) => {
+      const r = RULES[g.code];
+      if (!r) return;
+      const row = el('div', 'ay-tj-row');
+      const name = button(`ay-tj-name tj-${g.code}`, '');
+      name.append(el('i'), I.isEn ? r.en : r.ar);
+      name.dataset.def = g.code;
+      name.setAttribute('aria-expanded', 'false');
+      row.append(name);
+      g.items.forEach((it) => {
+        const w = button('ay-tj-word', it.word);
+        w.lang = 'ar';
+        w.dataset.ks = it.ks.join(' ');
+        row.append(w);
+      });
+      const def = el('p', 'ay-tj-def', I.isEn ? r.defEn : r.defAr);
+      def.hidden = true;
+      row.append(def);
+      box.append(row);
+    });
+    return box;
+  }
+  function rulesClick(ev) {
+    const name = ev.target.closest('[data-def]');
+    if (name) {
+      const def = name.parentNode.querySelector('.ay-tj-def');
+      def.hidden = !def.hidden;
+      name.setAttribute('aria-expanded', String(!def.hidden));
+      return;
+    }
+    const w = ev.target.closest('.ay-tj-word');
+    if (!w) return;
+    const box = w.closest('.ay-tj'), ks = w.dataset.ks.split(' ');
+    const host = R.box.querySelector(`[data-i="${box.dataset.v}"]`) || box.parentNode;
+    R.box.querySelectorAll('.is-hit').forEach((n) => n.classList.remove('is-hit'));
+    const hits = [...host.querySelectorAll('[data-m]')].filter((n) => n.dataset.m.split(' ').some((k) => ks.includes(k)));
+    hits.forEach((n) => n.classList.add('is-hit'));
+    clearTimeout(rulesClick.t);
+    rulesClick.t = setTimeout(() => hits.forEach((n) => n.classList.remove('is-hit')), 2600);
   }
   function foot(p) {
     const f = el('div', 'qr-pg-foot');
@@ -693,8 +751,10 @@
     for (const a of all) { const r = a.getBoundingClientRect(); if (r.bottom > top) return Number(a.dataset.i); }
     return starts[cur];
   }
-  let scrollT = 0;
+  let scrollT = 0, settleT = 0;
   function onScroll() {
+    clearTimeout(settleT);
+    settleT = setTimeout(settle, 220); // once the scrolling stops
     if (scrollT) return;
     scrollT = setTimeout(() => {
       scrollT = 0;
@@ -703,6 +763,25 @@
       updateMeta(i);
       setLast(i);
     }, 300);
+  }
+  // No verse line is left cut by the top edge: when the scrolling stops, the page moves the little
+  // it takes to show that line whole (js/mushaf-core.js decides which way). The bottom edge fades,
+  // so a line it cuts shows that the verse goes on.
+  function settle() {
+    if (!R || R.box.hidden || !window.noonMushafCore || R.body.scrollTop < 4) return;
+    const top = R.body.getBoundingClientRect().top, lines = [], range = document.createRange();
+    R.page.querySelectorAll('.ay, .ay-ar').forEach((v) => {
+      const b = v.getBoundingClientRect();
+      if (b.bottom < top - 4 || b.top > top + 4) return; // only the verse under the top edge
+      range.selectNodeContents(v);
+      for (const r of range.getClientRects()) if (r.height > 4) lines.push({ top: r.top, bottom: r.bottom });
+    });
+    // Rects of one line overlap (a verse number, a mark): merge them into whole lines.
+    lines.sort((a, b) => a.top - b.top);
+    const merged = [];
+    lines.forEach((l) => { const m = merged[merged.length - 1]; if (m && l.top < m.bottom - 2) m.bottom = Math.max(m.bottom, l.bottom); else merged.push({ ...l }); });
+    const d = window.noonMushafCore.cutDelta(merged, top);
+    if (Math.abs(d) > 1) R.body.scrollBy({ top: d, behavior: 'smooth' });
   }
 
   function select(i) {
@@ -829,6 +908,8 @@
       p.dir = t[0].startsWith('en') ? 'ltr' : 'rtl';
       text.split(/\n+/).filter((x) => x.trim()).forEach((para) => p.append(el('p', '', para.trim())));
       const parts = [pickT];
+      // The verse's tajweed rules sit above its tafsir, when they are switched on.
+      if (S.tajRules && TJ) { try { await data('tajweed'); parts.push(rulesBlock(i)); } catch (_) {} }
       if (k !== i) parts.push(el('p', 'hint', `${T('تفسير هذه الآية مع ما قبلها، من الآية')} ${I.num(ayahOf(k))}`));
       parts.push(p, el('span', 'hint', t[3] === 'alq' ? T('المصدر: api.alquran.cloud') : T('المصدر: spa5k/tafsir_api عبر jsDelivr')));
       R.tafsir.replaceChildren(...parts);
@@ -946,6 +1027,14 @@
   window.addEventListener('noon-hifz', () => { if (!root.hidden) renderIndex(); }); // the memorisation card's count
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'quran') renderIndex(); });
   setInterval(() => { if (S.today.day !== dayKey()) { fresh(); if (!root.hidden) renderIndex(); } }, 60000);
-  window.noonQuran = { open, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), openAyah: (s, a) => open(starts[s - 1] + Math.max(0, a - 1)), last: () => (S.last ? { i: S.last.i, label: refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
+  // For the page-turning Mushaf (js/mushaf-book.js): the texts, the reading progress and its last page.
+  const book = {
+    load: () => Promise.all([data('uthmani'), S.tajweed ? data('tajweed').catch(() => null) : null, fontReady()]),
+    verse, starts, surahOf, ayahOf, pageOf, juzOf, ar, sajda, markPage, setLast,
+    theme: () => S.theme, page: () => S.bookPage || (S.last ? pageOf(S.last.i) : 1),
+    setPage: (p) => { if (S.bookPage !== p) { S.bookPage = p; save(); } },
+    openAt: (i) => open(i)
+  };
+  window.noonQuran = { book, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), openAyah: (s, a) => open(starts[s - 1] + Math.max(0, a - 1)), last: () => (S.last ? { i: S.last.i, label: refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
   renderIndex();
 })();

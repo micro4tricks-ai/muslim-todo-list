@@ -2,6 +2,8 @@
 // The index comes from js/library-meta.js (tools/build_library.py); each section is read on demand
 // from github.com/fawazahmed0/hadith-api via jsDelivr (Arabic, English and the gradings) and kept
 // by the service worker for reading offline. js/salah-data.js holds the prayer, step by step.
+// The full books (js/library-books.js) and the whole Musnad of Ahmad (js/library-local.js) come from
+// the user's Shamela copy (tools/build_library_local.py), gzipped under books/ on the website.
 (() => {
   'use strict';
   const { T, I, $, el, button, load, store, toast, onRemote } = window.noonUI;
@@ -10,9 +12,23 @@
   const KEY = 'noon-sweep-library';
   const API = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/';
   const root = $('view-library');
-  let S = Object.assign({ marks: [], en: I.isEn, onlyAccepted: false }, load(KEY, {}));
+  let S = Object.assign({ marks: [], en: I.isEn, onlyAccepted: false, books: {} }, load(KEY, {}));
+  const SHELF = window.NOON_BOOKS || { cats: [], books: [] };
+  // The whole Musnad of Ahmad (al-Risalah numbering) takes the place of the caliphs' part.
+  const LOCAL = window.NOON_LIBRARY_LOCAL || {};
+  if (LOCAL.ahmad) {
+    const b = LIB.books.find((x) => x.id === 'ahmad');
+    if (b) Object.assign(b, { ar: 'مسند الإمام أحمد', en: 'Musnad Ahmad', count: LOCAL.ahmad.count, sections: LOCAL.ahmad.sections, src: 'local', slug: LOCAL.ahmad.slug, edition: LOCAL.ahmad.edition });
+    // Hadiths saved from the old part keep pointing at the same hadith under its al-Risalah number.
+    const moved = new Map(LOCAL.ahmad.migrate || []);
+    let changed = false;
+    S.marks.forEach((m) => { if (m.b === 'ahmad' && !m.v) { if (moved.has(m.n)) m.n = m.num = moved.get(m.n); m.v = 2; changed = true; } });
+    if (changed) store(KEY, S);
+  }
+  // The books live on the website; the Android app leaves them out and reads them from there.
+  const BOOKS = window.Capacitor ? 'https://micro4tricks-ai.github.io/muslim-todo-list/books/' : 'books/';
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); };
-  let screen = { name: 'home' }; // home | book | section | salah | marks
+  let screen = { name: 'home' }; // home | book | section | salah | marks | shelf (a full book) | read (its text)
 
   const SCHOLARS = {
     'Al-Albani': 'الألباني', 'Shuaib Al Arnaut': 'شعيب الأرناؤوط', 'Ahmad Muhammad Shakir': 'أحمد شاكر',
@@ -43,6 +59,31 @@
     }
     return cache.get(url);
   }
+  // A gzipped JSON file under books/ (kept on the phone after the first read, for reading offline).
+  const gzCache = new Map();
+  function gz(path, v) {
+    const url = BOOKS + path + (v ? `?v=${v}` : '');
+    if (!gzCache.has(url)) {
+      const p = (async () => {
+        let res = null;
+        const box = typeof caches !== 'undefined' ? await caches.open('library-v1').catch(() => null) : null;
+        if (box) res = await box.match(url).catch(() => null);
+        if (!res) {
+          res = await fetch(url);
+          if (!res.ok) throw new Error(res.status);
+          if (box) box.put(url, res.clone()).catch(() => {});
+        }
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        // The server may have unzipped it already; otherwise unzip it here.
+        if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return JSON.parse(new TextDecoder().decode(bytes));
+        const text = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+        return JSON.parse(text);
+      })();
+      p.catch(() => gzCache.delete(url));
+      gzCache.set(url, p);
+    }
+    return gzCache.get(url);
+  }
   // Books from hadith-json come as one file, split here by chapter.
   const AB = 'https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/';
   async function abBook(b) {
@@ -58,6 +99,9 @@
   async function section(bid, sec) {
     const book = bookOf(bid);
     if (book && book.src === 'ab') return (await abBook(book)).filter((h) => h.chapter === String(sec));
+    if (book && book.src === 'local') {
+      return (await gz(`${book.slug}/h${sec}.json.gz`, LOCAL.ahmad && LOCAL.ahmad.v)).map(([n, t]) => ({ hadithnumber: n, arabicnumber: n, ar: tidy(t), en: '', grades: [] }));
+    }
     const [a, e] = await Promise.all([get(`${API}ara-${bid}/sections/${sec}.min.json`), get(`${API}eng-${bid}/sections/${sec}.min.json`).catch(() => null)]);
     const en = new Map(((e && e.hadiths) || []).map((h) => [h.hadithnumber, h]));
     return a.hadiths.map((h) => {
@@ -80,15 +124,17 @@
     if (screen.name === 'section') return renderSection();
     if (screen.name === 'salah') return renderSalah();
     if (screen.name === 'marks') return renderMarks();
+    if (screen.name === 'shelf') return renderShelf();
+    if (screen.name === 'read') return renderRead();
     if (screen.name === 'tool' && window.noonTools) return window.noonTools.render(screen.tool, root, back('المكتبة', { name: 'home' }));
     renderHome();
   }
-  const go = (s) => { screen = s; render(); root.scrollIntoView({ block: 'start' }); };
+  const go = (s) => { window.dispatchEvent(new Event('noon-library-screen')); screen = s; render(); root.scrollIntoView({ block: 'start' }); };
   const back = (label, to) => { const b = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T(label)}`, () => go(to)); b.dataset.back = ''; return b; };
 
   function renderHome() {
     const head = el('div', 'view-head');
-    head.append(el('h2', '', T('المكتبة')), el('span', 'view-sub', T('الكتب الستة وموطأ مالك')));
+    head.append(el('h2', '', T('المكتبة')), el('span', 'view-sub', SHELF.books.length ? `${T('الكتب الستة وموطأ مالك')} · ${I.num(SHELF.books.length)} ${T('كتاباً كاملاً')}` : T('الكتب الستة وموطأ مالك')));
     root.append(head);
     const salah = button('lib-salah', '', () => go({ name: 'salah' }));
     salah.append(el('span', 'lib-salah-kicker', T('من التكبير إلى التسليم')), el('b', '', T('صفة صلاة النبي ﷺ')),
@@ -124,11 +170,12 @@
       const c = button('lib-book', '', () => go({ name: 'book', book: b.id }));
       c.dataset.book = b.id;
       c.append(el('b', '', bookName(b)), el('span', '', I.isEn ? b.authorEn : b.authorAr),
-        el('small', '', `${b.count.toLocaleString(I.isEn ? 'en-GB' : 'ar-EG')} ${T('حديث')} · ${I.num(b.sections.length)} ${T('كتاباً')}`));
+        el('small', '', `${b.count.toLocaleString(I.isEn ? 'en-GB' : 'ar-EG')} ${T('حديث')} · ${I.num(b.sections.length)} ${T(b.id === 'ahmad' ? 'مسنداً' : 'كتاباً')}`));
       grid.append(c);
     });
     root.append(grid);
-    root.append(el('p', 'hint', T('الأربعينات ورياض الصالحين وبلوغ المرام والأدب المفرد والشمائل والمشكاة ومسند أحمد وسنن الدارمي من مشروع hadith-json المفتوح، بنصّها كما هو (وفيه تخريج المصنّف)، ومن غير أحكام إضافية.')));
+    root.append(el('p', 'hint', T('الأربعينات ورياض الصالحين وبلوغ المرام والأدب المفرد والشمائل والمشكاة وسنن الدارمي من مشروع hadith-json المفتوح، بنصّها كما هو (وفيه تخريج المصنّف)، ومن غير أحكام إضافية. ومسند الإمام أحمد كاملاً بترقيم طبعة الرسالة، نصّه من المكتبة الشاملة دون حواشي المحققين.')));
+    renderShelves();
     if (S.marks.length) root.append(button('btn btn-quiet', `${T('الأحاديث المحفوظة')} (${I.num(S.marks.length)})`, () => go({ name: 'marks' })));
     root.append(el('p', 'credit', T('النصوص والأحكام من مشروع hadith-api المفتوح (github.com/fawazahmed0/hadith-api)، وعناوين الكتب بالعربية من hadith-json. الترجمة الإنجليزية كما في sunnah.com. يُحمَّل كل باب عند فتحه أول مرة، ثم يبقى للقراءة دون إنترنت.')));
   }
@@ -159,6 +206,7 @@
       try {
         if (!searchIndex || searchIndex.book !== b.id) {
           const j = b.src === 'ab' ? { hadiths: (await abBook(b)).map((h) => ({ hadithnumber: h.hadithnumber, arabicnumber: h.arabicnumber, text: h.ar })) }
+            : b.src === 'local' ? { hadiths: await allLocal(b, (k) => { out.replaceChildren(el('p', 'hint', `${T('جارٍ تحميل الكتاب للبحث (مرة واحدة)…')} ${Math.min(100, Math.round((k / b.sections.length) * 100))}%`)); }) }
             : await get(`${API}ara-${b.id}1.min.json`);
           searchIndex = { book: b.id, list: j.hadiths.map((h) => [h.hadithnumber, h.arabicnumber, norm(h.text), tidy(h.text)]) };
         }
@@ -189,6 +237,16 @@
     });
     root.append(list);
   }
+  // Every section of a local hadith book, a few at a time, for searching it.
+  async function allLocal(b, progress) {
+    const all = [];
+    for (let k = 0; k < b.sections.length; k += 12) {
+      const part = await Promise.all(b.sections.slice(k, k + 12).map((s) => section(b.id, s[0])));
+      part.forEach((rows) => rows.forEach((h) => all.push({ hadithnumber: h.hadithnumber, arabicnumber: h.arabicnumber, text: h.ar })));
+      if (progress) progress(k + 12);
+    }
+    return all;
+  }
   function openNumber(b, n) {
     // Numbers typed are the standard ones; find the section whose range holds them.
     const s = b.sections.find((x) => n >= Math.floor(Number(x[5])) && n <= Math.floor(Number(x[6])));
@@ -208,7 +266,7 @@
     en.addEventListener('change', () => { S.en = en.checked; save(); render(); });
     enBox.append(en, ' ', T('إظهار الترجمة الإنجليزية'));
     bar.append(enBox);
-    if (b.id !== 'bukhari' && b.id !== 'muslim' && b.src !== 'ab') {
+    if (b.id !== 'bukhari' && b.id !== 'muslim' && b.src !== 'ab' && b.src !== 'local') {
       const okBox = el('label', 'check'); const ok = el('input'); ok.type = 'checkbox'; ok.checked = S.onlyAccepted;
       ok.addEventListener('change', () => { S.onlyAccepted = ok.checked; save(); render(); });
       okBox.append(ok, ' ', T('الصحيح والحسن فقط (بحكم الألباني)'));
@@ -283,6 +341,191 @@
     return (m ? m[1] : t).trim();
   }
   function gradeLine(h) { const g = albani(h); return g ? `${I.isEn ? 'al-Albani' : 'الألباني'}: ${gradeText(g.grade)}` : ''; }
+
+
+  // ================= the full books (from Shamela) =================
+  const shelfBook = (slug) => SHELF.books.find((x) => x.slug === slug);
+  const catName = (c) => { const x = SHELF.cats.find((y) => y[0] === c); return x ? (I.isEn ? x[2] : x[1]) : c; };
+  const deathText = (d) => (d && d < 9000 ? `${I.isEn ? 'd.' : 'ت'} ${I.num(d)}${I.isEn ? ' AH' : 'هـ'}` : '');
+  const sizeText = (n) => (n >= 1e6 ? `${I.num((n / 1e6).toFixed(1))} ${T('ميجابايت')}` : `${I.num(Math.max(1, Math.round(n / 1e3)))} ${T('كيلوبايت')}`);
+  function renderShelves() {
+    if (!SHELF.books.length) return;
+    root.append(el('h3', 'lib-h', T('كتب كاملة من المكتبة الشاملة')));
+    // Recently read first.
+    const recent = Object.entries(S.books || {}).sort((a, b) => b[1].at - a[1].at).map(([k]) => shelfBook(k)).filter(Boolean).slice(0, 4);
+    if (recent.length) {
+      const row = el('div', 'lib-grid');
+      recent.forEach((b) => row.append(bookCard(b, true)));
+      root.append(el('p', 'view-sub', T('تابع القراءة')), row);
+    }
+    SHELF.cats.forEach(([c]) => {
+      const list = SHELF.books.filter((b) => b.cat === c);
+      if (!list.length) return;
+      const box = el('details', 'lib-shelf');
+      const sum = el('summary');
+      sum.append(el('b', '', catName(c)), el('span', 'hint', `${I.num(list.length)} ${T('كتاباً')}`));
+      box.append(sum);
+      const grid = el('div', 'lib-grid');
+      list.forEach((b) => grid.append(bookCard(b)));
+      box.append(grid);
+      root.append(box);
+    });
+    root.append(el('p', 'hint', T('نصوص هذه الكتب من المكتبة الشاملة، لمؤلفين توفّوا قبل أكثر من سبعين سنة، بنصّ المؤلف وحده دون حواشي المحققين ومقدماتهم. يُحمَّل كل جزء عند فتحه أول مرة ثم يبقى للقراءة دون إنترنت.')));
+  }
+  function bookCard(b, withPlace) {
+    const c = button('lib-book lib-full', '', () => go({ name: 'shelf', slug: b.slug }));
+    c.dataset.cat = b.cat;
+    const by = [I.isEn ? b.authorEn : b.author, deathText(b.death)].filter(Boolean).join(' · ');
+    c.append(el('b', '', I.isEn ? b.en : b.ar), el('span', '', by));
+    const place = S.books && S.books[b.slug];
+    c.append(el('small', '', withPlace && place && place.label ? place.label : `${I.num(b.pages)} ${T('صفحة')} · ${sizeText(b.size)}`));
+    return c;
+  }
+
+  // One book: its source, where you stopped, its contents and a search.
+  async function renderShelf() {
+    const b = shelfBook(screen.slug);
+    if (!b) return go({ name: 'home' });
+    const head = el('div', 'view-head');
+    head.append(back('المكتبة', { name: 'home' }), el('h2', '', I.isEn ? b.en : b.ar));
+    root.append(head);
+    const card = el('div', 'lib-about');
+    card.append(el('p', '', `${T('المؤلف')}: ${I.isEn ? b.authorEn : b.author}${b.death && b.death < 9000 ? ` (${deathText(b.death)})` : ''}`));
+    if (b.edition) card.append(el('p', '', `${T('الطبعة')}: ${b.edition.replace(/^ت\s+/, T('تحقيق') + ' ').replace(/^ط\s+/, T('طبعة') + ' ')}`));
+    card.append(el('p', 'hint', `${T('من المكتبة الشاملة، بنص المؤلف دون حواشي المحقق.')} ${I.num(b.pages)} ${T('صفحة')} · ${sizeText(b.size)}`));
+    const place = S.books && S.books[b.slug];
+    const acts = el('div', 'hadith-acts');
+    acts.append(button('btn btn-primary', T(place ? 'تابع القراءة' : 'ابدأ القراءة'), () => go({ name: 'read', slug: b.slug, f: place ? place.f : 0, page: place ? place.p : null })));
+    card.append(acts);
+    root.append(card);
+    // Search in the book: all its files, one at a time, stopping at 60 results.
+    const form = el('form', 'lib-tools');
+    const q = el('input'); q.type = 'search'; q.placeholder = T('ابحث في الكتاب'); q.setAttribute('aria-label', T('ابحث في الكتاب'));
+    const out = el('div', 'lib-results');
+    form.append(q, button('btn btn-primary', T('بحث')));
+    form.lastChild.type = 'submit';
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const needle = norm(q.value.trim()).trim();
+      if (needle.length < 2) return;
+      const hits = [];
+      try {
+        for (let f = 0; f < b.files && hits.length < 60; f++) {
+          out.replaceChildren(el('p', 'hint', `${T('جارٍ البحث…')} ${Math.round((f / b.files) * 100)}%`));
+          (await gz(`${b.slug}/${f}.json.gz`, b.v)).forEach((pg) => pg[3].forEach((x) => {
+            const t = typeof x === 'string' ? x : x[1];
+            if (hits.length < 60 && norm(t).includes(needle)) hits.push({ f, page: pg[0], t, where: pageLabel(pg) });
+          }));
+          if (screen.name !== 'shelf' || screen.slug !== b.slug) return;
+        }
+      } catch (_) { out.replaceChildren(el('p', 'hint', T('البحث يحتاج اتصالاً بالإنترنت أول مرة.'))); return; }
+      out.replaceChildren(el('p', 'view-sub', hits.length ? `${I.num(hits.length)}${hits.length === 60 ? '+' : ''} ${T('نتيجة')}` : T('لا نتائج. جرّب كلمة أخرى.')));
+      hits.forEach((h) => {
+        // The snippet near the match (positions in the marked text drift a little; close enough for a snippet).
+        const i = Math.max(0, norm(h.t).indexOf(needle));
+        const r = button('lib-hit', '', () => go({ name: 'read', slug: b.slug, f: h.f, page: h.page }));
+        r.append(el('b', '', h.where || T('نتيجة')), el('span', '', `…${h.t.slice(Math.max(0, i - 60), i + 100)}…`));
+        out.append(r);
+      });
+    });
+    root.append(form, out);
+    // Contents: the main headings, each opening onto the ones under it.
+    root.append(el('h3', 'lib-h', T('الفهرس')));
+    const tocBox = el('div', 'lib-toc');
+    tocBox.append(el('p', 'hint', T('جارٍ تحميل الفهرس…')));
+    root.append(tocBox);
+    let idx;
+    try { idx = await gz(`${b.slug}/index.json.gz`, b.v); } catch (_) {
+      tocBox.replaceChildren(el('p', 'empty', T('تعذّر تحميل هذا الكتاب. القراءة أول مرة تحتاج اتصالاً بالإنترنت.')));
+      return;
+    }
+    if (screen.name !== 'shelf' || screen.slug !== b.slug) return;
+    tocBox.replaceChildren();
+    const toc = idx.toc;
+    if (!toc.length) { tocBox.append(el('p', 'hint', T('لا فهرس لهذا الكتاب؛ اقرأه من أوله.'))); return; }
+    const top = Math.min(...toc.map((x) => x[1]));
+    const link = (x) => button('lib-sec lib-toc-link', x[2], () => go({ name: 'read', slug: b.slug, f: x[3], toc: x[0] }));
+    toc.forEach((x, k) => {
+      if (x[1] !== top) return;
+      const kids = [];
+      for (let j = k + 1; j < toc.length && toc[j][1] > top; j++) if (toc[j][1] === top + 1) kids.push(toc[j]);
+      if (!kids.length) { tocBox.append(link(x)); return; }
+      const d = el('details', 'lib-toc-group');
+      const sum = el('summary');
+      sum.append(el('span', '', x[2]), el('small', 'hint', I.num(kids.length)));
+      d.append(sum);
+      d.addEventListener('toggle', () => { if (d.open && d.children.length === 1) { d.append(link(x)); kids.forEach((y) => d.append(link(y))); } });
+      tocBox.append(d);
+    });
+  }
+  const pageLabel = (pg) => (pg[2] ? `${pg[1] ? `${T('ج')} ${I.num(pg[1])} · ` : ''}${T('ص')} ${I.num(pg[2])}` : '');
+
+  // A part of a book: its pages, with headings, and the way to the next part.
+  async function renderRead() {
+    const b = shelfBook(screen.slug);
+    if (!b) return go({ name: 'home' });
+    const f = Math.max(0, Math.min(b.files - 1, screen.f || 0));
+    const head = el('div', 'view-head');
+    head.append(back(I.isEn ? b.en : b.ar, { name: 'shelf', slug: b.slug }), el('h2', '', I.isEn ? b.en : b.ar));
+    root.append(head);
+    const nav = (where) => {
+      const n = el('div', `lib-read-nav ${where}`);
+      if (f > 0) n.append(button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('الجزء السابق')}`, () => go({ name: 'read', slug: b.slug, f: f - 1, end: true })));
+      n.append(el('span', 'hint', `${T('الجزء')} ${I.num(f + 1)} / ${I.num(b.files)}`));
+      if (f < b.files - 1) n.append(button('btn btn-primary', `${T('الجزء التالي')} ${I.isEn ? '→' : '←'}`, () => go({ name: 'read', slug: b.slug, f: f + 1 })));
+      return n;
+    };
+    root.append(nav('is-top'));
+    const box = el('div', 'lib-read');
+    box.lang = 'ar'; box.dir = 'rtl';
+    box.append(el('p', 'hint', T('جارٍ التحميل…')));
+    root.append(box);
+    let pages;
+    try { pages = await gz(`${b.slug}/${f}.json.gz`, b.v); } catch (_) {
+      box.replaceChildren(el('p', 'empty', T('تعذّر تحميل هذا الجزء. القراءة أول مرة تحتاج اتصالاً بالإنترنت.')));
+      return;
+    }
+    if (screen.name !== 'read' || screen.slug !== b.slug || (screen.f || 0) !== f) return;
+    box.replaceChildren();
+    let target = null;
+    pages.forEach((pg) => {
+      const sec = el('section', 'lib-pg');
+      sec.dataset.page = String(pg[0]);
+      pg[3].forEach((x) => {
+        if (typeof x === 'string') { sec.append(el('p', '', x)); return; }
+        const h = el('h3', 'lib-read-h', x[1]);
+        h.dataset.toc = String(x[0]);
+        if (screen.toc && x[0] === screen.toc) target = h;
+        sec.append(h);
+      });
+      if (pageLabel(pg)) sec.append(el('span', 'lib-pg-n', pageLabel(pg)));
+      if (screen.page && pg[0] === screen.page) target = target || sec;
+      box.append(sec);
+    });
+    root.append(nav('is-bottom'));
+    const keep = () => {
+      // Where you are: the first page at the top of the screen.
+      const secs = box.querySelectorAll('.lib-pg');
+      let at = secs[0];
+      for (const x of secs) { if (x.getBoundingClientRect().bottom > 90) { at = x; break; } }
+      if (!at) return;
+      const pg = pages.find((x) => String(x[0]) === at.dataset.page);
+      S.books = S.books || {};
+      S.books[b.slug] = { f, p: pg[0], at: Date.now(), label: `${T('الجزء')} ${I.num(f + 1)}${pageLabel(pg) ? ` · ${pageLabel(pg)}` : ''}` };
+      save();
+    };
+    let t = 0;
+    const onScroll = () => { clearTimeout(t); t = setTimeout(keep, 600); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    const stop = () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('noon-library-screen', stop); };
+    window.addEventListener('noon-library-screen', stop);
+    setTimeout(() => {
+      if (target) target.scrollIntoView({ block: 'start' });
+      else if (screen.end) box.lastElementChild.scrollIntoView({ block: 'end' });
+      else root.scrollIntoView({ block: 'start' }); // the text has come in: back to the top of it
+      keep();
+    }, 40);
+  }
 
   function renderMarks() {
     const head = el('div', 'view-head');

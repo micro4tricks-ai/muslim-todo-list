@@ -2,11 +2,11 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v28';
+const VERSION = 'v29';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
-const LIBRARY = 'library-v1'; // hadith chapters and tafsirs, kept once read
+const LIBRARY = 'library-v1'; // hadith chapters, tafsirs and the full books (books/), kept once read
 const LISTEN = 'listen-v1'; // the station and reciter lists, kept by js/listen.js itself
 const OURS = /^(shell|media|quran|library|listen|sounds)-v\d+$/; // every cache name this app uses
 const FILES = [
@@ -19,6 +19,7 @@ const FILES = [
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
   'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js',
   'js/extras-data.js', 'js/tools.js', 'js/prayers.js', 'js/listen.js', 'js/settings.js', 'js/device.js', 'js/today.js', 'js/nav.js', 'js/hifz.js', 'js/khatma.js', 'js/clock-core.js', 'js/reminders-core.js', 'js/reminders.js',
+  'js/tajweed-core.js', 'js/tajweed-rules.js', 'js/mushaf-core.js', 'js/mushaf-book.js', 'js/library-books.js', 'js/library-local.js',
   'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',
   'fonts/Amiri-400-latin-ext.woff2',
@@ -72,6 +73,7 @@ self.addEventListener('fetch', (ev) => {
   if (url.origin !== location.origin) return; // time servers, Supabase, CDNs: straight to the network
   if (url.pathname.endsWith('.apk')) return; // the Android app download is never kept offline
   if (/\/quran\/[a-z]+\.json$/.test(url.pathname)) { ev.respondWith(cacheFirst(req, QURAN)); return; }
+  if (/\/books\/.+\.json\.gz$/.test(url.pathname)) { ev.respondWith(cacheFirst(req, LIBRARY)); return; } // the books never change once built
   ev.respondWith(networkFirst(req, SHELL));
 });
 

@@ -112,6 +112,20 @@ report.reminder = await js(`(async () => {
 console.log('reminder:', JSON.stringify(report.reminder));
 // The clock's rules (js/clock-core.js) are in the app and load before the clock.
 report.clockCore = await js("window.noonClockCore && typeof window.noonClockCore.slotRects === 'function' ? window.noonClockCore.slotRects('modern', 100, 100, 100).length : 'missing'");
+// The page-turning Mushaf: page 3 opens whole (no line cut off), and ← turns to page 4.
+report.mushafBook = await js(`(async () => {
+  if (!window.noonMushafBook) return 'missing';
+  await window.noonMushafBook.open(3);
+  const t = document.querySelector('#mushafBook .mb-slot .mb-page:last-child .mb-text');
+  if (!t) return 'no page';
+  const whole = t.scrollHeight <= t.clientHeight + 1;
+  document.getElementById('mushafBook').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+  await new Promise((r) => setTimeout(r, 900));
+  const after = window.noonMushafBook.page();
+  window.noonMushafBook.close();
+  return { whole, after, books: (window.NOON_BOOKS || { books: [] }).books.length, rules: window.noonTajweedCore ? window.noonTajweedCore.rules('مِ[f:18[ن ق]َبْلِكَ').length : 0 };
+})()`);
+console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
 
 // ---- A few minutes of normal use, measuring memory, freezes and crashes ----
 const pkg = 'io.github.micro4tricks.muslimtodo';
@@ -323,6 +337,8 @@ if (!(report.soundsKept > 0)) problems.push(`focus sounds were not downloaded an
 if (!report.verseWidget) problems.push('the verse widget got no verse');
 if (!report.autoCatalog) problems.push('Android Auto got no station list');
 if (report.clockCore !== 3) problems.push(`clock rules missing in the app: ${report.clockCore}`);
+const mb = report.mushafBook || {};
+if (mb.whole !== true || mb.after !== 4 || !(mb.books >= 100) || mb.rules !== 1) problems.push(`page-turning Mushaf, books or tajweed rules: ${JSON.stringify(report.mushafBook)}`);
 if (!report.reminder || report.reminder.booked !== true || !(report.reminder.inMinutes >= 55 && report.reminder.inMinutes <= 61)) problems.push(`a reminder was not booked with the phone: ${JSON.stringify(report.reminder)}`);
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 report.problems = problems;
