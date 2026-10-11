@@ -28,7 +28,7 @@ jobs:
   robo:
     # After a release build that passed, or by hand.
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       HAS_KEY: ${{ secrets.FIREBASE_SA_KEY != '' && secrets.FIREBASE_PROJECT != '' }}
