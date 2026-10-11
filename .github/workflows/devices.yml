@@ -77,7 +77,9 @@ jobs:
             // Xiaomi 14 ("houji") failed to start the test in the lab four times (the app was never installed:
             // a lab-side fault) and is the only recent Xiaomi there, so it is skipped; another maker common
             // in the region (Oppo, Vivo, Realme, OnePlus, Motorola…) takes its place.
-            const AVOID = ["houji"];
+            // OnePlus 11 ("CPH2449") stayed "Pending" in the lab queue until the 40-minute job timeout
+            // in both release runs of 2026-10-08 (the Samsung beside it passed), so it is skipped too.
+            const AVOID = ["houji", "CPH2449"];
             const match = (re, d) => re.test(`${d.manufacturer} ${d.brand} ${d.name}`);
             const pick = (re) => ok.find((d) => match(re, d) && !AVOID.includes(d.id));
             const only = (process.env.ONLY || "").toLowerCase();
