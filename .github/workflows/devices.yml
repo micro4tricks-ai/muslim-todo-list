@@ -39,7 +39,7 @@ jobs:
 
       - name: The released APK
         if: env.HAS_KEY == 'true' && github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: muslim-todo-list-apk
           run-id: ${{ github.event.workflow_run.id }}
@@ -50,12 +50,12 @@ jobs:
         run: curl -fsSL -o muslim-todo-list.apk https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk
 
       - if: env.HAS_KEY == 'true'
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           credentials_json: ${{ secrets.FIREBASE_SA_KEY }}
 
       - if: env.HAS_KEY == 'true'
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Turn on Test Lab's services in the project (does nothing when they are on)
         if: env.HAS_KEY == 'true'
