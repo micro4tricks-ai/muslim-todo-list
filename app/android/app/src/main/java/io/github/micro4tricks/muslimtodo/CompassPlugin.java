@@ -37,6 +37,9 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
     @Override
     public void load() {
         sensors = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
+        // The emulator's made-up sensors brought the whole emulator down once this sensor started
+        // (the CI check, 2026-10-12); there the page uses its own orientation events instead.
+        if (isEmulator()) return;
         if (sensors != null) {
             sensor = sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
             if (sensor == null) sensor = sensors.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR);
@@ -110,6 +113,12 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
 
     @Override
     public void onAccuracyChanged(Sensor s, int a) { accuracy = a; }
+
+    private static boolean isEmulator() {
+        String hw = Build.HARDWARE == null ? "" : Build.HARDWARE;
+        String fp = Build.FINGERPRINT == null ? "" : Build.FINGERPRINT;
+        return hw.equals("ranchu") || hw.equals("goldfish") || fp.startsWith("generic") || fp.contains("emulator") || fp.contains("sdk_gphone");
+    }
 
     private int rotation() {
         try {

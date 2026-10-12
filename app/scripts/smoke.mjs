@@ -228,22 +228,12 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
       await P.stop(); hnd.remove();
       return { available: true, events: n, declination: s.declination, last };
     })()`);
-    // A short film of the live needle on the clock's qibla slot and the qibla card while the emulator's
-    // magnetic field turns (if its virtual sensors take the command).
+    // The modern face with its qibla slot (the live needle itself needs a real phone's compass).
     await js(`(() => { const L = JSON.parse(localStorage.getItem('noon-sweep-look') || '{}'); L.face = 'modern'; // its first slot is the qibla by default localStorage.setItem('noon-sweep-look', JSON.stringify(L)); return true; })()`);
     await send('Page.reload'); await sleep(8000);
     await js("scrollTo(0, 0); true");
-    try {
-      adb('shell "screenrecord --time-limit 12 /sdcard/needle.mp4 > /dev/null 2>&1 &"');
-      for (let k = 0; k < 24; k++) {
-        const a = (k * 15) * Math.PI / 180;
-        try { adb(`emu sensor set magnetic-field ${(22 * Math.sin(a)).toFixed(2)}:${(22 * Math.cos(a)).toFixed(2)}:-40`); } catch (_) { c.sensorCmd = 'refused'; break; }
-        await sleep(400);
-      }
-      await sleep(3000);
-      adb(`pull /sdcard/needle.mp4 ${out}/6-needle.mp4`);
-      c.film = true;
-    } catch (e) { c.film = String(e.message || e).slice(0, 120); }
+    await sleep(1500);
+    adb(`exec-out screencap -p > ${out}/6-clock-qibla.png`);
     c.needleLayer = await js("!!document.querySelector('.clock-needles')");
   } catch (e) { c.error = String(e.message || e).slice(0, 200); }
   report.cards = c;
