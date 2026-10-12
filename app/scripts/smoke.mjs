@@ -30,7 +30,8 @@ const js = async (e) => { const r = await timed(send('Runtime.evaluate', { expre
 await send('Runtime.enable');
 await send('Page.enable');
 // Record every task that blocks the page for more than 50 ms.
-await send('Page.addScriptToEvaluateOnNewDocument', { source: `window.__long = [];
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `window.__csp = []; document.addEventListener('securitypolicyviolation', (e) => __csp.push(e.violatedDirective + ' ' + e.blockedURI));
+  window.__long = [];
   try { new PerformanceObserver((l) => l.getEntries().forEach((e) => __long.push([Math.round(e.startTime), Math.round(e.duration)]))).observe({ type: 'longtask', buffered: true }); } catch (e) {}` });
 await send('Page.reload'); await sleep(8000);
 
@@ -363,7 +364,9 @@ if (pagesAfter.length) {
 }
 report.afterRendererCrash = { appRunning: alive(), page: reopened };
 // What a person would call broken; the workflow fails when this list isn't empty.
+report.cspBlocked = await js('window.__csp || []');
 const problems = [];
+if ((report.cspBlocked || []).length) problems.push(`the content security policy blocked: ${report.cspBlocked.slice(0, 5).join(' | ')}`);
 report.phases.forEach((p) => { if (!p.appRunning) problems.push(`app not running after "${p.name}"`); if (p.error) problems.push(`${p.name}: ${p.error}`); });
 ((report.listen && report.listen.radios) || []).forEach((r) => { if (!/^playing/.test(r.state)) problems.push(`radio not playing: ${r.state}`); });
 if (!report.listen || !report.listen.radios) problems.push('the radio check did not run');

@@ -48,7 +48,9 @@
     w.append(el('span', '', T(label)), i);
     return [w, i];
   };
-  const fail = (e) => toast(T('تعذّر الاتصال. تأكد من الإنترنت وحاول مرة أخرى.') + (e && e.message ? ` (${e.message})` : ''));
+  const fail = (e) => toast(e && /too many tries/.test(e.message || '')
+    ? T('محاولات كثيرة برموز غير صحيحة. انتظر ساعة ثم حاول مرة أخرى.') // supabase/hardening.sql
+    : T('تعذّر الاتصال. تأكد من الإنترنت وحاول مرة أخرى.') + (e && e.message ? ` (${e.message})` : ''));
 
   // ---- the first page: your khatmas, start one, join one ----
   async function home(code) {
