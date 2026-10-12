@@ -213,7 +213,7 @@
     const draw = () => {
       host.replaceChildren();
       host.append(el('p', 'st-note', T('اختر الكروت التي تظهر تحت الساعة ورتّبها. ويمكنك أيضاً الضغط مطوّلاً على أي كارت لإخفائه أو نقله.')));
-      const list = el('div', 'st-list');
+      const list = el('div', 'st-list td-set-list');
       const all = C.arrange(cfg);
       all.forEach((x, k) => {
         const row = el('div', 'st-row td-set-row');

@@ -1460,6 +1460,7 @@
   .td-menu { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface, var(--paper)); box-shadow: 0 10px 24px -14px rgba(20, 24, 32, 0.45); }
   .td-menu-title { flex-basis: 100%; font-size: 13px; color: var(--ink-faint); }
   .td-menu-item { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13.5px; cursor: pointer; }
+  .td-set-list, .st-body > .st-group, .st-body > .btn { flex: none; } /* the settings page scrolls; its list never shrinks */
   .td-set-row { gap: 8px; min-height: 58px; padding-block: 8px; }
   .td-set-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
   .td-set-label input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
