@@ -55,6 +55,7 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
 
     @PluginMethod
     public void start(PluginCall call) {
+        if (isEmulator()) { call.reject("emulator"); return; } // the page then starts no sensor at all
         if (sensor == null) { call.reject("no compass"); return; }
         Double lat = call.getDouble("lat"), lon = call.getDouble("lon");
         if (lat != null && lon != null) {

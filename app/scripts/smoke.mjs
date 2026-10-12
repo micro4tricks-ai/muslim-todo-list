@@ -158,6 +158,7 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
     await js('window.noonMushafBook.close(); true'); await sleep(800);
     // From inside the scroll reader, its «تقليب الصفحات» chip (2.4.0 shipped with it broken).
     await js('window.noonQuran.openSurah(2); true'); await sleep(3000);
+    await sleep(4000); await js("document.querySelectorAll('.toast').forEach((n) => n.remove()); true"); // a passing toast can sit over the chip
     const chip = await at('#quranReader .qr-tools .qr-chip', 'تقليب الصفحات');
     // What is under the chip when it is tapped (a card over it would take the tap); one more try if it did not open.
     if (chip) { t.chipHit = await js(`(() => { const n = document.elementFromPoint(${chip[0]} / devicePixelRatio, ${chip[1]} / devicePixelRatio); return n ? (n.className || n.tagName) + ' ' + (n.textContent || '').trim().slice(0, 20) : null; })()`); tap(chip); await sleep(2500); }

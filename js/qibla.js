@@ -131,8 +131,10 @@
         await NATIVE.start(p ? { lat: p.lat, lon: p.lon } : {});
         nativeOn = true;
         return;
-      } catch (_) {
+      } catch (e) {
         if (nativeHandle) { nativeHandle.remove(); nativeHandle = null; }
+        // On the Android emulator any orientation sensor brings the emulator down: no compass there.
+        if (/emulator/.test(String((e && e.message) || e))) return;
       }
     }
     addEventListener(webEvent(), onOrient);
