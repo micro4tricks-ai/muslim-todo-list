@@ -173,6 +173,83 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
   report.mushafTouch = t;
   console.log('page-turning Mushaf by touch:', JSON.stringify(t));
 }
+// The home screen's cards (2.5.0): each one, tapped for real, opens its place; the cards page in
+// Settings; and the phone's compass (CompassPlugin) sending readings.
+{
+  const centre = async (sel) => js(`(() => { const n = document.querySelector(${JSON.stringify(sel)});
+    if (!n) return null; n.scrollIntoView({ block: 'center' }); const r = n.getBoundingClientRect(), d = devicePixelRatio;
+    return [Math.round((r.left + r.width / 2) * d), Math.round((r.top + r.height / 2) * d)]; })()`);
+  const off = await js(`Math.max(0, Math.round(${h} - innerHeight * devicePixelRatio))`) || 0;
+  const tapAt = (p) => adb(`shell input tap ${p[0]} ${p[1] + Math.min(off, 200)}`);
+  // What is on screen: the section at the top, and any full-screen page or panel that is open.
+  const where = () => js(`(() => {
+    const v = [...document.querySelectorAll('.view')].find((x) => !x.hidden);
+    const open = ['quranReader', 'mushafBook', 'settingsScreen'].filter((id) => { const n = document.getElementById(id); return n && !n.hidden; });
+    if (document.querySelector('.qb:not([hidden])')) open.push('qibla');
+    if (document.querySelector('.kh:not([hidden])')) open.push('khatma');
+    return { view: v ? v.dataset.view : null, top: v ? Math.round(v.getBoundingClientRect().top) : null, open };
+  })()`);
+  const c = { taps: {} };
+  try {
+    // Every card on, a book pinned and one read, so each has something to show.
+    await js(`(() => { const C = window.noonTodayCore; const on = {}; C.ALL.forEach((id) => { on[id] = true; });
+      localStorage.setItem('noon-sweep-today', JSON.stringify({ on, book: 'al-arbain-an-nawawiyyah' }));
+      const L = JSON.parse(localStorage.getItem('noon-sweep-library') || '{}'); L.books = { 'tawhid': { f: 0, p: 1, at: Date.now(), label: 'x' } };
+      localStorage.setItem('noon-sweep-library', JSON.stringify(L)); return true; })()`);
+    await send('Page.reload'); await sleep(8000);
+    c.shown = await js('window.noonToday ? window.noonToday.cards() : null');
+    c.rendered = await js("[...document.querySelectorAll('.today .td-card')].map((n) => n.dataset.card)");
+    await js("scrollTo(0, 0); true"); await sleep(600);
+    adb(`exec-out screencap -p > ${out}/4-cards.png`);
+    for (const id of ['prayer', 'qibla', 'quran', 'adhkar', 'library', 'hadith', 'book', 'tasbih', 'khatma', 'radio']) {
+      const p = await centre(`.today .td-card[data-card="${id}"]`);
+      if (!p) { c.taps[id] = 'not shown'; continue; }
+      const before = id === 'tasbih' ? await js('window.noonAdhkar.tasbeeh().n') : null;
+      await sleep(400); tapAt(p); await sleep(2500);
+      c.taps[id] = id === 'tasbih' ? { before, after: await js('window.noonAdhkar.tasbeeh().n') } : await where();
+      // Back to a clean home screen for the next card.
+      await send('Page.reload'); await sleep(7000);
+    }
+    // Settings › «كروت يومي».
+    await js("window.noonSettings.open('today'); true"); await sleep(1500);
+    c.settingsRows = await js("document.querySelectorAll('#settingsScreen .td-set-row').length");
+    adb(`exec-out screencap -p > ${out}/5-cards-settings.png`);
+    await js("window.noonSettings.close(); true"); await sleep(800);
+    // The phone's compass.
+    c.compass = await js(`(async () => {
+      const P = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Compass;
+      if (!P) return 'no plugin';
+      const a = await P.available();
+      if (!a.available) return { available: false };
+      let n = 0, last = null;
+      const hnd = await P.addListener('heading', (d) => { n++; last = d; });
+      const s = await P.start({ lat: 26.43, lon: 50.1 });
+      await new Promise((r) => setTimeout(r, 2500));
+      await P.stop(); hnd.remove();
+      return { available: true, events: n, declination: s.declination, last };
+    })()`);
+    // A short film of the live needle on the clock's qibla slot and the qibla card while the emulator's
+    // magnetic field turns (if its virtual sensors take the command).
+    await js(`(() => { const L = JSON.parse(localStorage.getItem('noon-sweep-look') || '{}'); L.face = 'modern'; // its first slot is the qibla by default localStorage.setItem('noon-sweep-look', JSON.stringify(L)); return true; })()`);
+    await send('Page.reload'); await sleep(8000);
+    await js("scrollTo(0, 0); true");
+    try {
+      adb('shell "screenrecord --time-limit 12 /sdcard/needle.mp4 > /dev/null 2>&1 &"');
+      for (let k = 0; k < 24; k++) {
+        const a = (k * 15) * Math.PI / 180;
+        try { adb(`emu sensor set magnetic-field ${(22 * Math.sin(a)).toFixed(2)}:${(22 * Math.cos(a)).toFixed(2)}:-40`); } catch (_) { c.sensorCmd = 'refused'; break; }
+        await sleep(400);
+      }
+      await sleep(3000);
+      adb(`pull /sdcard/needle.mp4 ${out}/6-needle.mp4`);
+      c.film = true;
+    } catch (e) { c.film = String(e.message || e).slice(0, 120); }
+    c.needleLayer = await js("!!document.querySelector('.clock-needles')");
+  } catch (e) { c.error = String(e.message || e).slice(0, 200); }
+  report.cards = c;
+  console.log('cards:', JSON.stringify(c));
+}
+
 
 // ---- A few minutes of normal use, measuring memory, freezes and crashes ----
 const pkg = 'io.github.micro4tricks.muslimtodo';
@@ -391,6 +468,19 @@ if (mb.whole !== true || mb.after !== 4 || !(mb.books >= 100) || mb.rules !== 1)
 const mt = report.mushafTouch || {}, st = (k) => ((mt.steps || []).find((x) => x[0] === k) || [])[1];
 if (!/^\d+$/.test(String(mt.opened)) || Number(st('drag right')) !== Number(mt.opened) + 1 || Number(st('tap next')) !== Number(mt.opened) + 2) problems.push(`page-turning Mushaf by touch: ${JSON.stringify(mt)}`);
 if (!/^\d+$/.test(String(mt.fromReader))) problems.push(`the reader's «تقليب الصفحات» button did not open the page-turning Mushaf: ${mt.fromReader}`);
+const cd = report.cards || {}, tp = cd.taps || {}, near = (x, v) => x && x.view === v && Math.abs(x.top) <= 12, isOpen = (x, id) => x && (x.open || []).includes(id);
+const cardFails = [];
+if (!isOpen(tp.prayer, 'settingsScreen')) cardFails.push('prayer');
+if (!isOpen(tp.qibla, 'qibla')) cardFails.push('qibla');
+if (!(isOpen(tp.quran, 'quranReader') || isOpen(tp.quran, 'mushafBook') || near(tp.quran, 'quran'))) cardFails.push('quran');
+if (!near(tp.adhkar, 'adhkar')) cardFails.push('adhkar');
+['library', 'hadith', 'book'].forEach((k) => { if (!near(tp[k], 'library')) cardFails.push(k); });
+if (!(tp.radio && tp.radio.view === 'listen')) cardFails.push('radio');
+if (!(tp.tasbih && tp.tasbih.after === tp.tasbih.before + 1)) cardFails.push('tasbih');
+if (!isOpen(tp.khatma, 'khatma')) cardFails.push('khatma');
+if (cardFails.length || cd.error) problems.push(`home cards that did not open their place: ${cardFails.join(', ')} ${cd.error || ''} ${JSON.stringify(tp).slice(0, 400)}`);
+if (!(cd.settingsRows >= 15)) problems.push(`the «كروت يومي» settings page shows ${cd.settingsRows} rows`);
+if (cd.compass && cd.compass.available && !(cd.compass.events > 0)) problems.push(`the phone's compass sent no readings: ${JSON.stringify(cd.compass)}`);
 if (!(Math.abs(mt.adhkarTop) <= 12)) problems.push(`the bottom bar's «الأذكار» left its section at ${mt.adhkarTop}px from the top`);
 if (!report.reminder || report.reminder.booked !== true || !(report.reminder.inMinutes >= 55 && report.reminder.inMinutes <= 61)) problems.push(`a reminder was not booked with the phone: ${JSON.stringify(report.reminder)}`);
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');

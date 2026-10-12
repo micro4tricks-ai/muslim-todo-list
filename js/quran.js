@@ -152,9 +152,12 @@
     if (S.today.pages.length === goal()) toast(T('أتممت وردك اليومي من القرآن. بارك الله فيك.'));
     if (!root.hidden) renderIndex();
   }
-  function setLast(i) {
-    if (S.last && S.last.i === i) return;
+  // Where reading stopped, and how: scrolling (the reader) or turning pages (js/mushaf-book.js).
+  function setLast(i, mode) {
+    const how = mode || 'scroll';
+    if (S.last && S.last.i === i && S.lastMode === how) return;
     S.last = { i, at: Date.now() };
+    S.lastMode = how;
     save();
   }
   const isMarked = (i) => S.marks.some((b) => b.i === i);
@@ -1038,11 +1041,17 @@
   // For the page-turning Mushaf (js/mushaf-book.js): the texts, the reading progress and its last page.
   const book = {
     load: () => Promise.all([data('uthmani'), S.tajweed ? data('tajweed').catch(() => null) : null, fontReady()]),
-    verse, starts, surahOf, ayahOf, pageOf, juzOf, ar, sajda, markPage, setLast,
+    verse, starts, surahOf, ayahOf, pageOf, juzOf, ar, sajda, markPage, setLast: (i) => setLast(i, 'book'),
     theme: () => S.theme, page: () => S.bookPage || (S.last ? pageOf(S.last.i) : 1),
     setPage: (p) => { if (S.bookPage !== p) { S.bookPage = p; save(); } },
     openAt: (i) => open(i)
   };
-  window.noonQuran = { book, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), openAyah: (s, a) => open(starts[s - 1] + Math.max(0, a - 1)), last: () => (S.last ? { i: S.last.i, label: refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
+  // Back to where reading stopped, the way it was read: the page-turning Mushaf or the reader.
+  function resume() {
+    if (!S.last) return open(0);
+    if (S.lastMode === 'book' && window.noonMushafBook) return window.noonMushafBook.open(S.bookPage || pageOf(S.last.i));
+    return open(S.last.i);
+  }
+  window.noonQuran = { book, open, resume, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), openAyah: (s, a) => open(starts[s - 1] + Math.max(0, a - 1)), last: () => (S.last ? { i: S.last.i, mode: S.lastMode || 'scroll', label: S.lastMode === 'book' ? `${T('صفحة')} ${I.num(S.bookPage || pageOf(S.last.i))} · ${surahName(surahOf(S.last.i))}` : refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
   renderIndex();
 })();

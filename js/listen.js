@@ -483,6 +483,7 @@
       ev.stopPropagation();
       const k = S[list].indexOf(id);
       if (k >= 0) S[list].splice(k, 1); else S[list].push(id);
+      if (list === 'fav' && label) { S.favName = S.favName || {}; if (k >= 0) delete S.favName[id]; else S.favName[id] = label; } // for the «favourite station» card
       save();
       if (list === 'fav') sendCatalog();
       const now = S[list].includes(id);
@@ -893,5 +894,12 @@
   });
   if (window.noonUI.currentView && window.noonUI.currentView() === 'listen') render();
 
-  window.noonListen = { playRadio, stop: () => stop(true), state: () => state, open: () => window.noonUI.go('listen'), last: () => S.last, resume: resumeLast };
+  // The first favourite station, for the «favourite station» card on the home screen.
+  const favorite = () => (S.fav.length ? { id: S.fav[0], name: (S.favName || {})[S.fav[0]] || '' } : null);
+  async function playFavorite() {
+    const f = favorite();
+    if (!f) return;
+    try { const list = await radios(); const i = list.findIndex((r) => r.id === f.id); if (i >= 0) playRadio(list, i); } catch (_) { toast(T('تعذّر التشغيل. الاستماع يحتاج اتصالاً بالإنترنت.')); }
+  }
+  window.noonListen = { playRadio, stop: () => stop(true), state: () => state, open: () => window.noonUI.go('listen'), last: () => S.last, resume: resumeLast, favorite, playFavorite };
 })();

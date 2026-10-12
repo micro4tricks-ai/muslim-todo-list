@@ -576,6 +576,22 @@
 
   onRemote(KEY, () => { S = Object.assign(S, load(KEY, {})); if (!root.hidden && screen.name === 'marks') render(); });
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'library' && !root.childNodes.length) render(); });
-  window.noonLibrary = { open: (name, tool) => { window.noonUI.go('library'); go({ name: name || 'home', tool }); } };
+  // For the home screen's cards (js/today.js): the book read last, a book to open, and the list to pin one from.
+  function lastBook() {
+    const e = Object.entries(S.books || {}).sort((x, y) => y[1].at - x[1].at)[0];
+    const b = e && shelfBook(e[0]);
+    return b ? { slug: b.slug, ar: b.ar, en: b.en, label: e[1].label || '' } : null;
+  }
+  function openBook(slug, resume) {
+    const b = shelfBook(slug);
+    if (!b) return;
+    window.noonUI.go('library');
+    const place = S.books && S.books[slug];
+    go(resume && place ? { name: 'read', slug, f: place.f, page: place.p } : { name: 'shelf', slug });
+  }
+  window.noonLibrary = {
+    open: (name, tool) => { window.noonUI.go('library'); go({ name: name || 'home', tool }); },
+    lastBook, openBook, book: (slug) => shelfBook(slug), books: () => SHELF.books.map((b) => ({ slug: b.slug, ar: b.ar, en: b.en, cat: b.cat }))
+  };
   render();
 })();

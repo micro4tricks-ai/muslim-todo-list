@@ -45,6 +45,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PlayerPlugin.class);
         // ... and keeps the adhan reliable and installs updates through this one.
         registerPlugin(DevicePlugin.class);
+        // ... and reads the phone's own compass (rotation vector, true north) for the qibla through this one.
+        registerPlugin(CompassPlugin.class);
         keep(getIntent());
         super.onCreate(savedInstanceState);
         // When Android stops the page's renderer (usually to free memory), reopen the

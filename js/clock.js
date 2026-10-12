@@ -158,6 +158,13 @@
   const pane = document.getElementById('clockPane');
   const canvas = document.getElementById('clock');
   const ctx = canvas.getContext('2d');
+  // The qibla needles, on a layer of their own over the clock: while the compass is live they are
+  // redrawn at the screen's own rate (a few triangles), and the clock keeps its light pace on phones.
+  const needles = document.createElement('canvas');
+  needles.className = 'clock-needles';
+  needles.setAttribute('aria-hidden', 'true');
+  canvas.after(needles);
+  const nctx = needles.getContext('2d');
   let W, H, DPR, R, CX, CY, staticLayer, glassLayer;
 
   // Key light from the upper-left (unit vector pointing toward the light).
@@ -1140,13 +1147,25 @@
   }
 
   // The qibla slot's needle turns with the phone, so it is drawn each frame (only while watched).
-  let heading = null, unwatch = null;
+  let heading = null, unwatch = null, needleRaf = 0;
   function syncCompass() {
     const want = onScreen && !document.hidden && currentSlots().some((x) => x.id === 'qibla');
-    if (want && !unwatch && window.noonQibla && window.noonQibla.watch) unwatch = window.noonQibla.watch((h) => { heading = h; });
-    if (!want && unwatch) { unwatch(); unwatch = null; heading = null; }
+    if (want && !unwatch && window.noonQibla && window.noonQibla.watch) unwatch = window.noonQibla.watch((h) => { heading = h; queueNeedles(); });
+    if (!want && unwatch) { unwatch(); unwatch = null; heading = null; queueNeedles(); }
   }
-  function drawQiblaNeedles() {
+  // Live: the needle layer follows each new reading at the next screen frame.
+  function queueNeedles() {
+    if (needleRaf) return;
+    needleRaf = requestAnimationFrame(() => {
+      needleRaf = 0;
+      nctx.setTransform(1, 0, 0, 1, 0, 0);
+      nctx.clearRect(0, 0, needles.width, needles.height);
+      if (heading === null) return;
+      nctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      drawQiblaNeedles(nctx);
+    });
+  }
+  function drawQiblaNeedles(g) {
     if (!currentSlots().some((x) => x.id === 'qibla')) return;
     const b = qiblaDeg();
     if (b === null) return;
@@ -1158,20 +1177,20 @@
       const cx = round ? s.cx : s.x + s.w * 0.1;
       // Up on the screen is north on a desk, or the way the phone points when the sensor is on.
       const a = (b - (heading === null ? 0 : heading)) * DEG;
-      ctx.save();
-      ctx.translate(cx, s.cy);
-      ctx.rotate(a);
-      ctx.fillStyle = T.face === 'modern' ? T.theme.accent : T.dial.accent;
-      ctx.beginPath();
+      g.save();
+      g.translate(cx, s.cy);
+      g.rotate(a);
+      g.fillStyle = T.face === 'modern' ? T.theme.accent : T.dial.accent;
+      g.beginPath();
       if (round) {
         // A small triangle riding the slot's rim.
-        ctx.moveTo(0, -r); ctx.lineTo(r * 0.12, -r + r * 0.2); ctx.lineTo(-r * 0.12, -r + r * 0.2);
+        g.moveTo(0, -r); g.lineTo(r * 0.12, -r + r * 0.2); g.lineTo(-r * 0.12, -r + r * 0.2);
       } else {
-        ctx.moveTo(0, -r); ctx.lineTo(r * 0.3, r * 0.6); ctx.lineTo(0, r * 0.35); ctx.lineTo(-r * 0.3, r * 0.6);
+        g.moveTo(0, -r); g.lineTo(r * 0.3, r * 0.6); g.lineTo(0, r * 0.35); g.lineTo(-r * 0.3, r * 0.6);
       }
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      g.closePath();
+      g.fill();
+      g.restore();
     }
   }
 
@@ -1189,6 +1208,9 @@
     canvas.height = Math.round(H * DPR);
     canvas.style.width = W + 'px';
     canvas.style.height = H + 'px';
+    needles.width = canvas.width; needles.height = canvas.height;
+    needles.style.width = W + 'px'; needles.style.height = H + 'px';
+    queueNeedles();
     CX = W / 2 - Math.min(W, H) * 0.02; // leave room for the crown
     CY = H / 2;
     R = Math.min(W * 0.92, H) * 0.38;
@@ -1240,14 +1262,14 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     if (T.face === 'modern') {
       drawFocusArc();
-      drawQiblaNeedles();
+      if (heading === null) drawQiblaNeedles(ctx); // still, north up; live ones are on their own layer
       drawDigitalTime();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(glassLayer, 0, 0);
       return;
     }
     drawFocusArc();
-    drawQiblaNeedles();
+    if (heading === null) drawQiblaNeedles(ctx);
     drawHand(HANDS.hour, a.hour);
     drawHand(HANDS.minute, a.minute);
     drawHand(HANDS.second, a.second);

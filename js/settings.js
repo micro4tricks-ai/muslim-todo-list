@@ -17,6 +17,7 @@
     back: '<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
     chevron: '<path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+    cards: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="4" width="7.5" height="7" rx="2"/><rect x="13" y="4" width="7.5" height="7" rx="2"/><rect x="3.5" y="13" width="7.5" height="7" rx="2"/><rect x="13" y="13" width="7.5" height="7" rx="2"/></g>',
     gear: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.8l1.6 2.3 2.7-.6.6 2.7 2.3 1.6-1.2 2.5 1.2 2.5-2.3 1.6-.6 2.7-2.7-.6L12 21.2l-1.6-2.3-2.7.6-.6-2.7-2.3-1.6L6 12.7 4.8 10.2l2.3-1.6.6-2.7 2.7.6z"/><circle cx="12" cy="12" r="3"/></g>'
   };
   function icon(name, cls) {
@@ -74,11 +75,12 @@
       sub: () => (window.noonDevice && window.noonDevice.status() && !window.noonDevice.ok() ? `⚠ ${T('يحتاج ضبطاً')}` : T($('paEnabled').checked ? 'مفعّلة' : 'متوقفة')) },
     look: { title: 'المظهر والساعة', icon: 'palette', sub: lookName, node: () => $('lookPanel'), open: () => window.noonLook.open() },
     fonts: { title: 'الخطوط', icon: 'font', sub: fontNames, build: buildFonts },
+    today: { title: 'كروت يومي', icon: 'cards', sub: () => (window.noonToday ? `${I.num(window.noonToday.cards().length)} ${T('كروت ظاهرة')}` : ''), build: (box) => window.noonToday && window.noonToday.buildSettings(box) },
     account: { title: 'الحساب والمزامنة', icon: 'cloud', sub: () => $('syncLabel').textContent, node: () => $('syncPanel') },
     about: { title: 'حول التطبيق', icon: 'info', sub: () => $('appVersion').textContent, build: buildAbout },
     welcome: { title: 'أهلاً بك', icon: 'info', sub: () => '', build: buildWelcome }
   };
-  const GROUPS = [['عام', ['lang', 'place', 'adhan']], ['المظهر', ['look', 'fonts']], ['الحساب', ['account']], ['', ['about']]];
+  const GROUPS = [['عام', ['lang', 'place', 'adhan']], ['المظهر', ['look', 'today', 'fonts']], ['الحساب', ['account']], ['', ['about']]];
 
   let page = null; // null = closed, 'home', or a page id
   let depth = 0;   // our steps in the history, so back closes the screen at the right one

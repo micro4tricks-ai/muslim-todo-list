@@ -78,48 +78,84 @@
     }
     rose.style.transform = `rotate(${-heading}deg)`;
     const off = ((q.bearing - heading + 540) % 360) - 180;
-    const ok = Math.abs(off) < 4;
+    const ok = Math.abs(off) <= 3;
     box.classList.toggle('is-aligned', ok);
     if (ok && !aligned && navigator.vibrate) navigator.vibrate(60);
     aligned = ok;
-    hint.textContent = ok ? T('أنت الآن تتجه إلى القبلة.') : `${T(off > 0 ? 'استدر يميناً' : 'استدر يساراً')} ${I.num(Math.abs(Math.round(off)))}°`;
+    hint.textContent = calibrate ? T('البوصلة غير دقيقة الآن: حرّك الهاتف في الهواء على شكل رقم ٨، وأبعده عن المعادن والمغناطيس.')
+      : ok ? T('أنت الآن تتجه إلى القبلة.') : `${T(off > 0 ? 'استدر يميناً' : 'استدر يساراً')} ${I.num(Math.abs(Math.round(off)))}°`;
+    hint.classList.toggle('is-warn', calibrate);
   }
 
+  // ---- the heading: one source for the panel, the clock's needle and the qibla card ----
+  // In the app, the phone's own compass (CompassPlugin: rotation vector, true north from Android's
+  // magnetic model); on the website, the page's orientation events, turned from magnetic to true
+  // north with the World Magnetic Model (js/compass-core.js). Either way the needle is smoothed,
+  // and scattered readings (or the sensor saying so) ask for calibration.
+  const CC = window.noonCompassCore;
+  const NATIVE = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Compass;
+  const smooth = CC.smoother(0.22);
+  const recent = [];
+  let calibrate = false, nativeOn = false, nativeAcc = -1, nativeHandle = null, decl = null, declAt = '';
+  const declNow = () => {
+    const p = place();
+    if (!p || !window.NOON_WMM) return 0;
+    const key = `${p.lat.toFixed(2)},${p.lon.toFixed(2)},${new Date().toDateString()}`;
+    if (key !== declAt) { decl = CC.declination(p.lat, p.lon, CC.decimalYear(new Date()), window.NOON_WMM); declAt = key; }
+    return decl;
+  };
+  function feed(trueH) {
+    heading = smooth.push(trueH, performance.now());
+    recent.push(trueH);
+    if (recent.length > 24) recent.shift();
+    calibrate = (nativeOn && nativeAcc >= 0 && nativeAcc <= 1) || (recent.length >= 12 && CC.jitter(recent) > 12);
+    watchers.forEach((cb) => cb(heading, { calibrate }));
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (box && !box.hidden) draw(); });
+  }
   function onOrient(e) {
     let h = null;
     if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
     else if ((e.absolute || e.type === 'deviceorientationabsolute') && e.alpha !== null) h = 360 - e.alpha;
     if (h === null) return;
     const turn = (screen.orientation && screen.orientation.angle) || 0;
-    heading = (h + turn + 360) % 360;
-    watchers.forEach((cb) => cb(heading));
-    if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (box && !box.hidden) draw(); });
+    feed(CC.trueHeading(h + turn, declNow())); // both give magnetic north
   }
-  // Watchers outside the panel (the clock's qibla slot) get the heading too. The sensor starts
-  // only where it needs no permission prompt (Android), and stops when nobody is watching.
+  const webEvent = () => ('ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation');
+  async function startSensor() {
+    if (listening) return;
+    listening = true;
+    if (NATIVE) {
+      try {
+        const p = place();
+        nativeHandle = await NATIVE.addListener('heading', (d) => { nativeAcc = d.accuracy; feed(d.heading); });
+        await NATIVE.start(p ? { lat: p.lat, lon: p.lon } : {});
+        nativeOn = true;
+        return;
+      } catch (_) {
+        if (nativeHandle) { nativeHandle.remove(); nativeHandle = null; }
+      }
+    }
+    addEventListener(webEvent(), onOrient);
+  }
+  // Watchers outside the panel (the clock's qibla slot, the qibla card) get the heading too. The
+  // sensor starts only where it needs no permission prompt (Android, and the app), and stops when
+  // nobody is watching or the page is hidden.
   const watchers = new Set();
-  const quietSensor = () => typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function' && matchMedia('(pointer: coarse)').matches;
+  const quietSensor = () => !!NATIVE || (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function' && matchMedia('(pointer: coarse)').matches);
   function watch(cb) {
     watchers.add(cb);
-    if (!listening && quietSensor()) {
-      listening = true;
-      addEventListener('ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation', onOrient);
-    }
+    if (quietSensor() && !document.hidden) startSensor();
     return () => { watchers.delete(cb); if (!watchers.size && (!box || box.hidden)) stop(); };
   }
   let raf = 0;
   async function enable() {
     try {
-      if (typeof DeviceOrientationEvent.requestPermission === 'function' && (await DeviceOrientationEvent.requestPermission()) !== 'granted') {
+      if (!NATIVE && typeof DeviceOrientationEvent.requestPermission === 'function' && (await DeviceOrientationEvent.requestPermission()) !== 'granted') {
         toast(T('لم يُسمح باستخدام البوصلة.'));
         return;
       }
     } catch (_) { /* older browsers need no permission */ }
-    if (!listening) {
-      listening = true;
-      // Android gives a north-based heading on the "absolute" event; iPhone adds one to the plain event.
-      addEventListener('ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation', onOrient);
-    }
+    startSensor();
     enableBtn.hidden = true;
     draw();
   }
@@ -127,9 +163,20 @@
     if (!listening) return;
     removeEventListener('deviceorientationabsolute', onOrient);
     removeEventListener('deviceorientation', onOrient);
+    if (nativeHandle) { nativeHandle.remove(); nativeHandle = null; }
+    if (nativeOn && NATIVE) NATIVE.stop().catch(() => {});
+    nativeOn = false;
     listening = false;
     heading = null;
+    calibrate = false;
+    smooth.reset();
+    recent.length = 0;
   }
+  // The app's compass pauses with the app; start it again on return if someone still needs it.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else if (watchers.size || (box && !box.hidden)) { if (quietSensor()) startSensor(); }
+  });
 
   function open() {
     if (!box) build();
@@ -138,7 +185,7 @@
     draw();
     box.querySelector('.btn').focus();
     // Android asks for nothing, so the compass starts by itself there.
-    if (!listening && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function' && matchMedia('(pointer: coarse)').matches) enable();
+    if (!listening && quietSensor()) enable();
   }
   function close() {
     if (!box) return;
@@ -149,5 +196,5 @@
     if (b) b.focus();
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest('[data-qibla]')) open(); });
-  window.noonQibla = { open, watch, bearing: () => { const p = place(); return p ? qibla(p.lat, p.lon) : null; } };
+  window.noonQibla = { open, watch, heading: () => heading, calibrate: () => calibrate, bearing: () => { const p = place(); return p ? qibla(p.lat, p.lon) : null; } };
 })();

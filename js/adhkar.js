@@ -170,6 +170,7 @@
     return S.tasbeeh.n;
   }
   const tasbeeh = () => ({ n: S.day === dayKey() ? S.tasbeeh.n : 0, phrase: (TASBEEH[S.tasbeeh.phrase] || TASBEEH[0])[0] });
-  window.noonAdhkar = { open(cat) { open = cat; window.noonUI.show('adhkar'); render(); }, progress, period, tasbeeh, tasbeehTap };
+  // open() brings the section on screen (go), not only switches to it: on phones it sits below the clock.
+  window.noonAdhkar = { open(cat) { open = cat; window.noonUI.go('adhkar'); render(); }, progress, period, tasbeeh, tasbeehTap };
   render();
 })();

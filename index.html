@@ -15,8 +15,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.4.2.1">
-<link rel="stylesheet" href="fonts/extra.css?v=2.4.2.1">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.5.0.1">
+<link rel="stylesheet" href="fonts/extra.css?v=2.5.0.1">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -69,6 +69,7 @@
     display: block;
     cursor: pointer;
   }
+  .clock-pane canvas.clock-needles { pointer-events: none; } /* the live qibla needles (js/clock.js) */
   .place-chip {
     position: absolute;
     top: 12px;
@@ -1104,6 +1105,7 @@
   .qb.is-aligned .qb-ring { fill: var(--done-wash); stroke: var(--done); }
   .qb-info { margin: 0; text-align: center; font-weight: 600; font-size: 14px; }
   .qb-hint { margin: 0; text-align: center; }
+  .qb-hint.is-warn { color: #B4542F; font-weight: 600; }
   .qb .btn { align-self: center; }
 
   @media (max-width: 600px) {
@@ -1447,6 +1449,24 @@
   .td-qibla { position: relative; }
   .td-needle { position: absolute; inset-inline-end: 14px; top: 14px; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--paper); }
   .td-needle::after { content: ""; position: absolute; left: 50%; top: 3px; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent; border-bottom: 10px solid var(--accent); transform-origin: 4px 13.5px; transform: rotate(var(--qibla, 0deg)); }
+  /* The qibla card's dial, live with the compass: it turns with the phone so the arrow points to the qibla. */
+  .td-qibla.is-live .td-needle { width: 40px; height: 40px; border-width: 2px; background: radial-gradient(circle, var(--paper) 55%, var(--accent-wash) 56%); }
+  .td-qibla.is-live .td-needle::after { top: 4px; border-bottom-width: 14px; transform-origin: 4px 18px; }
+  .td-qibla.is-aligned .td-needle { border-color: #2F8F5B; box-shadow: 0 0 0 3px rgba(47, 143, 91, 0.25); }
+  .td-qibla.is-calibrate .td-sub::after { content: " · ٨"; color: #B4542F; }
+  .td-tasbih .td-title { font-family: "Amiri", var(--font); font-size: 17px; }
+  .td-hadith .td-sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-family: "Amiri", var(--font); font-size: 13.5px; line-height: 1.7; }
+  /* The long-press menu on a card, and Settings › «كروت يومي». */
+  .td-menu { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface, var(--paper)); box-shadow: 0 10px 24px -14px rgba(20, 24, 32, 0.45); }
+  .td-menu-title { flex-basis: 100%; font-size: 13px; color: var(--ink-faint); }
+  .td-menu-item { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13.5px; cursor: pointer; }
+  .td-set-row { gap: 8px; min-height: 58px; padding-block: 8px; }
+  .td-set-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .td-set-label input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+  .td-set-move { flex: none; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-size: 12px; cursor: pointer; }
+  .td-set-move:disabled { opacity: 0.35; cursor: default; }
+  .td-set-book { width: 100%; font: inherit; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+  .st-ico-today { background: #2F7F86; }
   .fm-span { font-size: 14px; opacity: 0.75; direction: ltr; unicode-bidi: isolate; min-height: 1.2em; }
   .look-slots label { display: flex; align-items: center; gap: 10px; justify-content: space-between; font-size: 14px; }
   .look-slots select { flex: 0 1 60%; }
@@ -2059,55 +2079,58 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.4.2.1"></script>
-<script src="js/clock-core.js?v=2.4.2.1"></script>
-<script src="js/clock.js?v=2.4.2.1"></script>
-<script src="js/astro.js?v=2.4.2.1"></script>
-<script src="js/look.js?v=2.4.2.1"></script>
-<script src="js/sounds.js?v=2.4.2.1"></script>
-<script src="js/tasks.js?v=2.4.2.1"></script>
-<script src="js/views.js?v=2.4.2.1"></script>
-<script src="js/remind-card.js?v=2.4.2.1"></script>
-<script src="js/reminders-core.js?v=2.4.2.1"></script>
-<script src="js/reminders.js?v=2.4.2.1"></script>
-<script src="js/notes.js?v=2.4.2.1"></script>
-<script src="js/cards.js?v=2.4.2.1"></script>
-<script src="js/adhkar-data.js?v=2.4.2.1"></script>
-<script src="js/adhkar.js?v=2.4.2.1"></script>
-<script src="js/habits.js?v=2.4.2.1"></script>
-<script src="js/prayers.js?v=2.4.2.1"></script>
-<script src="js/focus-plus.js?v=2.4.2.1"></script>
-<script src="js/native.js?v=2.4.2.1"></script>
-<script src="js/prayer-alerts.js?v=2.4.2.1"></script>
-<script src="js/device.js?v=2.4.2.1"></script>
-<script src="js/extras-data.js?v=2.4.2.1"></script>
-<script src="js/quran-meta.js?v=2.4.2.1"></script>
-<script src="js/hifz.js?v=2.4.2.1"></script>
-<script src="js/khatma.js?v=2.4.2.1"></script>
-<script src="js/tajweed-core.js?v=2.4.2.1"></script>
-<script src="js/tajweed-rules.js?v=2.4.2.1"></script>
-<script src="js/quran.js?v=2.4.2.1"></script>
-<script src="js/mushaf-core.js?v=2.4.2.1"></script>
-<script src="js/mushaf-book.js?v=2.4.2.1"></script>
-<script src="js/sunnah-data.js?v=2.4.2.1"></script>
-<script src="js/sunnah.js?v=2.4.2.1"></script>
-<script src="js/qibla.js?v=2.4.2.1"></script>
-<script src="js/library-meta.js?v=2.4.2.1"></script>
-<script src="js/salah-data.js?v=2.4.2.1"></script>
-<script src="js/tools.js?v=2.4.2.1"></script>
-<script src="js/library-books.js?v=2.4.2.1"></script>
-<script src="js/library-local.js?v=2.4.2.1"></script>
-<script src="js/library.js?v=2.4.2.1"></script>
-<script src="js/listen.js?v=2.4.2.1"></script>
-<script src="js/report.js?v=2.4.2.1"></script>
-<script src="js/focus-mode.js?v=2.4.2.1"></script>
-<script src="js/config.js?v=2.4.2.1"></script>
-<script src="js/vendor/supabase.js?v=2.4.2.1" defer></script>
-<script src="js/sync-core.js?v=2.4.2.1" defer></script>
-<script src="js/sync.js?v=2.4.2.1" defer></script>
-<script src="js/app.js?v=2.4.2.1" defer></script>
-<script src="js/settings.js?v=2.4.2.1" defer></script>
-<script src="js/today.js?v=2.4.2.1" defer></script>
-<script src="js/nav.js?v=2.4.2.1" defer></script>
+<script src="js/i18n.js?v=2.5.0.1"></script>
+<script src="js/clock-core.js?v=2.5.0.1"></script>
+<script src="js/clock.js?v=2.5.0.1"></script>
+<script src="js/astro.js?v=2.5.0.1"></script>
+<script src="js/look.js?v=2.5.0.1"></script>
+<script src="js/sounds.js?v=2.5.0.1"></script>
+<script src="js/tasks.js?v=2.5.0.1"></script>
+<script src="js/views.js?v=2.5.0.1"></script>
+<script src="js/remind-card.js?v=2.5.0.1"></script>
+<script src="js/reminders-core.js?v=2.5.0.1"></script>
+<script src="js/reminders.js?v=2.5.0.1"></script>
+<script src="js/notes.js?v=2.5.0.1"></script>
+<script src="js/cards.js?v=2.5.0.1"></script>
+<script src="js/adhkar-data.js?v=2.5.0.1"></script>
+<script src="js/adhkar.js?v=2.5.0.1"></script>
+<script src="js/habits.js?v=2.5.0.1"></script>
+<script src="js/prayers.js?v=2.5.0.1"></script>
+<script src="js/focus-plus.js?v=2.5.0.1"></script>
+<script src="js/native.js?v=2.5.0.1"></script>
+<script src="js/prayer-alerts.js?v=2.5.0.1"></script>
+<script src="js/device.js?v=2.5.0.1"></script>
+<script src="js/extras-data.js?v=2.5.0.1"></script>
+<script src="js/quran-meta.js?v=2.5.0.1"></script>
+<script src="js/hifz.js?v=2.5.0.1"></script>
+<script src="js/khatma.js?v=2.5.0.1"></script>
+<script src="js/tajweed-core.js?v=2.5.0.1"></script>
+<script src="js/tajweed-rules.js?v=2.5.0.1"></script>
+<script src="js/quran.js?v=2.5.0.1"></script>
+<script src="js/mushaf-core.js?v=2.5.0.1"></script>
+<script src="js/mushaf-book.js?v=2.5.0.1"></script>
+<script src="js/sunnah-data.js?v=2.5.0.1"></script>
+<script src="js/sunnah.js?v=2.5.0.1"></script>
+<script src="js/wmm-data.js?v=2.5.0.1"></script>
+<script src="js/compass-core.js?v=2.5.0.1"></script>
+<script src="js/qibla.js?v=2.5.0.1"></script>
+<script src="js/library-meta.js?v=2.5.0.1"></script>
+<script src="js/salah-data.js?v=2.5.0.1"></script>
+<script src="js/tools.js?v=2.5.0.1"></script>
+<script src="js/library-books.js?v=2.5.0.1"></script>
+<script src="js/library-local.js?v=2.5.0.1"></script>
+<script src="js/library.js?v=2.5.0.1"></script>
+<script src="js/listen.js?v=2.5.0.1"></script>
+<script src="js/report.js?v=2.5.0.1"></script>
+<script src="js/focus-mode.js?v=2.5.0.1"></script>
+<script src="js/config.js?v=2.5.0.1"></script>
+<script src="js/vendor/supabase.js?v=2.5.0.1" defer></script>
+<script src="js/sync-core.js?v=2.5.0.1" defer></script>
+<script src="js/sync.js?v=2.5.0.1" defer></script>
+<script src="js/app.js?v=2.5.0.1" defer></script>
+<script src="js/settings.js?v=2.5.0.1" defer></script>
+<script src="js/today-core.js?v=2.5.0.1" defer></script>
+<script src="js/today.js?v=2.5.0.1" defer></script>
+<script src="js/nav.js?v=2.5.0.1" defer></script>
 </body>
 </html>
