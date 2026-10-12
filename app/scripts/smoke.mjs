@@ -159,7 +159,9 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
     // From inside the scroll reader, its «تقليب الصفحات» chip (2.4.0 shipped with it broken).
     await js('window.noonQuran.openSurah(2); true'); await sleep(3000);
     const chip = await at('#quranReader .qr-tools .qr-chip', 'تقليب الصفحات');
-    if (chip) { tap(chip); await sleep(2500); }
+    // What is under the chip when it is tapped (a card over it would take the tap); one more try if it did not open.
+    if (chip) { t.chipHit = await js(`(() => { const n = document.elementFromPoint(${chip[0]} / devicePixelRatio, ${chip[1]} / devicePixelRatio); return n ? (n.className || n.tagName) + ' ' + (n.textContent || '').trim().slice(0, 20) : null; })()`); tap(chip); await sleep(2500); }
+    if (chip && /closed/.test(await pageNow())) { await sleep(1500); tap(await at('#quranReader .qr-tools .qr-chip', 'تقليب الصفحات') || chip); await sleep(2500); t.chipRetry = true; }
     t.fromReader = await pageNow();
     await js('window.noonMushafBook.close(); true'); await sleep(800);
     // The bottom bar's «الأذكار» brings its section to the top of the screen.
