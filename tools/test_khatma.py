@@ -113,6 +113,35 @@ def main():
         con.run('delete from public.khatma where id = :k', k=kid)
         as_admin()
         check('A (the owner) deletes it, with its parts', con.run('select count(*) from public.khatma_part where khatma = :k', k=kid)[0][0] == 0)
+        # supabase/hardening.sql: codes over A–Z 0–9, at most 20 wrong codes an hour, a size cap on synced data.
+        check('new codes use letters and digits, not just hex', all(len(x) == 8 and x.isalnum() and x.upper() == x
+              for x in (con.run('select public.khatma_new_code()')[0][0] for _ in range(20)))
+              and any(ch in 'GHIJKLMNOPQRSTUVWXYZ' for _ in range(5) for ch in con.run('select public.khatma_new_code()')[0][0]))
+        as_user(c)
+        for _ in range(20):
+            con.run("select public.khatma_join('WRONG000', 'x')")
+        con.run('savepoint t')
+        try:
+            con.run("select public.khatma_join('WRONG000', 'x')")
+            con.run('release savepoint t')
+            stopped = False
+        except Exception as e:
+            con.run('rollback to savepoint t')
+            stopped = 'too many tries' in str(e)
+        as_admin()
+        check('the 21st wrong code in an hour is refused', stopped)
+        as_user(a)
+        con.run('savepoint t')
+        try:
+            con.run("insert into public.user_state (user_id, data) values (:u, jsonb_build_object('x', repeat(md5(random()::text), 160000)))", u=a)
+            con.run('release savepoint t')
+            capped = False
+        except Exception:
+            con.run('rollback to savepoint t')
+            capped = True
+        con.run("insert into public.user_state (user_id, data) values (:u, '{\"tasks\": []}'::jsonb)", u=a)
+        as_admin()
+        check('synced data over 4 MB is refused, normal data is kept', capped and con.run('select count(*) from public.user_state where user_id = :u', u=a)[0][0] == 1)
     finally:
         con.run('rollback')
         con.close()
