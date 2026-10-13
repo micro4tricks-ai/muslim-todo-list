@@ -19,4 +19,11 @@ mkdirSync(raw, { recursive: true });
 for (const f of readdirSync(path.join(root, 'sounds', 'adhan')).filter((f) => /\.(mp3|wav)$/.test(f))) {
   cpSync(path.join(root, 'sounds', 'adhan', f), path.join(raw, f));
 }
+// The website allows no inline script; the app must, for the bridge Capacitor writes into the page.
+import { readFileSync, writeFileSync } from 'node:fs';
+const page = path.join(www, 'index.html');
+const html = readFileSync(page, 'utf8');
+const withBridge = html.replace("script-src 'self';", "script-src 'self' 'unsafe-inline';");
+if (withBridge === html) throw new Error('index.html: the content security policy was not found');
+writeFileSync(page, withBridge);
 console.log('Copied the site into', www, 'and the adhan sounds into', raw);

@@ -10,8 +10,10 @@
   const pad = (n) => String(n).padStart(2, '0');
   const dayKey = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const addDays = (key, n) => { const [y, m, d] = key.split('-').map(Number); return dayKey(new Date(y, m - 1, d + n).getTime()); };
+  // Saved (and synced) data never brings keys that would reshape the objects it is merged into.
+  const SAFE = (k, v) => (k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v);
   function load(key, fallback) {
-    try { const v = JSON.parse(localStorage.getItem(key)); return v && typeof v === 'object' ? v : fallback; } catch (_) { return fallback; }
+    try { const v = JSON.parse(localStorage.getItem(key), SAFE); return v && typeof v === 'object' ? v : fallback; } catch (_) { return fallback; }
   }
   function store(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) { /* kept in memory */ }

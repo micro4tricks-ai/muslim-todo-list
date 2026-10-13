@@ -142,6 +142,22 @@ def main():
         con.run("insert into public.user_state (user_id, data) values (:u, '{\"tasks\": []}'::jsonb)", u=a)
         as_admin()
         check('synced data over 4 MB is refused, normal data is kept', capped and con.run('select count(*) from public.user_state where user_id = :u', u=a)[0][0] == 1)
+        # supabase/grants.sql: visitors use nothing; signed-in people can never empty a table.
+        def refused(role, sql):
+            con.run('savepoint t')
+            try:
+                con.run('set local role %s' % role)
+                con.run(sql)
+                con.run('release savepoint t')
+                return False
+            except Exception:
+                con.run('rollback to savepoint t')
+                return True
+            finally:
+                as_admin()
+        check('a visitor (not signed in) cannot read synced data', refused('anon', 'select count(*) from public.user_state'))
+        as_user(a)
+        check('a signed-in person cannot empty a table', refused('authenticated', 'truncate public.user_state'))
     finally:
         con.run('rollback')
         con.close()

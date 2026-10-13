@@ -113,6 +113,7 @@ public class PlayerPlugin extends Plugin {
     private static final ExecutorService LOADER = Executors.newSingleThreadExecutor();
     private static final AtomicInteger GENERATION = new AtomicInteger();
     private static final long KEEP_FREE = 300L * 1024 * 1024; // never fill the phone
+    private static final long MAX_FILE = 400L << 20; // the longest surah recitations are well under this
 
     private File audioDir() {
         File d = new File(getContext().getFilesDir(), "audio");
@@ -152,6 +153,8 @@ public class PlayerPlugin extends Plugin {
                         if (gen != GENERATION.get()) throw new InterruptedException();
                         os.write(buf, 0, n);
                         done += n;
+                        // A stream with no end, or a file far larger than a recitation, must not fill the phone.
+                        if (done > MAX_FILE || (done % (8L << 20) < n && audioDir().getUsableSpace() < KEEP_FREE)) throw new Exception("Too large");
                         int pct = total > 0 ? (int) (done * 100 / total) : -1;
                         if (pct != last) {
                             last = pct;

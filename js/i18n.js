@@ -1297,6 +1297,7 @@
     'تعذّر التشغيل': 'Could not play',
     'سبّح': 'Count',
     'تصفير': 'Reset',
+    'بياناتك أكبر من الحد المسموح للمزامنة (٤ ميجابايت). احذف بعض الملاحظات أو الكروت القديمة ثم حاول.': 'Your data is over the sync limit (4 MB). Delete some old notes or cards, then try again.',
     // Language switch
     'English': 'العربية'
   };

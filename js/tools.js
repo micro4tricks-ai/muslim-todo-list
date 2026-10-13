@@ -251,7 +251,9 @@
   // ---- backup ----
   function backup(root, backBtn) {
     head(root, backBtn, 'نسخة احتياطية', 'احفظ مهامك وإعداداتك وقراءتك في ملف، واسترجعها على أي جهاز من غير حساب.');
-    const keys = () => Object.keys(localStorage).filter((k) => k.startsWith('noon-') && k !== 'noon-sweep-auth');
+    // Never the sign-in (the session and whatever the sync library keeps beside it): a backup file may be shared.
+    const private_ = (k) => k.startsWith('noon-sweep-auth');
+    const keys = () => Object.keys(localStorage).filter((k) => k.startsWith('noon-') && !private_(k));
     const save = button('btn btn-primary', T('حفظ نسخة احتياطية'), async () => {
       const data = { app: 'muslim-todo-list', v: 1, at: new Date().toISOString(), items: {} };
       keys().forEach((k) => { data.items[k] = localStorage.getItem(k); });
@@ -280,7 +282,7 @@
         const data = JSON.parse(await f.text());
         if (data.app !== 'muslim-todo-list' || !data.items) throw new Error('bad');
         if (!armed) { armed = true; toast(T('سيُستبدل ما على هذا الجهاز بما في الملف. اختر الملف مرة أخرى للتأكيد.')); file.value = ''; return; }
-        Object.entries(data.items).forEach(([k, v]) => { if (k.startsWith('noon-') && k !== 'noon-sweep-auth') localStorage.setItem(k, v); });
+        Object.entries(data.items).forEach(([k, v]) => { if (k.startsWith('noon-') && !private_(k) && typeof v === 'string') localStorage.setItem(k, v); });
         toast(T('تم الاسترجاع. سيُعاد فتح الصفحة.'));
         setTimeout(() => location.reload(), 1200);
       } catch (_) { toast(T('هذا الملف ليس نسخة احتياطية صحيحة.')); }

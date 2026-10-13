@@ -38,6 +38,7 @@ import java.util.Arrays;
 public class DevicePlugin extends Plugin {
 
     // The only address the update ever comes from.
+    private static final long MAX_APK = 120L << 20;
     private static final String APK_URL = "https://micro4tricks-ai.github.io/muslim-todo-list/muslim-todo-list.apk";
     // The Google Play build: Play does the updates, and some permissions are left out (see src/play).
     private static final boolean PLAY = "play".equals(BuildConfig.STORE);
@@ -161,6 +162,7 @@ public class DevicePlugin extends Plugin {
                     while ((n = in.read(buf)) > 0) {
                         out.write(buf, 0, n);
                         done += n;
+                        if (done > MAX_APK) throw new Exception("Too large"); // the app is ~15 MB
                         int pct = total > 0 ? (int) (done * 100 / total) : -1;
                         if (pct != lastPct) {
                             lastPct = pct;
@@ -204,6 +206,8 @@ public class DevicePlugin extends Plugin {
                 return;
             }
         }
+        // No signature could be read at all: not proven to be ours, so not installed.
+        throw new Exception("Could not check the signature");
     }
 
     @SuppressWarnings("deprecation")

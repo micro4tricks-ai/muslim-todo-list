@@ -98,7 +98,7 @@
   });
 
   // ---- the sync cycle: stamp local edits, pull, merge, apply, push ----
-  let busy = false, again = false;
+  let busy = false, again = false, tooBig = false;
   function applyLocal(doc, allowReload) {
     // Tasks: swap in the merged list if it differs from what's on screen.
     const mine = localTasks();
@@ -145,15 +145,21 @@
       const local = { tasks: stamped.tasks, tombs: stamped.tombs, settings: localSettings() };
       const { data: row, error } = await client.from('user_state').select('data').eq('user_id', user.id).maybeSingle();
       if (error) throw error;
-      const remote = (row && row.data) || {};
+      // The server's copy, without keys that would reshape the objects it is merged into.
+      const remote = row && row.data ? JSON.parse(JSON.stringify(row.data), (k, v) => (k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v)) : {};
       const merged = core.merge(local, remote, now);
       if (applyLocal(merged, allowReload)) return; // reloading
       if (core.canon(merged) !== core.canon(remote)) {
         const { error: e2 } = await client.from('user_state')
           .upsert({ user_id: user.id, data: merged, updated_at: new Date(now).toISOString() });
-        if (e2) throw e2;
+        if (e2) {
+          // Over the 4 MB a synced copy may hold (supabase/hardening.sql): say so, and stop retrying.
+          if (e2.code === '23514') { tooBig = true; state = 'error'; renderUI(T('بياناتك أكبر من الحد المسموح للمزامنة (٤ ميجابايت). احذف بعض الملاحظات أو الكروت القديمة ثم حاول.')); return; }
+          throw e2;
+        }
       }
       lastSync = Date.now();
+      tooBig = false;
       state = 'ok';
       renderUI();
     } catch (e) {
@@ -168,6 +174,7 @@
   let retryTimer = null;
   function retryLater() {
     clearTimeout(retryTimer);
+    if (tooBig) return;
     retryTimer = setTimeout(() => syncNow(), 30000);
   }
 
