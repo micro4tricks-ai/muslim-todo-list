@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Muslim Activity",
+  "version": "1.0.0",
+  "identifier": "io.github.micro4tricks.muslimtodo",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi", "dmg", "app"],
+    "publisher": "micro4tricks-ai",
+    "copyright": "micro4tricks-ai",
+    "category": "Lifestyle",
+    "shortDescription": "مهام المسلم",
+    "longDescription": "مهام المسلم: الصلاة والأذان، والمصحف، والأذكار، والمكتبة، ومهامك اليومية.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  }
+}

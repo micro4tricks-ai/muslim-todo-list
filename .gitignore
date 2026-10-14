@@ -1,1 +1,8 @@
 __pycache__/
+
+# The desktop app (desktop/): its build output and generated files
+desktop/node_modules/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+desktop/src-tauri/icons/
+desktop/package-lock.json

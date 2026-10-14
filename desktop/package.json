@@ -1,0 +1,12 @@
+{
+  "name": "muslim-todo-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The desktop app (Windows and macOS): the website in its own window, with a tray icon, start with the computer and system notifications.",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.5"
+  }
+}
