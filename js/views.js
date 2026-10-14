@@ -108,6 +108,7 @@
   function setScreen(view) {
     const screen = screenOf(view);
     document.body.dataset.screen = screen;
+    document.documentElement.classList.toggle('in-screen', screen !== 'home'); // scroll targets stop under the title bar
     barTitle.textContent = screen === 'home' ? '' : tabLabel(view);
     if (popping || !PHONE.matches) return;
     const st = history.state;

@@ -1568,7 +1568,7 @@
     .screen-back svg { width: 24px; height: 24px; }
     .screen-bar[dir="rtl"] .screen-back svg { transform: scaleX(-1); }
     /* Whatever a section scrolls to stops under the title bar, not behind it. */
-    body:not([data-screen="home"]) .view, body:not([data-screen="home"]) .view * { scroll-margin-top: calc(62px + env(safe-area-inset-top, 0px)); }
+    html.in-screen { scroll-padding-top: calc(62px + env(safe-area-inset-top, 0px)); }
     .screen-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   }
   /* Ease of use (js/a11y.js): stronger contrast, and no motion. */
@@ -1591,9 +1591,7 @@
     .btn, .chip, .place-chip, .pr-state, .rc-look, .cal-tag, .q-goal, .link-btn, .filter button, .modes button { min-height: 40px; }
     .link-btn { padding-inline: 10px; }
     .filter button, .modes button { padding-inline: 12px; }
-    .status, .play, .habit-tick, .habit-step { position: relative; }
-    .status::after, .play::after, .habit-tick::after, .habit-step::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; }
-    .status::after { inset: -11px; }
+    .status { width: 26px; height: 26px; }
     .habit-tick { width: 40px; height: 40px; }
     .habit-step { width: 38px; height: 38px; }
     .play { width: 36px; height: 36px; }
