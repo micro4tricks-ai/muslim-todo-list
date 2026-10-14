@@ -1577,14 +1577,13 @@
   html[data-contrast] :focus-visible { outline: 3px solid var(--accent) !important; outline-offset: 2px; }
   html[data-contrast] .btn, html[data-contrast] .chip, html[data-contrast] .link-btn { text-decoration-thickness: 2px; }
   html[data-calm] *, html[data-calm] *::before, html[data-calm] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-  /* Loading placeholders (noonUI.skeleton). */
+  /* Loading placeholders (noonUI.skeleton): plain bars, no moving shine (the CI Android emulator's
+     software GPU died on it, and a still shape is calmer to look at anyway). */
   .skel { display: grid; gap: 10px; padding: 14px 4px; }
-  .skel-line { display: block; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 45%, transparent) 50%, var(--line) 75%); background-size: 200% 100%; animation: skel 1.3s linear infinite; }
+  .skel-line { display: block; height: 14px; border-radius: 7px; background: var(--line); opacity: 0.7; }
   .skel-line:nth-child(3n+2) { width: 82%; }
   .skel-line:nth-child(3n) { width: 64%; }
   .skel-cap { color: var(--ink-faint); font-size: 12.5px; }
-  @keyframes skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-  @media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
   /* Touch screens: every control is easy to hit with a finger (about 44px). Text buttons grow;
      round icons keep their look and get a larger invisible touch area around them. */
   @media (pointer: coarse) {
