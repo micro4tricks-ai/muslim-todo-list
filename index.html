@@ -16,8 +16,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.5.1.1">
-<link rel="stylesheet" href="fonts/extra.css?v=2.5.1.1">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.6.0.1">
+<link rel="stylesheet" href="fonts/extra.css?v=2.6.0.1">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -912,6 +912,12 @@
   .qr-tools::-webkit-scrollbar { display: none; }
   .qr-chip { flex: none; border: 1px solid var(--qline); background: transparent; color: var(--qink); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; }
   .qr-chip[aria-pressed="true"] { background: var(--qgold); border-color: var(--qgold); color: #fff; }
+  .qr-more { display: none; }
+  @media (max-width: 860px) {
+    .qr-chip { min-height: 40px; padding: 8px 14px; font-size: 14px; }
+    .qr-more { display: inline-block; border-style: dashed; }
+    .qr-tools:not(.is-more) .qr-sec { display: none; }
+  }
   .qr-zoom { min-width: 44px; font-weight: 700; direction: ltr; }
   .qr-settings > .btn { flex-basis: 100%; }
   .qr-size input { flex: 1; min-width: 80px; }
@@ -1151,7 +1157,7 @@
   .rc-star { font-family: "Amiri", serif; font-size: 34px; color: var(--rc-frame); line-height: 1; }
   .rc-kicker { font-size: 13px; font-weight: 600; color: var(--rc-muted); }
   .rc-title { margin: 0; font-size: 22px; line-height: 1.45; color: var(--rc-title); text-wrap: balance; }
-  .rc-body { margin: 4px 0 0; font-family: "Amiri", var(--font); font-size: 21px; line-height: 1.9; }
+  .rc-body { white-space: pre-line; margin: 4px 0 0; font-family: "Amiri", var(--font); font-size: 21px; line-height: 1.9; }
   .rc-body.is-quran { font-family: "Amiri Quran", "Amiri", serif; font-size: 23px; line-height: 2.2; }
   .rc-ref { margin: 0; font-size: 12.5px; color: var(--rc-muted); }
   .rc-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
@@ -1469,6 +1475,21 @@
   .td-set-move:disabled { opacity: 0.35; cursor: default; }
   .td-set-book { width: 100%; font: inherit; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
   .st-ico-today { background: #2F7F86; }
+  .st-ico-a11y { background: #3F6FB5; }
+  .pa-iq-each { margin: 4px 0 10px; }
+  .pa-iq-each summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14px; padding: 8px 0; min-height: 40px; box-sizing: border-box; }
+  .pa-iq-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px 12px; }
+  .pa-iq-grid label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+  .td-ramadan { border-color: #B98A2E; background: color-mix(in srgb, #E9C46A 14%, var(--paper)); }
+  .rm-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, #E9C46A 14%, transparent); }
+  .rm-plan b { flex-basis: 100%; }
+  .ch-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 14px; }
+  .ch-step { min-width: 72px; font-size: 16px; }
+  .ch-num { width: 110px; flex: none; }
+  .ch-board { padding: 6px 14px 12px; }
+  .ch-board li.is-me .habit-bar-name { font-weight: 700; color: var(--accent-deep); }
+  .report-share { display: flex; justify-content: center; margin: 4px 0 16px; }
+  .td-iq { border-color: var(--done); background: color-mix(in srgb, var(--done) 9%, var(--paper)); }
   .fm-span { font-size: 14px; opacity: 0.75; direction: ltr; unicode-bidi: isolate; min-height: 1.2em; }
   .look-slots label { display: flex; align-items: center; gap: 10px; justify-content: space-between; font-size: 14px; }
   .look-slots select { flex: 0 1 60%; }
@@ -1533,8 +1554,59 @@
     .more-title { margin: 0 4px 12px; font-size: 18px; }
     .more-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
     .more-item { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 12px 4px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 12px; font-weight: 600; text-align: center; }
+    .more-item[aria-current="true"] { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
     .more-item svg { width: 24px; height: 24px; color: var(--accent); opacity: 1; }
   }
+  /* ---- Phones: each section is a screen of its own (js/views.js) ---- */
+  .screen-bar { display: none; }
+  @media (max-width: 860px) {
+    body:not([data-screen="home"]) .left-pane, body:not([data-screen="home"]) .todo-head, body:not([data-screen="home"]) .sync-panel, body:not([data-screen="home"]) .sunnah-strip { display: none !important; }
+    body:not([data-screen="home"]) .todo-pane { padding-top: 0; border-top: none; }
+    body:not([data-screen="home"]) .screen-bar { display: flex; align-items: center; gap: 6px; position: sticky; top: 0; z-index: 25; margin: 0 -16px 12px; padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px; background: color-mix(in srgb, var(--paper) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+    .screen-back { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 50%; border: none; background: transparent; color: var(--ink); }
+    .screen-back:active { background: var(--accent-wash); }
+    .screen-back svg { width: 24px; height: 24px; }
+    .screen-bar[dir="rtl"] .screen-back svg { transform: scaleX(-1); }
+    .screen-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  }
+  /* Ease of use (js/a11y.js): stronger contrast, and no motion. */
+  html[data-contrast] { --ink: #111317; --ink-soft: #2E3238; --ink-faint: #4A4F57; --line: #9A9D99; }
+  html[data-contrast][data-mode="dark"] { --ink: #FFFFFF; --ink-soft: #E2E4E8; --ink-faint: #C3C7CE; --line: #6E747D; }
+  html[data-contrast] :focus-visible { outline: 3px solid var(--accent) !important; outline-offset: 2px; }
+  html[data-contrast] .btn, html[data-contrast] .chip, html[data-contrast] .link-btn { text-decoration-thickness: 2px; }
+  html[data-calm] *, html[data-calm] *::before, html[data-calm] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  /* Loading placeholders (noonUI.skeleton). */
+  .skel { display: grid; gap: 10px; padding: 14px 4px; }
+  .skel-line { display: block; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 45%, transparent) 50%, var(--line) 75%); background-size: 200% 100%; animation: skel 1.3s linear infinite; }
+  .skel-line:nth-child(3n+2) { width: 82%; }
+  .skel-line:nth-child(3n) { width: 64%; }
+  .skel-cap { color: var(--ink-faint); font-size: 12.5px; }
+  @keyframes skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skel-line { animation: none; } }
+  /* Touch screens: every control is easy to hit with a finger (about 44px). Text buttons grow;
+     round icons keep their look and get a larger invisible touch area around them. */
+  @media (pointer: coarse) {
+    .btn, .chip, .place-chip, .pr-state, .rc-look, .cal-tag, .q-goal, .link-btn, .filter button, .modes button { min-height: 40px; }
+    .link-btn { padding-inline: 10px; }
+    .filter button, .modes button { padding-inline: 12px; }
+    .status, .play, .habit-tick, .habit-step { position: relative; }
+    .status::after, .play::after, .habit-tick::after, .habit-step::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; }
+    .status::after { inset: -11px; }
+    .habit-tick { width: 40px; height: 40px; }
+    .habit-step { width: 38px; height: 38px; }
+    .play { width: 36px; height: 36px; }
+    input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+  }
+  /* The slim bar with the time and the next prayer, once the clock has scrolled away (js/nav.js). */
+  .mini-clock { display: none; }
+  @media (max-width: 860px) {
+    .mini-clock:not([hidden]) { display: flex; align-items: baseline; gap: 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 24; box-sizing: border-box; min-height: 48px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; border: none; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: var(--ink); font: inherit; text-align: start; animation: mini-in 0.18s ease-out; }
+    .mini-time { font-size: 18px; font-variant-numeric: tabular-nums; }
+    .mini-next { min-width: 0; font-size: 13px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.qr-open .mini-clock, body.st-open .mini-clock, body.fm-open .mini-clock, body.more-open .mini-clock { display: none; }
+  }
+  @keyframes mini-in { from { transform: translateY(-100%); } }
+  @media (prefers-reduced-motion: reduce) { .mini-clock:not([hidden]) { animation: none; } }
   @keyframes nav-sheet { from { transform: translateY(100%); } }
   @keyframes nav-fade { from { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .more:not([hidden]), .more-veil:not([hidden]) { animation: none; } }
@@ -2081,58 +2153,60 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.5.1.1"></script>
-<script src="js/clock-core.js?v=2.5.1.1"></script>
-<script src="js/clock.js?v=2.5.1.1"></script>
-<script src="js/astro.js?v=2.5.1.1"></script>
-<script src="js/look.js?v=2.5.1.1"></script>
-<script src="js/sounds.js?v=2.5.1.1"></script>
-<script src="js/tasks.js?v=2.5.1.1"></script>
-<script src="js/views.js?v=2.5.1.1"></script>
-<script src="js/remind-card.js?v=2.5.1.1"></script>
-<script src="js/reminders-core.js?v=2.5.1.1"></script>
-<script src="js/reminders.js?v=2.5.1.1"></script>
-<script src="js/notes.js?v=2.5.1.1"></script>
-<script src="js/cards.js?v=2.5.1.1"></script>
-<script src="js/adhkar-data.js?v=2.5.1.1"></script>
-<script src="js/adhkar.js?v=2.5.1.1"></script>
-<script src="js/habits.js?v=2.5.1.1"></script>
-<script src="js/prayers.js?v=2.5.1.1"></script>
-<script src="js/focus-plus.js?v=2.5.1.1"></script>
-<script src="js/native.js?v=2.5.1.1"></script>
-<script src="js/prayer-alerts.js?v=2.5.1.1"></script>
-<script src="js/device.js?v=2.5.1.1"></script>
-<script src="js/extras-data.js?v=2.5.1.1"></script>
-<script src="js/quran-meta.js?v=2.5.1.1"></script>
-<script src="js/hifz.js?v=2.5.1.1"></script>
-<script src="js/khatma.js?v=2.5.1.1"></script>
-<script src="js/tajweed-core.js?v=2.5.1.1"></script>
-<script src="js/tajweed-rules.js?v=2.5.1.1"></script>
-<script src="js/quran.js?v=2.5.1.1"></script>
-<script src="js/mushaf-core.js?v=2.5.1.1"></script>
-<script src="js/mushaf-book.js?v=2.5.1.1"></script>
-<script src="js/sunnah-data.js?v=2.5.1.1"></script>
-<script src="js/sunnah.js?v=2.5.1.1"></script>
-<script src="js/wmm-data.js?v=2.5.1.1"></script>
-<script src="js/compass-core.js?v=2.5.1.1"></script>
-<script src="js/qibla.js?v=2.5.1.1"></script>
-<script src="js/library-meta.js?v=2.5.1.1"></script>
-<script src="js/salah-data.js?v=2.5.1.1"></script>
-<script src="js/tools.js?v=2.5.1.1"></script>
-<script src="js/library-books.js?v=2.5.1.1"></script>
-<script src="js/library-local.js?v=2.5.1.1"></script>
-<script src="js/library.js?v=2.5.1.1"></script>
-<script src="js/listen.js?v=2.5.1.1"></script>
-<script src="js/report.js?v=2.5.1.1"></script>
-<script src="js/focus-mode.js?v=2.5.1.1"></script>
-<script src="js/config.js?v=2.5.1.1"></script>
-<script src="js/vendor/supabase.js?v=2.5.1.1" defer></script>
-<script src="js/sync-core.js?v=2.5.1.1" defer></script>
-<script src="js/sync.js?v=2.5.1.1" defer></script>
-<script src="js/app.js?v=2.5.1.1" defer></script>
-<script src="js/settings.js?v=2.5.1.1" defer></script>
-<script src="js/today-core.js?v=2.5.1.1" defer></script>
-<script src="js/today.js?v=2.5.1.1" defer></script>
-<script src="js/nav.js?v=2.5.1.1" defer></script>
+<script src="js/i18n.js?v=2.6.0.1"></script>
+<script src="js/a11y.js?v=2.6.0.1"></script>
+<script src="js/clock-core.js?v=2.6.0.1"></script>
+<script src="js/clock.js?v=2.6.0.1"></script>
+<script src="js/astro.js?v=2.6.0.1"></script>
+<script src="js/look.js?v=2.6.0.1"></script>
+<script src="js/sounds.js?v=2.6.0.1"></script>
+<script src="js/tasks.js?v=2.6.0.1"></script>
+<script src="js/views.js?v=2.6.0.1"></script>
+<script src="js/remind-card.js?v=2.6.0.1"></script>
+<script src="js/reminders-core.js?v=2.6.0.1"></script>
+<script src="js/reminders.js?v=2.6.0.1"></script>
+<script src="js/notes.js?v=2.6.0.1"></script>
+<script src="js/cards.js?v=2.6.0.1"></script>
+<script src="js/adhkar-data.js?v=2.6.0.1"></script>
+<script src="js/adhkar.js?v=2.6.0.1"></script>
+<script src="js/habits.js?v=2.6.0.1"></script>
+<script src="js/prayers.js?v=2.6.0.1"></script>
+<script src="js/focus-plus.js?v=2.6.0.1"></script>
+<script src="js/native.js?v=2.6.0.1"></script>
+<script src="js/prayer-alerts.js?v=2.6.0.1"></script>
+<script src="js/device.js?v=2.6.0.1"></script>
+<script src="js/extras-data.js?v=2.6.0.1"></script>
+<script src="js/quran-meta.js?v=2.6.0.1"></script>
+<script src="js/hifz.js?v=2.6.0.1"></script>
+<script src="js/khatma.js?v=2.6.0.1"></script>
+<script src="js/challenge.js?v=2.6.0.1"></script>
+<script src="js/tajweed-core.js?v=2.6.0.1"></script>
+<script src="js/tajweed-rules.js?v=2.6.0.1"></script>
+<script src="js/quran.js?v=2.6.0.1"></script>
+<script src="js/mushaf-core.js?v=2.6.0.1"></script>
+<script src="js/mushaf-book.js?v=2.6.0.1"></script>
+<script src="js/sunnah-data.js?v=2.6.0.1"></script>
+<script src="js/sunnah.js?v=2.6.0.1"></script>
+<script src="js/wmm-data.js?v=2.6.0.1"></script>
+<script src="js/compass-core.js?v=2.6.0.1"></script>
+<script src="js/qibla.js?v=2.6.0.1"></script>
+<script src="js/library-meta.js?v=2.6.0.1"></script>
+<script src="js/salah-data.js?v=2.6.0.1"></script>
+<script src="js/tools.js?v=2.6.0.1"></script>
+<script src="js/library-books.js?v=2.6.0.1"></script>
+<script src="js/library-local.js?v=2.6.0.1"></script>
+<script src="js/library.js?v=2.6.0.1"></script>
+<script src="js/listen.js?v=2.6.0.1"></script>
+<script src="js/report.js?v=2.6.0.1"></script>
+<script src="js/focus-mode.js?v=2.6.0.1"></script>
+<script src="js/config.js?v=2.6.0.1"></script>
+<script src="js/vendor/supabase.js?v=2.6.0.1" defer></script>
+<script src="js/sync-core.js?v=2.6.0.1" defer></script>
+<script src="js/sync.js?v=2.6.0.1" defer></script>
+<script src="js/app.js?v=2.6.0.1" defer></script>
+<script src="js/settings.js?v=2.6.0.1" defer></script>
+<script src="js/today-core.js?v=2.6.0.1" defer></script>
+<script src="js/today.js?v=2.6.0.1" defer></script>
+<script src="js/nav.js?v=2.6.0.1" defer></script>
 </body>
 </html>

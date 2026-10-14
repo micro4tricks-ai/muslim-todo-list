@@ -32,6 +32,17 @@ public class WidgetBridge extends Plugin {
         call.resolve();
     }
 
+    /** The qibla's direction for its widget: { title, bearing, text, place, hint, north } as JSON. */
+    @PluginMethod
+    public void qibla(PluginCall call) {
+        Context ctx = getContext();
+        String data = call.getString("data", "");
+        if (data.length() > 4000) { call.reject("too long"); return; }
+        ctx.getSharedPreferences(PrayerWidget.PREFS, Context.MODE_PRIVATE).edit().putString(QiblaWidget.KEY, data).apply();
+        QiblaWidget.refreshAll(ctx);
+        call.resolve();
+    }
+
     /** The section a widget or an icon shortcut asked for when it opened the app, once. */
     @PluginMethod
     public void takeAction(PluginCall call) {

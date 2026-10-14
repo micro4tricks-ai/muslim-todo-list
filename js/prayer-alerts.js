@@ -39,12 +39,39 @@
   fsnd.append(new Option(T('مثل باقي الصلوات'), ''));
   SOUNDS.forEach(([v, label]) => fsnd.append(new Option(T(label), v)));
   fsnd.addEventListener('change', () => { S.fajrSound = fsnd.value; save(); });
-  iq.addEventListener('change', () => { S.iqamah = Number(iq.value) || 0; save(); });
+  iq.addEventListener('change', () => { S.iqamah = Number(iq.value) || 0; save(); syncForm(); });
+  // Mosques keep a different wait for each prayer: each can follow the one above or have its own.
+  const IQ_MINS = [0, 5, 10, 15, 20, 25, 30, 40];
+  const iqFor = (k) => { const v = S.iqamahBy && S.iqamahBy[k]; return Number.isFinite(v) ? v : (S.iqamah || 0); };
+  const each = document.createElement('details');
+  each.className = 'pa-iq-each';
+  const sum = document.createElement('summary');
+  sum.textContent = T('وقت الإقامة لكل صلاة');
+  const grid = document.createElement('div');
+  grid.className = 'pa-iq-grid';
+  const iqSel = {};
+  PRAYERS.forEach((k) => {
+    const lab = document.createElement('label');
+    const sel = document.createElement('select');
+    sel.append(new Option(T('مثل الكل'), ''));
+    IQ_MINS.forEach((m) => sel.append(new Option(m ? `${I.num(m)} ${T('دقيقة')}` : T('بدون'), String(m))));
+    sel.addEventListener('change', () => {
+      S.iqamahBy = Object.assign({}, S.iqamahBy);
+      if (sel.value === '') delete S.iqamahBy[k]; else S.iqamahBy[k] = Number(sel.value);
+      save();
+    });
+    lab.append(document.createTextNode(T(NAMES[k])), sel);
+    grid.append(lab);
+    iqSel[k] = sel;
+  });
+  each.append(sum, grid);
+  iq.closest('label').after(each);
   function syncForm() {
     en.checked = S.enabled; no.checked = S.notify; ap.checked = S.autoPause; bf.value = String(S.before);
     snd.value = SOUNDS.some((x) => x[0] === S.sound) ? S.sound : 'madinah';
     fsnd.value = SOUNDS.some((x) => x[0] === S.fajrSound) ? S.fajrSound : '';
     iq.value = String(S.iqamah || 0);
+    PRAYERS.forEach((k) => { const v = S.iqamahBy && S.iqamahBy[k]; iqSel[k].value = Number.isFinite(v) ? String(v) : ''; iqSel[k].disabled = !S.enabled; });
     sil.checked = !!S.silentOk;
     [no, ap, bf, snd, fsnd, iq].forEach((x) => { x.disabled = !S.enabled; });
   }
@@ -170,8 +197,8 @@
         window.dispatchEvent(new CustomEvent('noon-prayer', { detail: { prayer: k, name } }));
       }
       // The iqamah, some minutes after the adhan (the phone app books it as a notification).
-      const iqId = `${day}-${k}-iq`, iqAt = at + (S.iqamah || 0) / 60;
-      if (S.iqamah > 0 && !native() && !fired[iqId] && now >= iqAt && now < iqAt + 10 / 60) {
+      const iqId = `${day}-${k}-iq`, iqAt = at + iqFor(k) / 60;
+      if (iqFor(k) > 0 && !native() && !fired[iqId] && now >= iqAt && now < iqAt + 10 / 60) {
         mark(iqId);
         chime();
         toast(`${T('الإقامة')}: ${name}. ${T('قد قامت الصلاة، استووا واعتدلوا.')}`);
@@ -183,4 +210,21 @@
   setTimeout(check, 3000);
   onRemote(KEY, () => { S = Object.assign(S, load(KEY, {})); syncForm(); if (native()) native().schedulePrayers(true); });
   syncForm();
+  // Between the adhan and the iqamah: which prayer, and how long is left (the home card and bar show it).
+  function iqamahNow(t = Date.now()) {
+    if (!window.noonAstro) return null;
+    const snap = window.noonAstro.snapshot(t);
+    const midnight = t - snap.nowH * 3600e3;
+    for (const k of PRAYERS) {
+      const h = snap.today[k], mins = iqFor(k);
+      if (!Number.isFinite(h) || mins <= 0) continue;
+      const at = Math.round((midnight + h * 3600e3) / 60000) * 60000, iqAt = at + mins * 60000;
+      if (t >= at && t < iqAt) {
+        const left = Math.ceil((iqAt - t) / 60000);
+        return { key: k, name: T(NAMES[k]), at: iqAt, left, leftText: `${T('بعد')} ${I.num(left)} ${T('د')}` };
+      }
+    }
+    return null;
+  }
+  window.noonPrayerAlerts = Object.assign(window.noonPrayerAlerts || {}, { iqamahFor: iqFor, iqamahNow });
 })();

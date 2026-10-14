@@ -6,6 +6,7 @@
   'use strict';
   const { T, I, el, button, show, go } = window.noonUI;
   const SVG = {
+    group: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.3A4.5 4.5 0 0 1 20.5 19"/></g>',
     home: '<path d="M4 11l8-6.5 8 6.5V20h-5.5v-5.5h-5V20H4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>',
     more: '<g fill="currentColor"><circle cx="6" cy="6" r="1.9"/><circle cx="12" cy="6" r="1.9"/><circle cx="18" cy="6" r="1.9"/><circle cx="6" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18" cy="12" r="1.9"/><circle cx="6" cy="18" r="1.9"/><circle cx="12" cy="18" r="1.9"/><circle cx="18" cy="18" r="1.9"/></g>',
     qibla: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/>',
@@ -46,17 +47,22 @@
     if (id === 'more') { openSheet(); return; }
     closeSheet();
     if (id === 'home') {
-      show('tasks');
-      scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      // Already home: back to its top. From another screen: back home (a step back in the history).
+      if (document.body.dataset.screen === 'home') scrollTo({ top: 0, behavior: (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-calm')) ? 'auto' : 'smooth' });
+      else window.noonUI.home();
       mark('home');
       return;
     }
     go(id);
   }
   const current = () => (window.noonUI.currentView ? window.noonUI.currentView() : 'tasks');
-  const markCurrent = () => { const v = current(); mark(['quran', 'listen', 'adhkar'].includes(v) ? v : 'home'); };
+  // The bar shows where you are: a section from «المزيد» lights «المزيد», and the sheet marks it too.
+  const markCurrent = () => {
+    const v = current();
+    mark(['quran', 'listen', 'adhkar'].includes(v) ? v : v === 'tasks' ? 'home' : 'more');
+    grid.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-current', String(b.dataset.view === v)));
+  };
   window.addEventListener('noon-view', markCurrent);
-  markCurrent();
 
   // ---- the "More" sheet ----
   const veil = el('div', 'more-veil'); veil.hidden = true;
@@ -67,12 +73,14 @@
   const grid = el('div', 'more-grid');
   const SECTIONS = [['tasks', 'المهام'], ['library', 'المكتبة'], ['calendar', 'التقويم'], ['habits', 'عادات وصلواتي'], ['notes', 'ملاحظات'], ['cards', 'كروت'], ['report', 'تقرير']];
   SECTIONS.forEach(([view, label]) => {
-    const b = button('more-item', '', () => { closeSheet(); go(view); mark('home'); });
+    const b = button('more-item', '', () => { closeSheet(); go(view); });
+    b.dataset.view = view;
     b.append(tabIcon(view) || svg('more'), el('span', '', T(label)));
     grid.append(b);
   });
   const tool = (icon, label, run) => { const b = button('more-item', '', () => { closeSheet(); run(); }); b.append(svg(icon), el('span', '', T(label))); grid.append(b); };
   tool('qibla', 'القبلة', () => { const q = document.getElementById('qiblaBtn'); if (q) q.click(); });
+  tool('group', 'تحدٍّ جماعي', () => window.noonChallenge && window.noonChallenge.open());
   tool('sounds', 'أصوات التركيز', () => openSounds());
   tool('focus', 'وضع التركيز', () => window.noonFocusMode && window.noonFocusMode.open());
   tool('bell', 'تذكيراتي', () => window.noonReminders && window.noonReminders.open());
@@ -80,6 +88,7 @@
   const grab = el('span', 'more-grab');
   sheet.append(grab, el('h2', 'more-title', T('المزيد')), grid);
   document.body.append(veil, sheet);
+  markCurrent();
   let sheetOpen = false;
   function openSheet() {
     sheetOpen = true;
@@ -99,6 +108,36 @@
   // The phone's back key closes the sheet first.
   const before = window.noonBack;
   window.noonBack = () => { if (sheetOpen) { closeSheet(); return true; } return before ? before() : false; };
+
+  // ---- home: when the clock scrolls away, a slim bar keeps the time and the next prayer ----
+  const mini = button('mini-clock', '', () => scrollTo({ top: 0, behavior: (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-calm')) ? 'auto' : 'smooth' }), T('العودة إلى الساعة'));
+  mini.dir = I.isEn ? 'ltr' : 'rtl';
+  const miniTime = el('b', 'mini-time'), miniNext = el('span', 'mini-next');
+  mini.append(miniTime, miniNext);
+  mini.hidden = true;
+  document.body.append(mini);
+  const pane = document.getElementById('clockPane');
+  const PHONE = matchMedia('(max-width: 860px)');
+  let clockSeen = true, miniTimer = 0;
+  function paintMini() {
+    const snap = window.noonAstro && window.noonAstro.snapshot(Date.now());
+    if (!snap) return;
+    miniTime.textContent = snap.timeHere;
+    const iq = window.noonPrayerAlerts && window.noonPrayerAlerts.iqamahNow && window.noonPrayerAlerts.iqamahNow();
+    if (iq) { miniNext.textContent = `${T('الإقامة')}: ${iq.name} · ${iq.leftText}`; return; }
+    miniNext.textContent = snap.next ? `${T('الصلاة القادمة')}: ${snap.next.name} ${snap.next.time}${snap.next.inText ? ` · ${snap.next.inText}` : ''}` : '';
+  }
+  function updateMini() {
+    const on = PHONE.matches && !clockSeen && document.body.dataset.screen === 'home';
+    mini.hidden = !on;
+    clearInterval(miniTimer);
+    if (on) { paintMini(); miniTimer = setInterval(paintMini, 15000); }
+  }
+  if (pane && window.IntersectionObserver) {
+    new IntersectionObserver((entries) => { clockSeen = entries[entries.length - 1].isIntersecting; updateMini(); }, { rootMargin: '-80px 0px 0px 0px' }).observe(pane);
+  }
+  window.addEventListener('noon-view', updateMini);
+  PHONE.addEventListener('change', updateMini);
 
   // ---- the sound bar: shown while a sound plays, or when opened from "More" ----
   function openSounds() {

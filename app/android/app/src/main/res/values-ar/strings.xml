@@ -6,6 +6,8 @@
     <string name="verse_widget_description">آية اليوم</string>
     <string name="tasbih_widget_description">مسبحة: اضغط للعدّ</string>
     <string name="verse_title">آية اليوم</string>
+    <string name="qibla_widget_description">اتجاه القبلة</string>
+    <string name="qibla_empty">افتح التطبيق مرة</string>
     <string name="verse_empty">افتح التطبيق مرة لتظهر آية اليوم.</string>
     <string name="shortcut_listen">الإذاعة</string>
     <string name="shortcut_quran">المصحف</string>

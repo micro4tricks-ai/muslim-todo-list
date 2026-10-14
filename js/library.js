@@ -6,7 +6,7 @@
 // the user's Shamela copy (tools/build_library_local.py), gzipped under books/ on the website.
 (() => {
   'use strict';
-  const { T, I, $, el, button, load, store, toast, onRemote } = window.noonUI;
+  const { T, I, $, el, button, load, store, toast, onRemote, skeleton } = window.noonUI;
   const LIB = window.NOON_LIBRARY || { books: [] };
   const SALAH = window.NOON_SALAH || { steps: [] };
   const KEY = 'noon-sweep-library';
@@ -274,7 +274,7 @@
     }
     root.append(bar);
     const list = el('div', 'lib-list');
-    list.append(el('p', 'hint', T('جارٍ تحميل الأحاديث…')));
+    list.append(skeleton(T('جارٍ تحميل الأحاديث…'), 4));
     root.append(list);
     let items;
     try { items = await section(b.id, s[0]); } catch (_) {
@@ -432,7 +432,7 @@
     // Contents: the main headings, each opening onto the ones under it.
     root.append(el('h3', 'lib-h', T('الفهرس')));
     const tocBox = el('div', 'lib-toc');
-    tocBox.append(el('p', 'hint', T('جارٍ تحميل الفهرس…')));
+    tocBox.append(skeleton(T('جارٍ تحميل الفهرس…'), 5));
     root.append(tocBox);
     let idx;
     try { idx = await gz(`${b.slug}/index.json.gz`, b.v); } catch (_) {
@@ -458,7 +458,7 @@
       tocBox.append(d);
     });
   }
-  const pageLabel = (pg) => (pg[2] ? `${pg[1] ? `${T('ج')} ${I.num(pg[1])} · ` : ''}${T('ص')} ${I.num(pg[2])}` : '');
+  const pageLabel = (pg) => (pg[2] ? `${pg[1] ? `${I.tp('page', 'ج')} ${I.num(pg[1])} · ` : ''}${I.tp('page', 'ص')} ${I.num(pg[2])}` : '');
 
   // A part of a book: its pages, with headings, and the way to the next part.
   async function renderRead() {
@@ -478,7 +478,7 @@
     root.append(nav('is-top'));
     const box = el('div', 'lib-read');
     box.lang = 'ar'; box.dir = 'rtl';
-    box.append(el('p', 'hint', T('جارٍ التحميل…')));
+    box.append(skeleton(T('جارٍ التحميل…'), 4));
     root.append(box);
     let pages;
     try { pages = await gz(`${b.slug}/${f}.json.gz`, b.v); } catch (_) {

@@ -6,9 +6,9 @@
 (function (root) {
   'use strict';
   // Every card, in the default order. The first nine were the only ones before 2.5.
-  const ALL = ['prayer', 'qibla', 'fast', 'quran', 'adhkar', 'hifz', 'remind', 'invite', 'listen',
-    'library', 'hadith', 'book', 'tasbih', 'khatma', 'radio'];
-  const ON = new Set(ALL.slice(0, 9));
+  const ALL = ['prayer', 'ramadan', 'qibla', 'fast', 'quran', 'adhkar', 'hifz', 'remind', 'invite', 'listen',
+    'library', 'hadith', 'book', 'tasbih', 'khatma', 'challenge', 'radio'];
+  const ON = new Set(['prayer', 'ramadan', 'qibla', 'fast', 'quran', 'adhkar', 'hifz', 'remind', 'invite', 'listen']);
 
   function arrange(cfg) {
     const seen = new Set(), order = [];

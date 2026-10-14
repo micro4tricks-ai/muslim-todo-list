@@ -17,13 +17,13 @@
 
   // The cards' names, for the settings page and the long-press menu.
   const NAMES = {
-    prayer: 'الصلاة القادمة', qibla: 'القبلة', fast: 'الصيام والمواسم', quran: 'وردك اليوم', adhkar: 'أذكار الصباح والمساء',
+    prayer: 'الصلاة القادمة', ramadan: 'رمضان: السحور والإفطار', qibla: 'القبلة', fast: 'الصيام والمواسم', quran: 'وردك اليوم', adhkar: 'أذكار الصباح والمساء',
     hifz: 'مراجعة الحفظ', remind: 'التذكير القادم', invite: 'دعوة لختمة جماعية', listen: 'تابع الاستماع',
     library: 'تابع القراءة في المكتبة', hadith: 'حديث اليوم', book: 'كتاب مثبّت', tasbih: 'المسبحة',
-    khatma: 'الختمة الجماعية', radio: 'إذاعتك المفضلة'
+    khatma: 'الختمة الجماعية', challenge: 'التحدي الجماعي', radio: 'إذاعتك المفضلة'
   };
   // Cards that show only when they have something to say.
-  const NOTES = { fast: 'يظهر حين يكون غداً صيام أو موسم', hifz: 'يظهر حين تحين مراجعة', remind: 'يظهر قبل التذكير بيوم',
+  const NOTES = { ramadan: 'يظهر في شهر رمضان', fast: 'يظهر حين يكون غداً صيام أو موسم', hifz: 'يظهر حين تحين مراجعة', remind: 'يظهر قبل التذكير بيوم',
     invite: 'يظهر حين تصلك دعوة', listen: 'يظهر بعد أول استماع', library: 'يظهر بعد فتح كتاب من المكتبة' };
 
   function card(cls, kicker, title, sub, onClick, extra) {
@@ -45,8 +45,26 @@
     prayer() {
       const snap = window.noonAstro && window.noonAstro.snapshot(Date.now());
       if (!snap || !snap.next) return null;
+      // Between the adhan and the iqamah, the card counts down to the iqamah.
+      const iq = window.noonPrayerAlerts && window.noonPrayerAlerts.iqamahNow && window.noonPrayerAlerts.iqamahNow();
+      if (iq) return card('td-prayer td-iq', T('الإقامة'), iq.name, iq.leftText, () => window.noonSettings && window.noonSettings.open('adhan'));
       return card('td-prayer', T('الصلاة القادمة'), `${snap.next.name} ${snap.next.time}`, snap.next.inText,
         () => window.noonSettings && window.noonSettings.open('place'));
+    },
+    ramadan() {
+      const R = window.noonSunnah && window.noonSunnah.ramadanNow && window.noonSunnah.ramadanNow();
+      if (!R || !R.next) return null;
+      const snap = window.noonAstro.snapshot(Date.now());
+      const ms = R.next.at - Date.now();
+      const left = `${T('بعد')} ${I.dur(Math.floor(ms / 3600e3), Math.floor((ms % 3600e3) / 60000))}`;
+      const what = R.next.kind === 'iftar' ? T('الإفطار') : T('الإمساك');
+      return card('td-ramadan', `${T('رمضان')} · ${T('اليوم')} ${I.num(R.day)}`, `${what} ${snap.fmtHM(R.next.hours)}`,
+        `${left} · ${T('وِرد اليوم')}: ${T('الجزء')} ${I.num(R.juz)}`, () => window.noonUI.go('calendar'));
+    },
+    challenge() {
+      const code = window.noonChallenge && window.noonChallenge.waiting();
+      if (code) return card('td-fast', T('دعوة لتحدٍّ جماعي'), code, T('اضغط للانضمام'), () => window.noonChallenge.open(code));
+      return window.noonChallenge ? card('td-khatma', T('التحدي الجماعي'), T('هدف مشترك من الذكر أو القرآن'), T('تسبيح، استغفار، صلاة على النبي ﷺ، صفحات'), () => window.noonChallenge.open()) : null;
     },
     qibla() {
       const q = window.noonQibla && window.noonQibla.bearing();
@@ -181,7 +199,7 @@
   }
   function longPress(c, id) {
     let t = 0, fired = false, x = 0, y = 0;
-    c.addEventListener('pointerdown', (ev) => { fired = false; x = ev.clientX; y = ev.clientY; t = setTimeout(() => { fired = true; if (navigator.vibrate) navigator.vibrate(20); openMenu(c, id); }, 550); });
+    c.addEventListener('pointerdown', (ev) => { fired = false; x = ev.clientX; y = ev.clientY; t = setTimeout(() => { fired = true; window.noonBuzz(20); openMenu(c, id); }, 550); });
     const cancel = () => clearTimeout(t);
     c.addEventListener('pointermove', (ev) => { if (Math.abs(ev.clientX - x) > 10 || Math.abs(ev.clientY - y) > 10) cancel(); });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach((e) => c.addEventListener(e, cancel));

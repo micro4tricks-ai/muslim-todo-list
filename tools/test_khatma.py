@@ -142,6 +142,67 @@ def main():
         con.run("insert into public.user_state (user_id, data) values (:u, '{\"tasks\": []}'::jsonb)", u=a)
         as_admin()
         check('synced data over 4 MB is refused, normal data is kept', capped and con.run('select count(*) from public.user_state where user_id = :u', u=a)[0][0] == 1)
+        # supabase/challenge.sql: group challenges, members only, each changes only their own count.
+        as_user(a)
+        row = con.run("select * from public.challenge_create('تحدي التسبيح', 'tasbih', 1000, 7, 'أحمد')")[0]
+        cid, ccode = str(row[0]), row[1]
+        check('A starts a challenge with an 8-letter code and a 7-day end',
+              len(ccode) == 8 and con.run('select ends_on - current_date from public.challenge where id = :c', c=cid)[0][0] == 7)
+        as_admin()
+        as_user(b)
+        check('B sees no challenge before joining', con.run('select count(*) from public.challenge where id = :c', c=cid)[0][0] == 0)
+        check('B joins the challenge with its code', str(con.run('select public.challenge_join(:k, :n)', k=ccode.lower(), n='خالد')[0][0]) == cid)
+        con.run('update public.challenge_member set progress = 100, updated_at = now() where challenge = :c and user_id = :u', c=cid, u=b)
+        con.run('update public.challenge_member set progress = 999999 where challenge = :c and user_id = :u', c=cid, u=a)
+        as_admin()
+        counts = dict((str(u), p) for u, p in con.run('select user_id, progress from public.challenge_member where challenge = :c', c=cid))
+        check("B adds to their own count but not to A's", counts.get(b) == 100 and counts.get(a) == 0)
+        as_user(b)
+        con.run('savepoint t')
+        try:
+            con.run('update public.challenge_member set user_id = :u where challenge = :c and user_id = :me', u=a, c=cid, me=b)
+            con.run('release savepoint t')
+            moved = True
+        except Exception:
+            con.run('rollback to savepoint t')
+            moved = False
+        as_admin()
+        check("B can't move their row onto someone else", not moved)
+        as_user(b)
+        con.run('savepoint t')
+        try:
+            con.run('update public.challenge set goal = 1 where id = :c', c=cid)
+            con.run('release savepoint t')
+            changed = True
+        except Exception:
+            con.run('rollback to savepoint t')
+            changed = False
+        as_admin()
+        check("a member can't change the challenge's goal", not changed and con.run('select goal from public.challenge where id = :c', c=cid)[0][0] == 1000)
+        as_user(c)
+        check('C (not a member) sees no challengers', con.run('select count(*) from public.challenge_member where challenge = :c', c=cid)[0][0] == 0)
+        con.run('delete from public.challenge where id = :c', c=cid)
+        as_admin()
+        check("C can't delete it", con.run('select count(*) from public.challenge where id = :c', c=cid)[0][0] == 1)
+        as_user(b)
+        con.run('delete from public.challenge_member where challenge = :c and user_id = :u', c=cid, u=b)
+        as_admin()
+        check('B leaves the challenge', con.run('select count(*) from public.challenge_member where challenge = :c and user_id = :u', c=cid, u=b)[0][0] == 0)
+        as_user(a)
+        con.run('delete from public.challenge where id = :c', c=cid)
+        as_admin()
+        check('A (the owner) deletes it, with its members', con.run('select count(*) from public.challenge_member where challenge = :c', c=cid)[0][0] == 0)
+        as_user(a)
+        con.run('savepoint t')
+        try:
+            con.run("select * from public.challenge_create('x', 'nonsense', 10, 0, 'أحمد')")
+            con.run('release savepoint t')
+            bad = False
+        except Exception:
+            con.run('rollback to savepoint t')
+            bad = True
+        as_admin()
+        check('an unknown kind of challenge is refused', bad)
         # supabase/grants.sql: visitors use nothing; signed-in people can never empty a table.
         def refused(role, sql):
             con.run('savepoint t')
@@ -158,6 +219,7 @@ def main():
         check('a visitor (not signed in) cannot read synced data', refused('anon', 'select count(*) from public.user_state'))
         as_user(a)
         check('a signed-in person cannot empty a table', refused('authenticated', 'truncate public.user_state'))
+        check('a visitor cannot read challenges', refused('anon', 'select count(*) from public.challenge_member'))
     finally:
         con.run('rollback')
         con.close()

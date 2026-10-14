@@ -94,8 +94,9 @@
             body: `${T('باقي')} ${I.num(S.before)} ${T('دقيقة على صلاة')} ${name}. ${T('اختم ما بين يديك.')}`.trim(),
             schedule: { at: new Date(early), allowWhileIdle: true } });
         }
-        const iq = at + (S.iqamah || 0) * 60000;
-        if (S.iqamah > 0 && iq > now + 5000) {
+        const iqMins = S.iqamahBy && Number.isFinite(S.iqamahBy[k]) ? S.iqamahBy[k] : (S.iqamah || 0);
+        const iq = at + iqMins * 60000;
+        if (iqMins > 0 && iq > now + 5000) {
           out.push({ id: id + 2, channelId: 'alerts-v2', title: `${T('الإقامة')}: ${name}`, body: T('قد قامت الصلاة، استووا واعتدلوا.'),
             schedule: { at: new Date(iq), allowWhileIdle: true } });
         }
@@ -162,6 +163,22 @@
     verseSig = data;
     quiet(Widget.verse({ data }));
   }
+  // The qibla widget (QiblaWidget.java): the bearing from the place set here, refreshed when it changes.
+  let qiblaSig = '';
+  function updateQibla() {
+    const Q = window.noonQibla, A = window.noonAstro, CC = window.noonClockCore;
+    if (!Widget || !Widget.qibla || !Q || !A) return;
+    const q = Q.bearing();
+    if (!q || !Number.isFinite(q.bearing)) return;
+    const deg = Math.round(q.bearing);
+    const point = CC ? T(CC.POINTS[CC.compassPoint(q.bearing)]) : '';
+    const data = JSON.stringify({ title: T('اتجاه القبلة'), bearing: q.bearing, text: `${I.num(deg)}°${point ? ` · ${point}` : ''}`,
+      place: A.snapshot(Date.now()).place.name, hint: T('من الشمال مع عقارب الساعة. اضغط للبوصلة.'), north: I.isEn ? 'N' : 'ش' });
+    if (data === qiblaSig) return;
+    qiblaSig = data;
+    quiet(Widget.qibla({ data }));
+  }
+  window.addEventListener('noon-place', updateQibla);
   // A widget or an icon shortcut opened the app on a section (MainActivity keeps it until asked).
   function openSection(view) {
     if (view === 'qibla') { const q = document.getElementById('qiblaBtn'); if (q) q.click(); return; }
@@ -171,7 +188,7 @@
     if (!Widget || !Widget.takeAction) return;
     try { const r = await Widget.takeAction(); if (r && r.view) openSection(r.view); } catch (_) {}
   };
-  addEventListener('load', () => setTimeout(() => { window.noonTakeAction(); updateVerse(); }, 600));
+  addEventListener('load', () => setTimeout(() => { window.noonTakeAction(); updateVerse(); updateQibla(); }, 600));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { window.noonTakeAction(); updateVerse(); } });
   setInterval(updateVerse, 30 * 60000);
 

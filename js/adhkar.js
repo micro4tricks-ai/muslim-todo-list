@@ -84,7 +84,7 @@
       const counter = button('dhikr-count', '', () => {
         if (countOf(c.id, it) >= it.repeat) return;
         (S.counts[c.id] = S.counts[c.id] || {})[it.id] = countOf(c.id, it) + 1;
-        if (navigator.vibrate) navigator.vibrate(12);
+        window.noonBuzz(12);
         save();
         const now = countOf(c.id, it);
         counter.firstChild.textContent = `${I.num(now)} / ${I.num(it.repeat)}`;
@@ -143,7 +143,7 @@
     const [ar] = TASBEEH[S.tasbeeh.phrase] || TASBEEH[0];
     const big = button('tasbeeh-tap', '', () => {
       S.tasbeeh.n++;
-      if (navigator.vibrate) navigator.vibrate(S.tasbeeh.n % 33 === 0 ? [30, 60, 30] : 10);
+      window.noonBuzz(S.tasbeeh.n % 33 === 0 ? [30, 60, 30] : 10);
       save();
       big.querySelector('.tasbeeh-n').textContent = I.num(S.tasbeeh.n);
     }, T('سبّح'));
@@ -162,7 +162,7 @@
   function tasbeehTap() {
     fresh();
     S.tasbeeh.n++;
-    if (navigator.vibrate) navigator.vibrate(S.tasbeeh.n % 33 === 0 ? [30, 60, 30] : 10);
+    window.noonBuzz(S.tasbeeh.n % 33 === 0 ? [30, 60, 30] : 10);
     save();
     window.dispatchEvent(new CustomEvent('noon-tasbeeh'));
     const shown = document.querySelector('.tasbeeh-n');

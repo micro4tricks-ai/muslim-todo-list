@@ -4,7 +4,7 @@
 // nobody can change another member's juz. Needs the account (Settings › Account & sync).
 (() => {
   'use strict';
-  const { T, I, el, button, toast } = window.noonUI;
+  const { T, I, el, button, toast, skeleton } = window.noonUI;
   const M = window.NOON_QURAN_META;
   const SITE = 'https://micro4tricks-ai.github.io/muslim-todo-list/';
   const NAME_KEY = 'noon-khatma-name';
@@ -99,7 +99,7 @@
     const mine = el('section', 'st-group');
     mine.append(el('h3', 'st-group-name', T('ختماتي')));
     const list = el('div', 'st-list');
-    list.append(el('p', 'hint st-pad', T('جارٍ التحميل…')));
+    list.append(skeleton(T('جارٍ التحميل…'), 2));
     mine.append(list);
     body.append(...(code ? [join, mine, make] : [mine, join, make]));
     const { data, error } = await db().from('khatma_member').select('khatma(id,title,code,created_at)').eq('user_id', me().id);
@@ -118,7 +118,7 @@
   // ---- one khatma: the 30 parts ----
   async function detail(id) {
     current = id;
-    body.replaceChildren(el('p', 'hint', T('جارٍ التحميل…')));
+    body.replaceChildren(skeleton(T('جارٍ التحميل…'), 4));
     await draw();
     clearInterval(timer);
     timer = setInterval(() => { if (open && current === id && !document.hidden) draw(); }, 20000);

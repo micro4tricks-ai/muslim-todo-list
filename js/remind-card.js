@@ -73,6 +73,8 @@
 
   // ---- the same card as an image (1080 × 1350) ----
   function wrap(ctx, text, width) {
+    // Each line of the text (a summary is one item per line) wraps on its own.
+    if (String(text).includes('\n')) return String(text).split('\n').flatMap((t) => wrap(ctx, t, width));
     const words = String(text).split(/\s+/), lines = [];
     let line = '';
     for (const w of words) {

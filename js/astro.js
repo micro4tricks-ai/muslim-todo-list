@@ -382,7 +382,7 @@
     const dl = s.dayLen;
     const dlText = Number.isFinite(dl) ? I.dur(Math.floor(dl), Math.round((dl % 1) * 60)) : '—';
     $('ppSun').textContent = `${T('الشروق')} ${fmtHM(s.today.sunrise)} · ${T('الغروب')} ${fmtHM(s.today.sunset)} · ${T('طول النهار')} ${dlText}`;
-    $('ppMoon').textContent = `${T('القمر:')} ${s.moon.name} · ${T('الإضاءة')} ${ar(Math.round(s.moon.illum * 100))}${I.isEn ? '%' : '٪'} · ${T('عمره')} ${ar(Math.floor(s.moon.age))} ${T('يوماً')}`;
+    $('ppMoon').textContent = `${T('القمر:')} ${s.moon.name} · ${T('الإضاءة')} ${ar(Math.round(s.moon.illum * 100))}${I.isEn ? '%' : '٪'} · ${T('عمره')} ${I.days(Math.floor(s.moon.age))}`;
     $('ppMethod').textContent = `${T('طريقة الحساب:')} ${methodName(s.method.ar)}`;
   }
   function openPanel() {

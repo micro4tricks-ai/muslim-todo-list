@@ -8,6 +8,8 @@
     <string name="verse_widget_description">The verse of the day</string>
     <string name="tasbih_widget_description">A tasbih: tap to count</string>
     <string name="verse_title">Verse of the day</string>
+    <string name="qibla_widget_description">Qibla direction</string>
+    <string name="qibla_empty">Open the app once</string>
     <string name="verse_empty">Open the app once to show the verse of the day.</string>
     <string name="shortcut_listen">Radio</string>
     <string name="shortcut_quran">Quran</string>

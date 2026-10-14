@@ -7,6 +7,7 @@
   const { T, I, $, el, button } = window.noonUI;
 
   const ICONS = {
+    eye: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g>',
     globe: '<g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z"/></g>',
     pin: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4" fill="currentColor"/>',
     bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2H4.5zM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>',
@@ -75,12 +76,13 @@
       sub: () => (window.noonDevice && window.noonDevice.status() && !window.noonDevice.ok() ? `⚠ ${T('يحتاج ضبطاً')}` : T($('paEnabled').checked ? 'مفعّلة' : 'متوقفة')) },
     look: { title: 'المظهر والساعة', icon: 'palette', sub: lookName, node: () => $('lookPanel'), open: () => window.noonLook.open() },
     fonts: { title: 'الخطوط', icon: 'font', sub: fontNames, build: buildFonts },
+    a11y: { title: 'سهولة الاستخدام', icon: 'eye', sub: a11yName, build: buildA11y },
     today: { title: 'كروت يومي', icon: 'cards', sub: () => (window.noonToday ? `${I.num(window.noonToday.cards().length)} ${T('كروت ظاهرة')}` : ''), build: (box) => window.noonToday && window.noonToday.buildSettings(box) },
     account: { title: 'الحساب والمزامنة', icon: 'cloud', sub: () => $('syncLabel').textContent, node: () => $('syncPanel') },
     about: { title: 'حول التطبيق', icon: 'info', sub: () => $('appVersion').textContent, build: buildAbout },
     welcome: { title: 'أهلاً بك', icon: 'info', sub: () => '', build: buildWelcome }
   };
-  const GROUPS = [['عام', ['lang', 'place', 'adhan']], ['المظهر', ['look', 'today', 'fonts']], ['الحساب', ['account']], ['', ['about']]];
+  const GROUPS = [['عام', ['lang', 'place', 'adhan']], ['المظهر', ['look', 'today', 'fonts', 'a11y']], ['الحساب', ['account']], ['', ['about']]];
 
   let page = null; // null = closed, 'home', or a page id
   let depth = 0;   // our steps in the history, so back closes the screen at the right one
@@ -221,6 +223,41 @@
     };
     draw();
     box.append(el('p', 'st-note', T('الخط الإنجليزي يُستخدم للحروف اللاتينية، والعربي لما سواها. خط المصحف والأحاديث يبقى كما هو.')));
+  }
+  // Text size, stronger contrast, less motion and vibration (js/a11y.js, js/look.js).
+  const SIZES = [[0.9, 'صغير'], [1, 'عادي'], [1.12, 'كبير'], [1.25, 'أكبر']];
+  function a11yName() {
+    const L = window.noonLook, A = window.noonA11y ? window.noonA11y.get() : {};
+    const s = SIZES.find(([v]) => v === (L && L.scale ? L.scale() : 1));
+    const parts = [s ? `${T('الخط')}: ${T(s[1])}` : ''];
+    if (A.contrast) parts.push(T('تباين عالٍ'));
+    if (A.motion) parts.push(T('حركة أقل'));
+    return parts.filter(Boolean).join(' · ');
+  }
+  function buildA11y(box) {
+    const L = window.noonLook, X = window.noonA11y;
+    const draw = () => {
+      box.replaceChildren();
+      const sizeG = el('section', 'st-group');
+      sizeG.append(el('h3', 'st-group-name', T('حجم الخط')));
+      const sizeL = el('div', 'st-list');
+      SIZES.forEach(([v, label]) => sizeL.append(choice(T(label), T('مهام اليوم · سبحان الله وبحمده'), L.scale() === v, () => { L.setScale(v); draw(); })));
+      const sample = sizeL.querySelectorAll('.st-sample');
+      SIZES.forEach(([v], i) => { if (sample[i]) sample[i].style.fontSize = Math.round(14 * v) + 'px'; });
+      sizeG.append(sizeL);
+      const A = X.get();
+      const optG = el('section', 'st-group');
+      optG.append(el('h3', 'st-group-name', T('العرض واللمس')));
+      const optL = el('div', 'st-list');
+      [['contrast', 'تباين عالٍ', 'نص أغمق وحدود أوضح لتسهل القراءة.'],
+        ['motion', 'حركة أقل', 'يوقف الحركات والانتقالات في الصفحة.'],
+        ['haptics', 'اهتزاز خفيف عند اللمس', 'عند إتمام مهمة أو التسبيح أو التنقل بين الشاشات.']].forEach(([k, label, sub]) => {
+        optL.append(choice(T(label), T(sub), !!A[k], () => { X.set(k, !A[k]); draw(); }));
+      });
+      optG.append(optL);
+      box.append(sizeG, optG, el('p', 'st-note', T('هذه الإعدادات خاصة بهذا الجهاز، ولا تنتقل مع المزامنة.')));
+    };
+    draw();
   }
   function buildAbout(box) {
     const card = el('div', 'st-about');

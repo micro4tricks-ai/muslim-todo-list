@@ -12,7 +12,7 @@
   const root = $('view-calendar');
   const native = () => window.noonNative;
   const defaults = () => ({ adj: 0, time: '21:00', fast: true, white: true, seasons: true, friday: true, adhkar: false, wird: false, wirdTime: '20:00',
-    suhoor: true, daily: false, notify: !!native(), ramadan: {} });
+    suhoor: true, daily: false, weekly: true, notify: !!native(), ramadan: {} });
   let S = Object.assign(defaults(), load(KEY, {}));
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); window.dispatchEvent(new CustomEvent('noon-sunnah')); };
 
@@ -156,6 +156,8 @@
         const v = verseOfDay(day);
         out.push({ key: `daily-${dayKey(day)}`, at: at(day, 7.5), title: T('آية اليوم'), body: I.isEn ? v.en : v.ar, hadith: I.isEn ? v.en : v.ar, ref: I.isEn ? v.refEn : v.refAr, quran: !I.isEn, view: 'quran' });
       }
+      // Friday evening: the week's harvest, in the Report (Settings here).
+      if (S.weekly && new Date(day).getDay() === 5) out.push({ key: `week-${dayKey(day)}`, at: at(day, 20.5), title: T('حصاد أسبوعك'), body: T('انظر ما أنجزته هذا الأسبوع من صلاة وقرآن وتركيز، وشاركه ككارت إن شئت.'), view: 'report' });
       if (S.wird) out.push({ key: `wird-${dayKey(day)}`, at: at(day, hm(S.wirdTime)), title: T('وردك من القرآن'), body: T('خصّص دقائق لوردك اليومي من المصحف.'), view: 'quran' });
     }
     return out.filter((x) => x.at > from - 30 * 60000).sort((a, b) => a.at - b.at);
@@ -182,7 +184,7 @@
 
   // A reminder as a designed card (js/remind-card.js), or a plain notice without it.
   function showCard(r) {
-    const open = r.view ? [{ label: T('افتح'), primary: true, run: () => window.noonUI.go(r.view) }] : [];
+    const open = r.view ? [{ label: T('افتح'), primary: true, run: () => { if (r.key.startsWith('week-') && window.noonReport) window.noonReport.week(); window.noonUI.go(r.view); } }] : [];
     if (!window.noonCard) { toast(`${r.title}. ${r.body}`, r.view ? { label: T('افتح'), run: () => window.noonUI.go(r.view) } : null); return; }
     window.noonCard.show({ title: r.title, body: r.hadith || r.body, ref: r.hadith ? [r.note, r.ref].filter(Boolean).join(' · ') : '', quran: r.quran, actions: open });
   }
@@ -297,7 +299,15 @@
         grid.append(b);
       });
       const fasted = Object.values(log).filter((v) => v === 'fast').length, owed = Object.values(log).filter((v) => v === 'excused').length;
-      box.append(el('p', 'hint', `${T('صيام الشهر')}: ${I.num(fasted)} ${T('يوماً')}${owed ? ` · ${T('للقضاء')}: ${I.num(owed)}` : ''} ${T('(اضغط اليوم مرة لصمتُ، ومرتين لأفطرتُ بعذر)')}`), grid);
+      box.append(el('p', 'hint', `${T('صيام الشهر')}: ${I.days(fasted)}${owed ? ` · ${T('للقضاء')}: ${I.num(owed)}` : ''} ${T('(اضغط اليوم مرة لصمتُ، ومرتين لأفطرتُ بعذر)')}`), grid);
+    }
+    // A khatma in the month: a juz a day, today's juz matching the day of Ramadan.
+    if (h.m === 9 && window.noonQuran && window.noonQuran.openJuz) {
+      const j = Math.min(30, h.d);
+      const plan = el('div', 'rm-plan');
+      plan.append(el('b', '', T('ختمة رمضان: جزء كل يوم')), el('span', 'hint', `${T('وِرد اليوم')}: ${T('الجزء')} ${I.num(j)}`),
+        button('btn btn-primary', `${T('اقرأ الجزء')} ${I.num(j)}`, () => window.noonQuran.openJuz(j)));
+      box.append(plan);
     }
     const acts = el('div', 'salah-links');
     acts.append(button('btn btn-quiet', T('إمساكية رمضان'), () => imsakiya(today)));
@@ -488,7 +498,8 @@
       check('adhkar', 'تذكير بأذكار الصباح (بعد الفجر) والمساء (بعد العصر)'),
       check('wird', 'تذكير يومي بورد القرآن'),
       check('suhoor', 'في رمضان: تذكير بالسحور قبل الفجر بـ٤٥ دقيقة'),
-      check('daily', 'آية اليوم كل صباح'));
+      check('daily', 'آية اليوم كل صباح'),
+      check('weekly', 'مساء الجمعة: حصاد أسبوعك من صلاة وقرآن وتركيز'));
     box.append(grid);
     const f1 = el('label', 'field'); f1.append(el('span', '', T('وقت تذكير الصيام (مساء اليوم السابق)')), timeSel('time', 17, 23.5));
     const f2 = el('label', 'field'); f2.append(el('span', '', T('وقت تذكير الورد')), timeSel('wirdTime', 5, 23.5));
@@ -557,7 +568,20 @@
     if (lastDay !== dayKey()) { lastDay = dayKey(); shown = null; picked = null; strip(); if (!root.hidden) render(); }
   }, 30000);
   setTimeout(check, 4000);
-  window.noonSunnah = { plan, eventsOn, hijri, settings: () => S, verseOfDay: (t) => verseOfDay(t || Date.now()) };
+  // For the home card: the day of Ramadan, and the next of suhoor's end or iftar (null outside Ramadan).
+  function ramadanNow(t = Date.now()) {
+    const today = midnight(t), h = hijri(today);
+    if (h.m !== 9) return null;
+    const tt = times(today);
+    if (!tt) return null;
+    const imsak = at(tt.mid, tt.fajr), iftar = at(tt.mid, tt.maghrib);
+    let next;
+    if (t < imsak) next = { kind: 'imsak', at: imsak, hours: tt.fajr };
+    else if (t < iftar) next = { kind: 'iftar', at: iftar, hours: tt.maghrib };
+    else { const t2 = times(plusDays(today, 1)); next = t2 && hijri(plusDays(today, 1)).m === 9 ? { kind: 'imsak', at: at(t2.mid, t2.fajr), hours: t2.fajr } : null; }
+    return { day: h.d, juz: Math.min(30, h.d), next };
+  }
+  window.noonSunnah = { ramadanNow, plan, eventsOn, hijri, settings: () => S, verseOfDay: (t) => verseOfDay(t || Date.now()) };
   render();
   strip();
 })();

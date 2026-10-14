@@ -78,7 +78,7 @@
     }
     const head = el('div', 'view-head');
     head.append(el('h2', '', T('التقرير')),
-      el('span', 'view-sub', n === 1 ? longDate.format(dateOf(from)) : `${dm.format(dateOf(from))} – ${dm.format(dateOf(to))} · ${I.num(n)} ${T('يوماً')}`));
+      el('span', 'view-sub', n === 1 ? longDate.format(dateOf(from)) : `${dm.format(dateOf(from))} – ${dm.format(dateOf(to))} · ${I.days(n)}`));
     root.append(head, rangeBar());
 
     // Totals.
@@ -108,6 +108,21 @@
       tile(T('أيام الصيام'), I.num(fasts), T('صيام تطوع')),
       tile(T('أيام تركيز متتالية'), I.num(streak), streak ? T('استمر!') : T('ابدأ جلسة اليوم')));
     root.append(tiles);
+    // The range in a few lines, as a card to keep or send.
+    const harvest = [
+      `${T('الصلوات في وقتها')}: ${I.num(onTime)} / ${I.num(5 * n)}`,
+      `${T('صفحات القرآن')}: ${I.num(pages)}`,
+      `${T('وقت التركيز')}: ${dur(focus)}`,
+      `${T('مهام أنجزتها')}: ${I.num(tasks)}`,
+    ].concat(fasts ? [`${T('أيام الصيام')}: ${I.num(fasts)}`] : []);
+    const shareRow = el('div', 'report-share');
+    shareRow.append(button('btn btn-quiet', T('مشاركة الملخص ككارت'), () => {
+      if (!window.noonCard) return;
+      window.noonCard.show({ kicker: n === 7 ? T('حصاد الأسبوع') : T('حصاد المدة'),
+        title: n === 1 ? longDate.format(dateOf(from)) : `${dm.format(dateOf(from))} – ${dm.format(dateOf(to))}`,
+        body: harvest.join('\n'), ref: T('تقبّل الله منا ومنكم.'), actions: [] });
+    }));
+    root.append(shareRow);
 
     if (n > 1) {
       // Long ranges are drawn week by week.
@@ -249,6 +264,7 @@
     return wrap;
   }
 
+  window.noonReport = { week() { R.kind = 'week'; store(RANGE_KEY, R); render(); } };
   window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'report') render(); });
   ['noon-focuslog', 'noon-distractions', 'noon-reminders'].forEach((e) => window.addEventListener(e, render));
   render();

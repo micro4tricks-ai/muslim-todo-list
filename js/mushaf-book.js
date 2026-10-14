@@ -7,7 +7,7 @@
 // Pages and the rules for them are in js/mushaf-core.js; texts and reading progress in js/quran.js.
 (() => {
   'use strict';
-  const { T, I, el, button, toast } = window.noonUI;
+  const { T, I, el, button, toast, skeleton } = window.noonUI;
   const C = window.noonMushafCore, M = window.NOON_QURAN_META;
   const PAGES = 604, TOTAL = 6236;
   const LITE = matchMedia('(pointer: coarse)').matches || !!window.Capacitor;
@@ -142,7 +142,7 @@
     if (busy) return;
     const to = C.step(page, dir, two, PAGES);
     if (to === page || (two && C.spread(to, PAGES)[0] === C.spread(page, PAGES)[0])) { show(page); return; }
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { show(to); return; }
+    if ((matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-calm'))) { show(to); return; }
     busy = true;
     const done = () => { busy = false; show(to); };
     if (two && !LITE) return flip(dir, to, done, angle || 0);
@@ -372,7 +372,7 @@
     B.box.dataset.theme = Q().theme();
     document.body.classList.add('qr-open');
     if (!history.state || !history.state.mb) history.pushState({ mb: 1 }, '');
-    B.book.replaceChildren(el('p', 'qr-loading', T('جارٍ فتح المصحف…')));
+    B.book.replaceChildren(skeleton(T('جارٍ فتح المصحف…'), 8));
     try { await Q().load(); } catch (_) {
       B.book.replaceChildren(el('p', 'qr-loading', T('تعذّر تحميل نص المصحف. تحقّق من الاتصال ثم حاول مرة أخرى.')));
       return;

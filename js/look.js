@@ -135,7 +135,9 @@
       theme: (() => { const t = THEME_OPTS.find((x) => x[0] === L.theme) || THEME_OPTS[0]; return { id: t[0], bg1: t[2], bg2: t[3], accent: t[4] }; })() }),
     SLOTS: SLOT_OPTS,
     fonts: { ar: AR_FONTS, en: EN_FONTS },
-    setFont(kind, id) { L[kind === 'en' ? 'fontEn' : 'fontAr'] = id; save(); applyFont(); }
+    setFont(kind, id) { L[kind === 'en' ? 'fontEn' : 'fontAr'] = id; save(); applyFont(); },
+    scale: () => L.scale || 1,
+    setScale(v) { L.scale = v; save(); applyMode(); }
   };
   const announce = () => window.dispatchEvent(new CustomEvent('noon-look'));
 

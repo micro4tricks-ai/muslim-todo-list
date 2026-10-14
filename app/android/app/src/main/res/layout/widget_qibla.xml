@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget: the qibla's direction from the app's place (QiblaWidget, WidgetBridge.qibla). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/q_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_bg"
+    android:layoutDirection="locale">
+
+    <ImageView
+        android:id="@+id/q_dial"
+        android:layout_width="88dp"
+        android:layout_height="88dp"
+        android:contentDescription="@string/qibla_widget_description" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/q_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFF2D58A"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:text="@string/qibla_widget_description" />
+
+        <TextView
+            android:id="@+id/q_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#FFF5F1E6"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:text="@string/qibla_empty" />
+
+        <TextView
+            android:id="@+id/q_place"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#CCF5F1E6"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/q_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#99F5F1E6"
+            android:textSize="11sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>

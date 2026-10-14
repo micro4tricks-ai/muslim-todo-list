@@ -64,6 +64,13 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/verse_widget_info" />
         </receiver>
+        <!-- The qibla's direction from the place set in the app; a tap opens the live compass. -->
+        <receiver android:name=".QiblaWidget" android:exported="false" android:label="@string/qibla_widget_description">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/qibla_widget_info" />
+        </receiver>
         <receiver android:name=".TasbihWidget" android:exported="false" android:label="@string/tasbih_widget_description">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

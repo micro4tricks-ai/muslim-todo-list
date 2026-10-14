@@ -169,7 +169,12 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
     await js('scrollTo(0, 0); true'); await sleep(800);
     const tab = await at('.bnav .bnav-item', 'الأذكار');
     if (tab) { tap(tab); await sleep(2000); }
-    t.adhkarTop = await js("Math.round(document.getElementById('view-adhkar').getBoundingClientRect().top)");
+    t.adhkarTop = await js("(() => { const b = document.querySelector('.screen-bar'); return Math.round(document.getElementById('view-adhkar').getBoundingClientRect().top - (b && b.offsetParent ? b.getBoundingClientRect().bottom : 0)); })()");
+    // 2.6.0: a section opens as a screen of its own; the phone's back key returns home, and the app stays open.
+    t.screenBack = await js("document.body.dataset.screen");
+    adb('shell input keyevent BACK'); await sleep(1500);
+    t.screenBack += ' > ' + await js("document.body.dataset.screen");
+    t.screenBackAppOpen = (() => { try { return adb(`shell pidof io.github.micro4tricks.muslimtodo`).trim() !== ''; } catch { return false; } })();
   } catch (e) { t.error = String(e.message || e).slice(0, 200); }
   report.mushafTouch = t;
   console.log('page-turning Mushaf by touch:', JSON.stringify(t));
@@ -188,7 +193,8 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
     const open = ['quranReader', 'mushafBook', 'settingsScreen'].filter((id) => { const n = document.getElementById(id); return n && !n.hidden; });
     if (document.querySelector('.qb:not([hidden])')) open.push('qibla');
     if (document.querySelector('.kh:not([hidden])')) open.push('khatma');
-    return { view: v ? v.dataset.view : null, top: v ? Math.round(v.getBoundingClientRect().top) : null, open };
+    const bar = document.querySelector('.screen-bar'), under = bar && bar.offsetParent ? bar.getBoundingClientRect().bottom : 0;
+    return { view: v ? v.dataset.view : null, top: v ? Math.round(v.getBoundingClientRect().top - under) : null, open, screen: document.body.dataset.screen };
   })()`);
   const c = { taps: {} };
   try {
@@ -388,6 +394,7 @@ await phase('Adhan player: play, then stop', async () => {
   const w = prefs('noon_widget'), a = prefs('noon_adhan');
   report.widgetHasTimes = /&quot;at&quot;/.test(w);
   report.verseWidget = /name="verse"/.test(w);
+  report.qiblaWidget = /name="qibla"/.test(w) && /bearing/.test(w);
   report.autoCatalog = /folders/.test(prefs('noon_auto'));
   report.adhanBooked = Number((a.match(/name="count" value="(\d+)"/) || [])[1] || 0);
   console.log('widget has prayer times:', report.widgetHasTimes, '| adhan alarms booked:', report.adhanBooked);
@@ -452,6 +459,8 @@ if (!report.settings || report.settings.offset !== 1) problems.push(`a minute ad
 if (!report.widgetHasTimes) problems.push('the widget has no prayer times');
 if (!(report.soundsKept > 0)) problems.push(`focus sounds were not downloaded and kept: ${report.soundsKept}`);
 if (!report.verseWidget) problems.push('the verse widget got no verse');
+if (!report.qiblaWidget) problems.push('the qibla widget got no direction');
+if (mt.screenBack !== 'adhkar > home' || mt.screenBackAppOpen !== true) problems.push(`the back key on a section's screen: ${mt.screenBack}, app open: ${mt.screenBackAppOpen}`);
 if (!report.autoCatalog) problems.push('Android Auto got no station list');
 if (report.clockCore !== 3) problems.push(`clock rules missing in the app: ${report.clockCore}`);
 const mb = report.mushafBook || {};

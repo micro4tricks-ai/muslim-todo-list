@@ -80,7 +80,7 @@
     const off = ((q.bearing - heading + 540) % 360) - 180;
     const ok = Math.abs(off) <= 3;
     box.classList.toggle('is-aligned', ok);
-    if (ok && !aligned && navigator.vibrate) navigator.vibrate(60);
+    if (ok && !aligned && window.noonBuzz) window.noonBuzz(60);
     aligned = ok;
     hint.textContent = calibrate ? T('البوصلة غير دقيقة الآن: حرّك الهاتف في الهواء على شكل رقم ٨، وأبعده عن المعادن والمغناطيس.')
       : ok ? T('أنت الآن تتجه إلى القبلة.') : `${T(off > 0 ? 'استدر يميناً' : 'استدر يساراً')} ${I.num(Math.abs(Math.round(off)))}°`;

@@ -1079,7 +1079,7 @@
     g.restore();
   }
 
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { compKey = ''; staticLayer = buildStatic(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!R) return; compKey = ''; staticLayer = buildStatic(); });
   canvas.addEventListener('click', (ev) => {
     const box = canvas.getBoundingClientRect();
     const id = window.noonClockCore.hitSlot(window.noonClockCore.slotRects(T.face, CX, CY, R), ev.clientX - box.left, ev.clientY - box.top);
@@ -1202,6 +1202,8 @@
   function resize() {
     DPR = Math.min(window.devicePixelRatio || 1, LITE ? 2 : 3);
     const box = pane.getBoundingClientRect();
+    // Hidden (another screen on a phone): nothing to size until it shows again.
+    if (box.width < 40 || box.height < 40) return;
     W = Math.max(1, box.width);
     H = Math.max(1, box.height);
     canvas.width = Math.round(W * DPR);
@@ -1243,6 +1245,7 @@
   }
 
   function frame(now) {
+    if (!staticLayer) return;
     const a = handAngles(now);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);

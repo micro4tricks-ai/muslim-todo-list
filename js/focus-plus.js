@@ -75,7 +75,7 @@
       const tap = button('tip-count', `${I.num(tipCount)} / ${I.num(tip.count)}`, () => {
         tipCount = Math.min(tip.count, tipCount + 1);
         tap.textContent = `${I.num(tipCount)} / ${I.num(tip.count)}`;
-        if (navigator.vibrate) navigator.vibrate(10);
+        window.noonBuzz(10);
         if (tipCount === tip.count) tap.classList.add('is-done');
       }, T('عدّ'));
       row.append(tap);

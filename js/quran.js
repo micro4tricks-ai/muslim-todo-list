@@ -3,7 +3,7 @@
 // and fetched on first use; js/quran-meta.js holds the surah list and the page / juz starts.
 (() => {
   'use strict';
-  const { T, I, $, el, button, load, store, dayKey, toast, onRemote } = window.noonUI;
+  const { T, I, $, el, button, load, store, dayKey, toast, onRemote, skeleton } = window.noonUI;
   const M = window.NOON_QURAN_META;
   const KEY = 'noon-sweep-quran';
   const root = $('view-quran');
@@ -426,7 +426,16 @@
     qRules.title = T('أحكام التجويد مكتوبة تحت كل آية، فوق التفسير');
     // To the page-turning Mushaf, at the page being read.
     const qBook = button('qr-chip', T('تقليب الصفحات'), toBook);
-    tools.append(minus, plus, qTafsir, qTrans, qTajweed, qRules, qBook);
+    // The three used most come first; the rest wait behind «المزيد» (on wide screens all show).
+    const qMore = button('qr-chip qr-more', T('المزيد'), () => {
+      const on = !tools.classList.contains('is-more');
+      tools.classList.toggle('is-more', on);
+      qMore.setAttribute('aria-expanded', String(on));
+      qMore.textContent = on ? T('أقل') : T('المزيد');
+    }, T('أدوات أخرى'));
+    qMore.setAttribute('aria-expanded', 'false');
+    [minus, plus, qTrans, qRules].forEach((b) => b.classList.add('qr-sec'));
+    tools.append(qBook, qTafsir, qTajweed, qMore, qTrans, qRules, minus, plus);
 
     // Reading settings.
     const settings = el('div', 'qr-settings');
@@ -559,7 +568,7 @@
       return;
     }
     if (S.inlineTafsir && !surahTafsirs[`${S.tafsir}:${s}`]) {
-      R.page.replaceChildren(el('p', 'qr-loading', T('جارٍ تحميل التفسير…')));
+      R.page.replaceChildren(skeleton(T('جارٍ تحميل التفسير…'), 8));
       loadSurahTafsir(s).then(() => renderSurah(s, at, keep)).catch(() => {
         toast(T('التفسير يحتاج اتصالاً بالإنترنت. حاول مرة أخرى.'));
         S.inlineTafsir = false; renderSurah(s, at, keep);
@@ -655,7 +664,7 @@
     if (at !== null && at !== undefined && at > first) {
       const target = R.page.querySelector(`[data-i="${at}"]`);
       if (target && keep) target.scrollIntoView({ block: 'start' });
-      else if (target) { target.scrollIntoView({ block: 'center' }); flash(target); }
+      else if (target) { target.scrollIntoView({ block: 'start' }); flash(target); }
     } else R.body.scrollTop = 0;
     updateMeta(at !== null && at !== undefined ? at : first);
     if (playing >= 0) highlight(playing);
@@ -841,7 +850,7 @@
   async function wordByWord(i) {
     R.sheet.classList.add('is-tall');
     R.tafsir.hidden = false;
-    R.tafsir.replaceChildren(el('p', 'hint', T('جارٍ تحميل معاني الكلمات…')));
+    R.tafsir.replaceChildren(skeleton(T('جارٍ تحميل معاني الكلمات…'), 3));
     const lang = I.isEn ? 'en' : (['ur', 'id', 'tr', 'bn'].includes(transLang().split('.')[0]) ? transLang().split('.')[0] : 'en');
     try {
       const r = await fetch(`https://api.quran.com/api/v4/verses/by_key/${surahOf(i) + 1}:${ayahOf(i)}?words=true&word_fields=text_uthmani&language=${lang}`);
@@ -899,7 +908,7 @@
     TAFSIRS.forEach((x) => pickT.append(new Option(I.isEn ? x[2] : x[1], x[0])));
     pickT.value = t[0];
     pickT.addEventListener('change', () => { S.tafsir = pickT.value; save(); tafsirOf(i); });
-    R.tafsir.replaceChildren(pickT, el('p', 'hint', T('جارٍ تحميل التفسير…')));
+    R.tafsir.replaceChildren(pickT, skeleton(T('جارٍ تحميل التفسير…'), 3));
     try {
       // Some tafsirs explain a group of verses once, under its first verse.
       let k = i, text = await tafsirText(t, k);
@@ -997,7 +1006,7 @@
     R.box.hidden = false;
     document.body.classList.add('qr-open');
     if (!history.state || !history.state.qr) history.pushState({ qr: 1 }, '');
-    R.page.replaceChildren(el('p', 'qr-loading', T('جارٍ فتح المصحف…')));
+    R.page.replaceChildren(skeleton(T('جارٍ فتح المصحف…'), 8));
     try {
       await Promise.all([data('uthmani'), S.trans ? data('en') : null, fontReady()]);
     } catch (_) {
@@ -1052,6 +1061,6 @@
     if (S.lastMode === 'book' && window.noonMushafBook) return window.noonMushafBook.open(S.bookPage || pageOf(S.last.i));
     return open(S.last.i);
   }
-  window.noonQuran = { book, open, resume, openSurah: (s) => open(starts[s - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), openAyah: (s, a) => open(starts[s - 1] + Math.max(0, a - 1)), last: () => (S.last ? { i: S.last.i, mode: S.lastMode || 'scroll', label: S.lastMode === 'book' ? `${T('صفحة')} ${I.num(S.bookPage || pageOf(S.last.i))} · ${surahName(surahOf(S.last.i))}` : refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
+  window.noonQuran = { book, open, resume, openSurah: (s) => open(starts[s - 1]), openJuz: (j) => open(M.juz[Math.max(1, Math.min(30, j)) - 1]), progress: () => ({ today: S.today.pages.length, goal: goal() }), openAyah: (s, a) => open(starts[s - 1] + Math.max(0, a - 1)), last: () => (S.last ? { i: S.last.i, mode: S.lastMode || 'scroll', label: S.lastMode === 'book' ? `${T('صفحة')} ${I.num(S.bookPage || pageOf(S.last.i))} · ${surahName(surahOf(S.last.i))}` : refText(S.last.i) } : null), pagesOn: (day) => ((S.log || {})[day] || 0) };
   renderIndex();
 })();

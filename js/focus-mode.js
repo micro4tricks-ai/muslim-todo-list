@@ -181,7 +181,7 @@
         const tap = button('fm-tap', `${I.num(0)} / ${I.num(t.count)}`, () => {
           n = Math.min(t.count, n + 1);
           tap.textContent = `${I.num(n)} / ${I.num(t.count)}`;
-          if (navigator.vibrate) navigator.vibrate(10);
+          window.noonBuzz(10);
           tap.classList.toggle('is-done', n === t.count);
         }, T('عدّ'));
         tip.append(tap);
