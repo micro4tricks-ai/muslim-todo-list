@@ -114,7 +114,7 @@ await check('Word audio (audio.qurancdn.com)', 'Mushaf › word by word', 'none'
 
 // ---- the library, adhkar, sounds, tools ----
 await check('Hadith books (fawazahmed0/hadith-api)', 'Library', 'kept on the device once read', async () => ({ ok: (await get('https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-bukhari/sections/1.min.json')).ok }));
-await check('Hadith books (AhmedBaset/hadith-json)', 'Library › other books', 'kept on the device once read', async () => ({ ok: (await get('https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/forties/nawawi40.json')).ok }));
+await check('Hadith books (AhmedBaset/hadith-json on GitHub)', 'Library › other books', 'kept on the device once read', async () => ({ ok: (await get('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/other_books/shamail_muhammadiyah.json')).ok }));
 await check('Adhkar audio (hisnmuslim.com)', 'Adhkar › listen', 'none', async () => ({ ok: await audio('https://www.hisnmuslim.com/audio/ar/75.mp3') }));
 await check('Focus sounds (moodist on jsDelivr)', 'Sound library (fallback copy)', 'the copy on this site comes first', async () => ({ ok: await audio('https://cdn.jsdelivr.net/gh/remvze/moodist@285ecdbfc67fb082833eee8cef9cd34bbdb1d755/public/sounds/rain/light-rain.mp3') }));
 await check('Mosques near me (Overpass)', 'Tools › mosques', 'three servers, then a Google Maps link', async () => {

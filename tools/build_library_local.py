@@ -284,7 +284,7 @@ def build_hadith(h):
 
 def migrate_ahmad(items):
     """[old number, new number] for the hadiths of the partial Musnad (hadith-json) whose number changes."""
-    url = 'https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/the_9_books/ahmed.json'
+    url = 'https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/ahmed.json'
     req = urllib.request.Request(url, headers={'User-Agent': 'muslim-todo-list-builder'})
     with urllib.request.urlopen(req, timeout=300) as r:
         old = json.loads(r.read().decode('utf-8'))['hadiths']

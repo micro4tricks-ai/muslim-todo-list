@@ -37,7 +37,7 @@ EXTRA = [
     ('darimi', 'the_9_books/darimi', 'سنن الدارمي', 'Sunan ad-Darimi', 'الإمام عبد الله بن عبد الرحمن الدارمي', 'Imam ad-Darimi'),
     ('waliullah40', 'forties/shahwaliullah40', 'الأربعون لولي الله الدهلوي', 'Shah Waliullah’s Forty', 'الشيخ ولي الله الدهلوي', 'Shah Waliullah ad-Dihlawi'),
 ]
-AB = 'https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/{}.json'
+AB = 'https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/{}.json'
 
 
 def get(url):
@@ -56,6 +56,13 @@ def main():
     for bid, ar, en, author_ar, author_en in BOOKS:
         meta = info[bid]['metadata']
         chapters = get(f'https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/{bid}.json')['chapters']
+        # The hadiths with text in each section (by the section each one names; the number ranges overlap
+        # in places), so the reader knows each chapter's length before reading it.
+        counts = {}
+        for h in get(f'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-{bid}.min.json')['hadiths']:
+            if h['text'].strip():
+                k = str(h['reference']['book'])
+                counts[k] = counts.get(k, 0) + 1
         arabic = {key(c['english']): c['arabic'].strip() for c in chapters}
         sections, missing = [], 0
         for k in sorted((k for k, v in meta['sections'].items() if v), key=float):
@@ -65,18 +72,20 @@ def main():
             if not title_ar:
                 missing += 1
             sections.append([k, title_ar or '', title_en, d['hadithnumber_first'], d['hadithnumber_last'],
-                             str(d['arabicnumber_first']), str(d['arabicnumber_last'])])
+                             str(d['arabicnumber_first']), str(d['arabicnumber_last']), counts.get(k, 0)])
         total = int(meta['last_hadithnumber'])
         print(bid, len(sections), 'sections,', total, 'hadiths, without an Arabic title:', missing)
         books.append({'id': bid, 'ar': ar, 'en': en, 'authorAr': author_ar, 'authorEn': author_en, 'count': total, 'sections': sections})
     for bid, path, ar, en, author_ar, author_en in EXTRA:
         d = get(AB.format(path))
-        ranges = {}
+        ranges, counts = {}, {}
         for h in d['hadiths']:
+            if (h.get('arabic') or '').strip():
+                counts[h['chapterId']] = counts.get(h['chapterId'], 0) + 1
             r = ranges.setdefault(h['chapterId'], [h['idInBook'], h['idInBook']])
             r[0], r[1] = min(r[0], h['idInBook']), max(r[1], h['idInBook'])
         sections = [[str(c['id']), c['arabic'].replace('ـ', '').strip(), c['english'].strip(), ranges[c['id']][0], ranges[c['id']][1],
-                     str(ranges[c['id']][0]), str(ranges[c['id']][1])] for c in d['chapters'] if c['id'] in ranges]
+                     str(ranges[c['id']][0]), str(ranges[c['id']][1]), counts.get(c['id'], 0)] for c in d['chapters'] if c['id'] in ranges]
         print(bid, len(sections), 'sections,', len(d['hadiths']), 'hadiths')
         books.append({'id': bid, 'ar': ar, 'en': en, 'authorAr': author_ar, 'authorEn': author_en, 'count': len(d['hadiths']),
                       'sections': sections, 'src': 'ab', 'path': path})

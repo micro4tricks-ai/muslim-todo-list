@@ -116,7 +116,7 @@ def main():
              for x in get('https://api.aladhan.com/v1/asmaAlHusna')['data']]
     assert len(names) == 99
 
-    nawawi = get('https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/forties/nawawi40.json')
+    nawawi = get('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/forties/nawawi40.json')
     forty = [{'n': h['idInBook'], 'ar': h['arabic'].strip(), 'en': ' '.join(x for x in (h['english'].get('narrator'), h['english'].get('text')) if x).strip()}
              for h in nawawi['hadiths']]
 

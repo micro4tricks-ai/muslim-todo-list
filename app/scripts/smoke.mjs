@@ -316,6 +316,18 @@ await phase('Book reader: scroll through parts, jump, search', async () => {
       return { parts, ord: at && at.ord, results, marked, kept: !!(kept && kept.p) };
     } catch (e) { return 'ERR ' + e.message; }
   })()`);
+  // A hadith book (2.7.1): Sahih Muslim's introduction, without the numbers that have no text.
+  const hadith = await js(`(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    try {
+      window.noonBookReader.open('h:muslim', { f: 0 }); await wait(7000);
+      const hp = [...document.querySelectorAll('.br-pg')];
+      const out = { pages: hp.length, empty: hp.filter((p) => !(p.querySelector('p[data-i]') || {}).textContent).length, num: !!document.querySelector('.br-pgn.is-head') };
+      window.noonBookReader.close(); await wait(800);
+      return out;
+    } catch (e) { return 'ERR ' + e.message; }
+  })()`);
+  if (report.bookReader && typeof report.bookReader === 'object') report.bookReader.hadith = hadith;
   console.log('book reader:', JSON.stringify(report.bookReader));
 }, 4000);
 // The Listen tab: the mp3quran.net lists load, a station plays, and the adhan can reach the page.
@@ -514,7 +526,7 @@ if (!(Math.abs(mt.adhkarTop) <= 12)) problems.push(`the bottom bar's «الأذ�
 if (!report.reminder || report.reminder.booked !== true || !(report.reminder.inMinutes >= 55 && report.reminder.inMinutes <= 61)) problems.push(`a reminder was not booked with the phone: ${JSON.stringify(report.reminder)}`);
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
 const br = report.bookReader || {};
-if (!(br.parts >= 2 && br.ord === 100 && br.results > 0 && br.marked > 0 && br.kept)) problems.push(`the book reader: ${JSON.stringify(report.bookReader)}`);
+if (!(br.parts >= 2 && br.ord === 100 && br.results > 0 && br.marked > 0 && br.kept && br.hadith && br.hadith.pages > 2 && !br.hadith.empty && br.hadith.num)) problems.push(`the book reader: ${JSON.stringify(report.bookReader)}`);
 report.problems = problems;
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));

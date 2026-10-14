@@ -2,7 +2,7 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v35';
+const VERSION = 'v36';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
@@ -60,7 +60,9 @@ self.addEventListener('activate', (ev) => {
 const isMedia = (url) => (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname) && url.hostname !== 'cdn.islamic.network' && !/mp3quran\.net$/.test(url.hostname)) || url.hostname === 'fonts.gstatic.com';
 const isFontCss = (url) => url.hostname === 'fonts.googleapis.com';
 // Hadith books and tafsirs never change once published.
-const isLibrary = (url) => (url.hostname === 'cdn.jsdelivr.net' && /\/gh\/(fawazahmed0\/hadith-api|spa5k\/tafsir_api|AhmedBaset\/hadith-json)@/.test(url.pathname))
+// hadith-json comes from GitHub itself: jsDelivr stopped serving it (the repository passed its 50 MB limit).
+const isLibrary = (url) => (url.hostname === 'raw.githubusercontent.com' && url.pathname.startsWith('/AhmedBaset/hadith-json/'))
+  || (url.hostname === 'cdn.jsdelivr.net' && /\/gh\/(fawazahmed0\/hadith-api|spa5k\/tafsir_api|AhmedBaset\/hadith-json)@/.test(url.pathname))
   || (url.hostname === 'api.alquran.cloud' && /^\/v1\/(ayah|surah)\//.test(url.pathname))
   || (url.hostname === 'api.quran.com' && url.pathname.startsWith('/api/v4/verses/'));
 

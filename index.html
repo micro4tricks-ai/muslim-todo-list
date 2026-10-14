@@ -16,8 +16,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.7.0.1">
-<link rel="stylesheet" href="fonts/extra.css?v=2.7.0.1">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.7.1.2">
+<link rel="stylesheet" href="fonts/extra.css?v=2.7.1.2">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -1641,6 +1641,20 @@
   .br-pg { margin: 0; }
   .br-pgn { display: flex; align-items: center; gap: 10px; margin: 0.4em 0 1.1em; font-family: var(--font); font-size: 12px; line-height: 1; color: var(--bsoft); -webkit-user-select: none; user-select: none; }
   .br-pgn::before, .br-pgn::after { content: ''; flex: 1; border-top: 1px dashed var(--bline); }
+  /* A hadith book: the gradings, the English and the buttons under each hadith. */
+  .br-pgn.is-head { margin: 1.3em 0 0.55em; color: var(--bacc); font-size: 13px; font-weight: 700; }
+  .br-h + .br-pgn.is-head { margin-top: 0.4em; }
+  .br-grades { display: flex; flex-wrap: wrap; gap: 6px; margin: 0.1em 0 0.5em; font-family: var(--font); line-height: 1.4; -webkit-user-select: none; user-select: none; }
+  /* The page's own colours, whatever the app's light or dark mode. */
+  .br .br-grades .grade, .br .br-grades .grade.is-good, .br .br-grades .grade.is-weak { background: transparent; border-color: var(--bline); color: var(--bsoft); }
+  .br .br-grades .grade.is-good { color: #2F7A4C; border-color: rgba(47, 122, 76, 0.4); }
+  .br .br-grades .grade.is-weak { color: #A4432A; border-color: rgba(164, 67, 42, 0.4); }
+  .br[data-theme="night"] .br-grades .grade.is-good { color: #8FD4A8; border-color: rgba(143, 212, 168, 0.35); }
+  .br[data-theme="night"] .br-grades .grade.is-weak { color: #F0A28C; border-color: rgba(240, 162, 140, 0.35); }
+  .br-en { margin: 0 0 0.6em; font-family: var(--font); font-size: 0.72em; line-height: 1.7; text-align: left; color: var(--bsoft); }
+  .br-hacts { margin: 0 0 0.2em; font-family: var(--font); font-size: 13.5px; line-height: 1.4; -webkit-user-select: none; user-select: none; }
+  .br-hacts .link-btn { color: var(--bacc); min-height: 36px; }
+  .lib-book .lib-at { color: var(--accent); font-weight: 600; }
   .br-wait { padding: 40px 10px; text-align: center; color: var(--bsoft); font-family: var(--font); font-size: 15px; }
   mark.br-hl { color: inherit; border-radius: 3px; padding: 0 1px; }
   mark.br-hl.is-gold { background: rgba(240, 196, 70, 0.42); }
@@ -2244,61 +2258,61 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.7.0.1"></script>
-<script src="js/a11y.js?v=2.7.0.1"></script>
-<script src="js/clock-core.js?v=2.7.0.1"></script>
-<script src="js/clock.js?v=2.7.0.1"></script>
-<script src="js/astro.js?v=2.7.0.1"></script>
-<script src="js/look.js?v=2.7.0.1"></script>
-<script src="js/sounds.js?v=2.7.0.1"></script>
-<script src="js/tasks.js?v=2.7.0.1"></script>
-<script src="js/views.js?v=2.7.0.1"></script>
-<script src="js/remind-card.js?v=2.7.0.1"></script>
-<script src="js/reminders-core.js?v=2.7.0.1"></script>
-<script src="js/reminders.js?v=2.7.0.1"></script>
-<script src="js/notes.js?v=2.7.0.1"></script>
-<script src="js/cards.js?v=2.7.0.1"></script>
-<script src="js/adhkar-data.js?v=2.7.0.1"></script>
-<script src="js/adhkar.js?v=2.7.0.1"></script>
-<script src="js/habits.js?v=2.7.0.1"></script>
-<script src="js/prayers.js?v=2.7.0.1"></script>
-<script src="js/focus-plus.js?v=2.7.0.1"></script>
-<script src="js/native.js?v=2.7.0.1"></script>
-<script src="js/prayer-alerts.js?v=2.7.0.1"></script>
-<script src="js/device.js?v=2.7.0.1"></script>
-<script src="js/extras-data.js?v=2.7.0.1"></script>
-<script src="js/quran-meta.js?v=2.7.0.1"></script>
-<script src="js/hifz.js?v=2.7.0.1"></script>
-<script src="js/khatma.js?v=2.7.0.1"></script>
-<script src="js/challenge.js?v=2.7.0.1"></script>
-<script src="js/tajweed-core.js?v=2.7.0.1"></script>
-<script src="js/tajweed-rules.js?v=2.7.0.1"></script>
-<script src="js/quran.js?v=2.7.0.1"></script>
-<script src="js/mushaf-core.js?v=2.7.0.1"></script>
-<script src="js/mushaf-book.js?v=2.7.0.1"></script>
-<script src="js/sunnah-data.js?v=2.7.0.1"></script>
-<script src="js/sunnah.js?v=2.7.0.1"></script>
-<script src="js/wmm-data.js?v=2.7.0.1"></script>
-<script src="js/compass-core.js?v=2.7.0.1"></script>
-<script src="js/qibla.js?v=2.7.0.1"></script>
-<script src="js/library-meta.js?v=2.7.0.1"></script>
-<script src="js/salah-data.js?v=2.7.0.1"></script>
-<script src="js/tools.js?v=2.7.0.1"></script>
-<script src="js/library-books.js?v=2.7.0.1"></script>
-<script src="js/library-local.js?v=2.7.0.1"></script>
-<script src="js/library.js?v=2.7.0.1"></script>
-<script src="js/book-reader.js?v=2.7.0.1"></script>
-<script src="js/listen.js?v=2.7.0.1"></script>
-<script src="js/report.js?v=2.7.0.1"></script>
-<script src="js/focus-mode.js?v=2.7.0.1"></script>
-<script src="js/config.js?v=2.7.0.1"></script>
-<script src="js/vendor/supabase.js?v=2.7.0.1" defer></script>
-<script src="js/sync-core.js?v=2.7.0.1" defer></script>
-<script src="js/sync.js?v=2.7.0.1" defer></script>
-<script src="js/app.js?v=2.7.0.1" defer></script>
-<script src="js/settings.js?v=2.7.0.1" defer></script>
-<script src="js/today-core.js?v=2.7.0.1" defer></script>
-<script src="js/today.js?v=2.7.0.1" defer></script>
-<script src="js/nav.js?v=2.7.0.1" defer></script>
+<script src="js/i18n.js?v=2.7.1.2"></script>
+<script src="js/a11y.js?v=2.7.1.2"></script>
+<script src="js/clock-core.js?v=2.7.1.2"></script>
+<script src="js/clock.js?v=2.7.1.2"></script>
+<script src="js/astro.js?v=2.7.1.2"></script>
+<script src="js/look.js?v=2.7.1.2"></script>
+<script src="js/sounds.js?v=2.7.1.2"></script>
+<script src="js/tasks.js?v=2.7.1.2"></script>
+<script src="js/views.js?v=2.7.1.2"></script>
+<script src="js/remind-card.js?v=2.7.1.2"></script>
+<script src="js/reminders-core.js?v=2.7.1.2"></script>
+<script src="js/reminders.js?v=2.7.1.2"></script>
+<script src="js/notes.js?v=2.7.1.2"></script>
+<script src="js/cards.js?v=2.7.1.2"></script>
+<script src="js/adhkar-data.js?v=2.7.1.2"></script>
+<script src="js/adhkar.js?v=2.7.1.2"></script>
+<script src="js/habits.js?v=2.7.1.2"></script>
+<script src="js/prayers.js?v=2.7.1.2"></script>
+<script src="js/focus-plus.js?v=2.7.1.2"></script>
+<script src="js/native.js?v=2.7.1.2"></script>
+<script src="js/prayer-alerts.js?v=2.7.1.2"></script>
+<script src="js/device.js?v=2.7.1.2"></script>
+<script src="js/extras-data.js?v=2.7.1.2"></script>
+<script src="js/quran-meta.js?v=2.7.1.2"></script>
+<script src="js/hifz.js?v=2.7.1.2"></script>
+<script src="js/khatma.js?v=2.7.1.2"></script>
+<script src="js/challenge.js?v=2.7.1.2"></script>
+<script src="js/tajweed-core.js?v=2.7.1.2"></script>
+<script src="js/tajweed-rules.js?v=2.7.1.2"></script>
+<script src="js/quran.js?v=2.7.1.2"></script>
+<script src="js/mushaf-core.js?v=2.7.1.2"></script>
+<script src="js/mushaf-book.js?v=2.7.1.2"></script>
+<script src="js/sunnah-data.js?v=2.7.1.2"></script>
+<script src="js/sunnah.js?v=2.7.1.2"></script>
+<script src="js/wmm-data.js?v=2.7.1.2"></script>
+<script src="js/compass-core.js?v=2.7.1.2"></script>
+<script src="js/qibla.js?v=2.7.1.2"></script>
+<script src="js/library-meta.js?v=2.7.1.2"></script>
+<script src="js/salah-data.js?v=2.7.1.2"></script>
+<script src="js/tools.js?v=2.7.1.2"></script>
+<script src="js/library-books.js?v=2.7.1.2"></script>
+<script src="js/library-local.js?v=2.7.1.2"></script>
+<script src="js/library.js?v=2.7.1.2"></script>
+<script src="js/book-reader.js?v=2.7.1.2"></script>
+<script src="js/listen.js?v=2.7.1.2"></script>
+<script src="js/report.js?v=2.7.1.2"></script>
+<script src="js/focus-mode.js?v=2.7.1.2"></script>
+<script src="js/config.js?v=2.7.1.2"></script>
+<script src="js/vendor/supabase.js?v=2.7.1.2" defer></script>
+<script src="js/sync-core.js?v=2.7.1.2" defer></script>
+<script src="js/sync.js?v=2.7.1.2" defer></script>
+<script src="js/app.js?v=2.7.1.2" defer></script>
+<script src="js/settings.js?v=2.7.1.2" defer></script>
+<script src="js/today-core.js?v=2.7.1.2" defer></script>
+<script src="js/today.js?v=2.7.1.2" defer></script>
+<script src="js/nav.js?v=2.7.1.2" defer></script>
 </body>
 </html>

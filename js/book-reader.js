@@ -5,6 +5,8 @@
 // selected text can be copied (with its source), highlighted in three colours, given a note or
 // shared; pages can be bookmarked; the place is kept to the line and reopens there. Each book can be
 // kept on the phone for reading offline, or saved as a text file, whole or in part.
+// The hadith books read here too (2.7.1): library.js hands over a book whose parts are its chapters
+// and whose pages are its hadiths (load, toc, label, decorate, urls, findNumber), with their gradings.
 (() => {
   'use strict';
   const { T, I, el, button, toast } = window.noonUI;
@@ -98,12 +100,24 @@
   let loading = null, cur = { ord: 0 }, hits = [], hitAt = -1, toc = [];
   const S = () => D().state();
   const ordOf = (f, k) => base[f] + k;
+  const isH = () => !!(B && B.kind === 'hadith');
+  const label = (pg) => (B && B.label ? B.label(pg) : D().pageLabel(pg));
+  // «صفحة ٥ · ج ١ ص ٧» in a book; a hadith book counts its hadiths by their numbers.
+  const posText = (o, lbl) => (isH() ? lbl || I.num(o + 1) : `${T('صفحة')} ${I.num(o + 1)}${lbl ? ` · ${lbl}` : ''}`);
+  const partUrls = (f) => (B.urls ? B.urls(f) : [D().url(`${B.slug}/${f}.json.gz`, B.v)]);
+  // A part's real length can differ from the count given ahead (a hadith chapter with gaps in its
+  // numbers); the pages after it move along.
+  function rebase() {
+    base = []; let acc = 0; B.fc.forEach((n) => { base.push(acc); acc += n; });
+    B.pages = acc;
+    parts.forEach(({ el: sec }, f) => sec.querySelectorAll(':scope > .br-pg').forEach((pg, k) => { pg.dataset.ord = String(base[f] + k); }));
+  }
   function fileOfOrd(o) { let f = 0; while (f < B.files - 1 && base[f + 1] <= o) f++; return f; }
 
   // ---- open and close ----
   function open(slug, opts = {}) {
     const d = D();
-    const b = d && d.shelfBook(slug);
+    const b = d && (d.book ? d.book(slug) : d.shelfBook(slug));
     if (!b) return;
     if (!b.fc) b.fc = Array.from({ length: b.files }, (_, f) => (f === b.files - 1 ? b.pages - Math.floor(b.pages / b.files) * (b.files - 1) : Math.floor(b.pages / b.files)));
     B = b;
@@ -118,12 +132,14 @@
     fitRail();
     document.body.classList.add('br-open');
     if (!history.state || !history.state.br) history.pushState({ br: 1 }, '');
-    d.gz(`${slug}/index.json.gz`, b.v).then((idx) => { if (B === b) toc = idx.toc || []; }).catch(() => {});
+    if (b.toc) toc = b.toc();
+    else d.gz(`${slug}/index.json.gz`, b.v).then((idx) => { if (B === b) toc = idx.toc || []; }).catch(() => {});
     // Where to: a heading, a page, the saved place, or the start.
     const place = (S().books || {})[slug];
     let at;
     if (opts.toc) at = { f: opts.f || 0, toc: opts.toc };
     else if (opts.page) at = { f: opts.f || 0, page: opts.page };
+    else if (opts.num) at = { f: opts.f || 0, num: opts.num };
     else if ((opts.resume || opts.f === undefined) && place) at = { f: place.f || 0, page: place.p, off: place.off || 0 };
     else at = { f: opts.f || 0 };
     // From a search result on the book's page: the same search here, at that result, its words marked.
@@ -147,8 +163,11 @@
   // ---- the parts on screen ----
   async function part(f) {
     if (data.has(f)) return data.get(f);
-    const pages = await D().gz(`${B.slug}/${f}.json.gz`, B.v);
+    const b = B;
+    const pages = b.load ? await b.load(f) : await D().gz(`${b.slug}/${f}.json.gz`, b.v);
+    if (B !== b) return pages;
     data.set(f, pages);
+    if (b.fc[f] !== pages.length) { b.fc[f] = pages.length; rebase(); }
     return pages;
   }
   function build(f, pages) {
@@ -165,8 +184,10 @@
         n.dataset.i = String(i++);
         p.append(n);
       });
-      const lbl = D().pageLabel(pg);
-      p.append(el('div', 'br-pgn', `${lbl ? `${lbl} · ` : ''}${I.num(ordOf(f, k) + 1)}`));
+      if (B.decorate) p.append(...B.decorate(pg));
+      const lbl = label(pg);
+      // A hadith's number heads it (after its chapter's title); a book's page number closes the page.
+      if (isH()) { const n = el('div', 'br-pgn is-head', lbl); const t = p.querySelector('p'); if (t) p.insertBefore(n, t); else p.append(n); } else p.append(el('div', 'br-pgn', `${lbl ? `${lbl} · ` : ''}${I.num(ordOf(f, k) + 1)}`));
       paintMarks(p, f);
       sec.append(p);
     });
@@ -222,6 +243,7 @@
     const secEl = parts.get(f).el;
     if (at.toc) target = secEl.querySelector(`.br-h[data-toc="${at.toc}"]`);
     if (!target && at.page) target = secEl.querySelector(`.br-pg[data-page="${at.page}"]`);
+    if (!target && at.num) { const pd = (data.get(f) || []).find((x) => Number(x[2]) === at.num); if (pd) target = secEl.querySelector(`.br-pg[data-page="${pd[0]}"]`); }
     if (!target && at.ord !== undefined) target = secEl.querySelector(`.br-pg[data-ord="${at.ord}"]`);
     const pg = target ? target.closest('.br-pg') : secEl.querySelector('.br-pg');
     if (pg) {
@@ -274,10 +296,10 @@
   function showPlace() {
     const n = B.pages, o = cur.ord;
     const pgData = (data.get(cur.f) || [])[o - base[cur.f]];
-    const lbl = pgData ? D().pageLabel(pgData) : '';
-    tMeta.textContent = `${T('صفحة')} ${I.num(o + 1)} ${T('من')} ${I.num(n)}${lbl ? ` · ${lbl}` : ''}`;
-    fText.textContent = `${headingAt() || ''}`;
+    const lbl = pgData ? label(pgData) : '';
     const frac = n > 1 ? o / (n - 1) : 0;
+    tMeta.textContent = isH() ? `${lbl ? `${lbl} · ` : ''}${I.num(Math.round(frac * 100))}٪` : `${T('صفحة')} ${I.num(o + 1)} ${T('من')} ${I.num(n)}${lbl ? ` · ${lbl}` : ''}`;
+    fText.textContent = `${headingAt() || ''}`;
     fFill.style.width = `${Math.round(frac * 100)}%`;
     rail.setAttribute('aria-valuemin', '1'); rail.setAttribute('aria-valuemax', String(n)); rail.setAttribute('aria-valuenow', String(o + 1));
     rail.setAttribute('aria-valuetext', tMeta.textContent);
@@ -302,7 +324,7 @@
     const pgData = (data.get(cur.f) || [])[cur.ord - base[cur.f]];
     st.books = st.books || {};
     st.books[B.slug] = { f: cur.f, p: cur.page, off: Math.round((cur.off || 0) * 1000) / 1000, ord: cur.ord, at: Date.now(),
-      label: `${T('صفحة')} ${I.num(cur.ord + 1)} ${T('من')} ${I.num(B.pages)}${pgData && d.pageLabel(pgData) ? ` · ${d.pageLabel(pgData)}` : ''}` };
+      label: isH() ? (pgData ? label(pgData) : '') : `${T('صفحة')} ${I.num(cur.ord + 1)} ${T('من')} ${I.num(B.pages)}${pgData && label(pgData) ? ` · ${label(pgData)}` : ''}` };
     if (now) clearTimeout(saveT);
     d.save();
   }
@@ -323,8 +345,8 @@
   }
   function bubbleFor(o, frac) {
     const f = fileOfOrd(o), pg = (data.get(f) || [])[o - base[f]];
-    const lbl = pg ? D().pageLabel(pg) : '';
-    bubble.textContent = `${I.num(o + 1)} / ${I.num(B.pages)}${lbl ? ` · ${lbl}` : ''}`;
+    const lbl = pg ? label(pg) : '';
+    bubble.textContent = isH() ? lbl || `${I.num(Math.round(frac * 100))}٪` : `${I.num(o + 1)} / ${I.num(B.pages)}${lbl ? ` · ${lbl}` : ''}`;
     bubble.hidden = false;
     const h = rail.clientHeight - thumb.offsetHeight;
     bubble.style.transform = `translateY(${Math.round(frac * Math.max(0, h))}px)`;
@@ -399,16 +421,23 @@
     sList.style.top = `${sBar.getBoundingClientRect().bottom - box.getBoundingClientRect().top}px`;
     sList.hidden = false;
     sList.replaceChildren(el('p', 'br-wait', T('جارٍ البحث…')));
+    // A hadith book comes whole in one file for searching (its chapters one by one would take long).
+    let whole = null;
+    if (b.allParts) {
+      try { whole = await (b._all = b._all || b.allParts().catch((e) => { b._all = null; throw e; })); } catch (_) { if (run === searchRun) sList.replaceChildren(el('p', 'br-wait', T('البحث يحتاج اتصالاً بالإنترنت أول مرة.'))); return; }
+      if (run !== searchRun || B !== b) return;
+    }
     for (let f = 0; f < b.files && hits.length < 300; f++) {
       let pages;
-      try { pages = await part(f); } catch (_) { if (run === searchRun) sList.replaceChildren(el('p', 'br-wait', T('البحث يحتاج اتصالاً بالإنترنت أول مرة.'))); return; }
+      if (!whole) for (let j = f + 1; j < Math.min(b.files, f + 6); j++) part(j).catch(() => {}); // the next few on their way
+      try { pages = whole ? whole[f] || [] : await part(f); } catch (_) { if (run === searchRun) sList.replaceChildren(el('p', 'br-wait', T('البحث يحتاج اتصالاً بالإنترنت أول مرة.'))); return; }
       if (run !== searchRun || B !== b) return;
       pages.forEach((pg, k) => pg[3].forEach((x, i) => {
         const t = typeof x === 'string' ? x : x[1];
         const F = folded(t);
         let at = F.s.indexOf(needle);
         while (at >= 0 && hits.length < 300) {
-          hits.push({ f, page: pg[0], ord: ordOf(f, k), i, t, s: F.map[at], e: F.map[at + needle.length - 1] + 1, lbl: D().pageLabel(pg) });
+          hits.push({ f, page: pg[0], ord: ordOf(f, k), i, t, s: F.map[at], e: F.map[at + needle.length - 1] + 1, lbl: label(pg) });
           at = F.s.indexOf(needle, at + needle.length);
         }
       }));
@@ -422,7 +451,7 @@
       const snip = el('span', 'br-snip');
       const a = Math.max(0, h.s - 50), z = Math.min(h.t.length, h.e + 70);
       snip.append(document.createTextNode(`${a > 0 ? '…' : ''}${h.t.slice(a, h.s)}`), el('mark', '', h.t.slice(h.s, h.e)), document.createTextNode(`${h.t.slice(h.e, z)}${z < h.t.length ? '…' : ''}`));
-      r.append(el('b', '', `${T('صفحة')} ${I.num(h.ord + 1)}${h.lbl ? ` · ${h.lbl}` : ''}`), snip);
+      r.append(el('b', '', posText(h.ord, h.lbl)), snip);
       sList.append(r);
     });
   }
@@ -509,9 +538,10 @@
     return out;
   }
   const selText = () => selPieces().map((x) => x.text).join('\n');
+  function lblOf(pgEl) { const o = Number(pgEl.dataset.ord), f = fileOfOrd(o), pg = (data.get(f) || [])[o - base[f]]; return pg ? label(pg) : ''; }
   function sourceOf(pgEl) {
     const o = Number(pgEl.dataset.ord), f = fileOfOrd(o), pg = (data.get(f) || [])[o - base[f]];
-    const lbl = pg ? D().pageLabel(pg) : '';
+    const lbl = pg ? label(pg) : '';
     return `${I.isEn ? B.en : B.ar} — ${I.isEn ? B.authorEn : B.author}${lbl ? `، ${lbl}` : ''}`;
   }
   // Copied text carries its source, whichever way it is copied.
@@ -535,7 +565,7 @@
     const list = notes();
     ps.forEach((x, k) => {
       const pid = Number(x.pg.dataset.page), o = Number(x.pg.dataset.ord);
-      list.push({ id: `${g}-${k}`, g, p: pid, f: fileOfOrd(o), ord: o, i: Number(x.para.dataset.i), s: x.s, e: x.e, c, note: k === 0 ? note || '' : '', text: x.text.slice(0, 400), at: Date.now() });
+      list.push({ id: `${g}-${k}`, g, p: pid, f: fileOfOrd(o), ord: o, lbl: lblOf(x.pg), i: Number(x.para.dataset.i), s: x.s, e: x.e, c, note: k === 0 ? note || '' : '', text: x.text.slice(0, 400), at: Date.now() });
     });
     D().save();
     clearSel();
@@ -550,7 +580,7 @@
     noteDialog('', (txt) => {
       // The selection is gone once the box is typed in; keep what was chosen.
       const g = Date.now().toString(36);
-      snapshot.forEach((x, k) => notes().push({ id: `${g}-${k}`, g, p: Number(x.pg.dataset.page), f: fileOfOrd(Number(x.pg.dataset.ord)), ord: Number(x.pg.dataset.ord),
+      snapshot.forEach((x, k) => notes().push({ id: `${g}-${k}`, g, p: Number(x.pg.dataset.page), f: fileOfOrd(Number(x.pg.dataset.ord)), ord: Number(x.pg.dataset.ord), lbl: lblOf(x.pg),
         i: Number(x.para.dataset.i), s: x.s, e: x.e, c: 'gold', note: k === 0 ? txt : '', text: x.text.slice(0, 400), at: Date.now() }));
       D().save();
       [...new Set(snapshot.map((x) => x.pg.dataset.page))].forEach(repaint);
@@ -589,7 +619,7 @@
     const list = bookmarks();
     const k = list.findIndex((m) => m.p === cur.page);
     if (k >= 0) { list.splice(k, 1); toast(T('أُزيلت العلامة.')); } else {
-      list.push({ p: cur.page, f: cur.f, ord: cur.ord, title: headingAt().slice(0, 80), at: Date.now() });
+      list.push({ p: cur.page, f: cur.f, ord: cur.ord, lbl: cur.el ? lblOf(cur.el) : '', title: headingAt().slice(0, 80), at: Date.now() });
       toast(T('وُضعت علامة على هذه الصفحة.'));
       window.noonBuzz && window.noonBuzz(10);
     }
@@ -598,6 +628,7 @@
   }
   // A tap on a highlight: its colour, its note, or remove it.
   doc.addEventListener('click', (ev) => {
+    if (ev.target.closest('button, a, input')) return;
     const m = ev.target.closest('mark.br-hl');
     const s = getSelection();
     if (m && (!s || s.isCollapsed)) { editMark(m.dataset.hl); return; }
@@ -692,7 +723,7 @@
       bm.forEach((m) => {
         const r = el('div', 'br-mrow');
         const go = button('br-mgo', '', () => { closeSheet(); jump({ f: m.f, page: m.p }); });
-        go.append(el('b', '', `${T('صفحة')} ${I.num(m.ord + 1)}`), el('span', '', m.title || ''));
+        go.append(el('b', '', posText(m.ord, m.lbl)), el('span', '', m.title || ''));
         r.append(go, button('link-btn danger', T('إزالة'), () => { const l = bookmarks(); l.splice(l.indexOf(m), 1); D().save(); pane.replaceChildren(); drawMarks(pane); showPlace(); }));
         pane.append(r);
       });
@@ -703,7 +734,7 @@
         const r = el('div', 'br-mrow');
         const go = button('br-mgo', '', () => { closeSheet(); jump({ f: h.f, page: h.p }).then(() => flashMark(h.id)); });
         const t = el('span', `br-mtext is-${h.c}`, h.text);
-        go.append(el('b', '', `${T('صفحة')} ${I.num(h.ord + 1)}`), t);
+        go.append(el('b', '', posText(h.ord, h.lbl)), t);
         if (h.note) go.append(el('small', 'br-mnote', h.note));
         r.append(go, button('link-btn danger', T('حذف'), () => { removeMark(h.g); pane.replaceChildren(); drawMarks(pane); }));
         pane.append(r);
@@ -758,10 +789,10 @@
       c.append(off);
       offlineState().then((n) => drawOffline(n, state, act));
       const exp = el('div', 'br-block');
-      exp.append(el('b', '', T('تنزيل كملف نصي')), el('p', 'br-hint', T('ملف نصي (txt) بنص الكتاب وعناوينه وأرقام صفحاته، يُفتح بأي برنامج.')));
+      exp.append(el('b', '', T('تنزيل كملف نصي')), el('p', 'br-hint', T(isH() ? 'ملف نصي (txt) بنص الأحاديث وأبوابها وأرقامها، يُفتح بأي برنامج.' : 'ملف نصي (txt) بنص الكتاب وعناوينه وأرقام صفحاته، يُفتح بأي برنامج.')));
       const ea = el('div', 'br-acts');
-      ea.append(button('btn btn-quiet', T('الكتاب كاملاً'), () => exportText(0, B.pages - 1)),
-        button('btn btn-quiet', T('الجزء الحالي'), () => exportText(base[cur.f || 0], base[cur.f || 0] + B.fc[cur.f || 0] - 1)));
+      ea.append(button('btn btn-quiet', T('الكتاب كاملاً'), () => exportText(0, B.pages - 1, [0, B.files - 1])),
+        button('btn btn-quiet', T(isH() ? 'هذا الباب' : 'الجزء الحالي'), () => { const f = cur.f || 0, sp = B.span ? B.span(f) : [f, f]; exportText(base[sp[0]], base[sp[1]] + B.fc[sp[1]] - 1, sp); }));
       const from = el('input'); from.type = 'number'; from.min = '1'; from.max = String(B.pages); from.value = String(cur.ord + 1); from.setAttribute('aria-label', T('من صفحة'));
       const to = el('input'); to.type = 'number'; to.min = '1'; to.max = String(B.pages); to.value = String(Math.min(B.pages, cur.ord + 20)); to.setAttribute('aria-label', T('إلى صفحة'));
       const range = el('div', 'br-range');
@@ -769,14 +800,31 @@
         const a = Math.max(1, Math.min(B.pages, Number(from.value) || 1)), z = Math.max(1, Math.min(B.pages, Number(to.value) || 1));
         exportText(Math.min(a, z) - 1, Math.max(a, z) - 1);
       }));
-      exp.append(ea, range);
+      exp.append(ea);
+      if (!isH()) exp.append(range); // a hadith book saves by chapter; its numbers are not its pages
       c.append(exp);
       const jumpBox = el('div', 'br-block');
+      if (isH() && B.findNumber) {
+        const nin = el('input'); nin.type = 'number'; nin.min = '1'; nin.placeholder = T('رقم الحديث'); nin.setAttribute('aria-label', T('رقم الحديث'));
+        const nr = el('div', 'br-range');
+        const goNum = async () => {
+          const n = Math.floor(Number(String(nin.value).replace(/[٠-٩]/g, (x) => '٠١٢٣٤٥٦٧٨٩'.indexOf(x))));
+          let at = null;
+          try { at = n > 0 ? await B.findNumber(n) : null; } catch (_) { toast(T('تعذّر تحميل هذا الجزء. القراءة أول مرة تحتاج اتصالاً بالإنترنت.')); return; }
+          if (!at) { toast(T('لا يوجد حديث بهذا الرقم في هذا الكتاب.')); return; }
+          closeSheet(); jump(at);
+        };
+        nin.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') goNum(); });
+        nr.append(nin, button('btn btn-primary', T('اذهب'), goNum));
+        jumpBox.append(el('b', '', T('اذهب إلى حديث برقمه')), nr);
+        c.append(jumpBox);
+      } else {
       const pin = el('input'); pin.type = 'number'; pin.min = '1'; pin.max = String(B.pages); pin.placeholder = `1–${B.pages}`; pin.setAttribute('aria-label', T('رقم الصفحة'));
       const jr = el('div', 'br-range');
       jr.append(pin, button('btn btn-primary', T('اذهب'), () => { const n = Number(pin.value); if (n >= 1 && n <= B.pages) { closeSheet(); jump({ ord: n - 1 }); } }));
       jumpBox.append(el('b', '', `${T('اذهب إلى صفحة')} (${I.num(1)}–${I.num(B.pages)})`), jr);
       c.append(jumpBox);
+      }
       const about = el('div', 'br-acts');
       about.append(button('btn btn-quiet', T('صفحة الكتاب: المؤلف والفهرس'), () => { const slug = B.slug; close(); setTimeout(() => D().showBook(slug), 120); }));
       c.append(about);
@@ -787,7 +835,7 @@
     try {
       const c = await caches.open('library-v1');
       let n = 0;
-      for (let f = 0; f < B.files; f++) if (await c.match(D().url(`${B.slug}/${f}.json.gz`, B.v))) n++;
+      for (let f = 0; f < B.files; f++) if (await c.match(partUrls(f)[0])) n++;
       return n;
     } catch (_) { return -1; }
   }
@@ -798,20 +846,21 @@
       state.textContent = T('الكتاب محفوظ كاملاً على هذا الجهاز، ويُقرأ دون إنترنت.');
       act.append(button('btn btn-quiet danger', T('حذف النسخة المحفوظة'), async () => {
         const c = await caches.open('library-v1');
-        for (let f = 0; f < B.files; f++) await c.delete(D().url(`${B.slug}/${f}.json.gz`, B.v));
+        for (let f = 0; f < B.files; f++) for (const u of partUrls(f)) await c.delete(u);
+        if (B.forget) B.forget();
         drawOffline(await offlineState(), state, act);
         toast(T('حُذفت النسخة المحفوظة. تبقى الأجزاء التي تقرؤها محفوظة حتى تُحذف.'));
       }));
       return;
     }
-    state.textContent = `${T('محفوظ منه')} ${I.num(n)} ${T('من')} ${I.num(B.files)} ${T('أجزاء')} · ${T('حجمه كاملاً نحو')} ${(B.size / 1e6).toFixed(1)} ${T('ميجابايت')}`;
+    state.textContent = `${T('محفوظ منه')} ${I.num(n)} ${T('من')} ${I.num(B.files)} ${T(isH() ? 'أبواب' : 'أجزاء')}${B.size ? ` · ${T('حجمه كاملاً نحو')} ${(B.size / 1e6).toFixed(1)} ${T('ميجابايت')}` : ''}`;
     const go = button('btn btn-primary', T('احفظ الكتاب كاملاً'), async () => {
       go.disabled = true;
       const b = B;
       try {
         for (let f = 0; f < b.files; f++) {
           state.textContent = `${T('جارٍ الحفظ…')} ${I.num(Math.round((f / b.files) * 100))}%`;
-          await D().gz(`${b.slug}/${f}.json.gz`, b.v);
+          if (b.load) await b.load(f); else await D().gz(`${b.slug}/${f}.json.gz`, b.v);
         }
         drawOffline(await offlineState(), state, act);
         toast(T('حُفظ الكتاب كاملاً للقراءة دون إنترنت.'));
@@ -819,24 +868,26 @@
     });
     act.append(go);
   }
-  async function exportText(a, z) {
+  async function exportText(a, z, files) {
     const b = B;
     toast(T('جارٍ تجهيز الملف…'));
-    const lines = [`${b.ar}`, `${b.author}${b.death && b.death < 9000 ? ` (ت ${b.death}هـ)` : ''}`, b.edition || '', `${T('من المكتبة الشاملة، بنص المؤلف دون حواشي المحقق.')}`, ''];
+    const lines = [`${b.ar}`, `${b.author}${b.death && b.death < 9000 ? ` (ت ${b.death}هـ)` : ''}`, b.edition || '', b.note !== undefined ? b.note : T('من المكتبة الشاملة، بنص المؤلف دون حواشي المحقق.'), ''];
     try {
-      for (let f = fileOfOrd(a); f <= fileOfOrd(z); f++) {
+      const [fa, fz] = files || [fileOfOrd(a), fileOfOrd(z)];
+      for (let f = fa; f <= fz; f++) {
         const pages = await part(f);
         pages.forEach((pg, k) => {
           const o = ordOf(f, k);
-          if (o < a || o > z) return;
+          if (!files && (o < a || o > z)) return;
           pg[3].forEach((x) => lines.push(typeof x === 'string' ? x : `\n■ ${x[1]}\n`));
-          const lbl = D().pageLabel(pg);
+          if (b.plain && b.plain(pg)) lines.push(b.plain(pg));
+          const lbl = label(pg);
           lines.push(`— [${lbl || `${T('صفحة')} ${o + 1}`}] —`, '');
         });
       }
     } catch (_) { toast(T('تعذّر تجهيز الملف. القراءة أول مرة تحتاج اتصالاً بالإنترنت.')); return; }
-    const whole = a === 0 && z === b.pages - 1;
-    const name = `${b.slug}${whole ? '' : `-${a + 1}-${z + 1}`}.txt`;
+    const whole = files ? files[0] === 0 && files[1] === b.files - 1 : a === 0 && z === b.pages - 1;
+    const name = `${b.slug.replace(':', '-')}${whole ? '' : `-${a + 1}-${z + 1}`}.txt`;
     await saveText(name, lines.join('\n'), b.ar);
   }
   async function saveText(name, text, title) {

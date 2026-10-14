@@ -53,7 +53,17 @@
   const cache = new Map();
   function get(url) {
     if (!cache.has(url)) {
-      const p = fetch(url).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+      // Kept in the library's cache once read, so a chapter reads offline in the app as on the website.
+      const p = (async () => {
+        const box = typeof caches !== 'undefined' ? await caches.open('library-v1').catch(() => null) : null;
+        let res = box ? await box.match(url).catch(() => null) : null;
+        if (!res) {
+          res = await fetch(url);
+          if (!res.ok) throw new Error(res.status);
+          if (box) box.put(url, res.clone()).catch(() => {});
+        }
+        return res.json();
+      })();
       p.catch(() => cache.delete(url));
       cache.set(url, p);
     }
@@ -85,7 +95,7 @@
     return gzCache.get(url);
   }
   // Books from hadith-json come as one file, split here by chapter.
-  const AB = 'https://cdn.jsdelivr.net/gh/AhmedBaset/hadith-json@main/db/by_book/';
+  const AB = 'https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/';
   async function abBook(b) {
     const d = await get(`${AB}${b.path}.json`);
     if (!d._rows) {
@@ -129,7 +139,11 @@
     if (screen.name === 'tool' && window.noonTools) return window.noonTools.render(screen.tool, root, back('المكتبة', { name: 'home' }));
     renderHome();
   }
-  const go = (s) => { window.dispatchEvent(new Event('noon-library-screen')); screen = s; render(); root.scrollIntoView({ block: 'start' }); };
+  const go = (s) => {
+    // A chapter of a hadith book opens in the reader, at its start or at the hadith asked for.
+    if (s.name === 'section' && window.noonBookReader && hadithBook(s.book)) { readHadith(s); return; }
+    window.dispatchEvent(new Event('noon-library-screen')); screen = s; render(); root.scrollIntoView({ block: 'start' });
+  };
   // A book's text opens in the full-screen reader (js/book-reader.js); the page below is its fallback.
   const read = (s) => { if (window.noonBookReader) window.noonBookReader.open(s.slug, s); else go(Object.assign({ name: 'read' }, s)); };
   const back = (label, to) => { const b = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T(label)}`, () => go(to)); b.dataset.back = ''; return b; };
@@ -173,6 +187,8 @@
       c.dataset.book = b.id;
       c.append(el('b', '', bookName(b)), el('span', '', I.isEn ? b.authorEn : b.authorAr),
         el('small', '', `${b.count.toLocaleString(I.isEn ? 'en-GB' : 'ar-EG')} ${T('حديث')} · ${I.num(b.sections.length)} ${T(b.id === 'ahmad' ? 'مسنداً' : 'كتاباً')}`));
+      const place = S.books && S.books[`h:${b.id}`];
+      if (place && place.label) c.append(el('small', 'lib-at', `${T('وقفت عند')} ${place.label}`));
       grid.append(c);
     });
     root.append(grid);
@@ -193,6 +209,16 @@
     const head = el('div', 'view-head');
     head.append(back('المكتبة', { name: 'home' }), el('h2', '', bookName(b)));
     root.append(head);
+    if (window.noonBookReader) {
+      const place = S.books && S.books[`h:${b.id}`];
+      const about = el('div', 'lib-about');
+      about.append(el('p', '', `${T('المؤلف')}: ${I.isEn ? b.authorEn : b.authorAr}`),
+        el('p', 'hint', `${b.count.toLocaleString(I.isEn ? 'en-GB' : 'ar-EG')} ${T('حديث')} · ${I.num(b.sections.length)} ${T(b.id === 'ahmad' ? 'مسنداً' : 'كتاباً')}${place && place.label ? ` · ${T('وقفت عند')} ${place.label}` : ''}`));
+      const acts = el('div', 'hadith-acts');
+      acts.append(button('btn btn-primary', T(place ? 'تابع القراءة' : 'ابدأ القراءة'), () => window.noonBookReader.open(`h:${b.id}`, place ? { resume: true } : { f: 0 })));
+      about.append(acts);
+      root.append(about);
+    }
     const tools = el('form', 'lib-tools');
     const q = el('input'); q.type = 'search'; q.placeholder = T('ابحث في الكتاب بكلمة، أو اكتب رقم الحديث');
     q.setAttribute('aria-label', T('بحث في الكتاب'));
@@ -284,6 +310,8 @@
       return;
     }
     if (screen.sec !== s[0] || screen.book !== b.id) return;
+    // The source keeps some numbers with no text (e.g. in Muslim's introduction); they are left out.
+    items = items.filter((h) => h.ar);
     const shown = S.onlyAccepted ? items.filter((h) => { const g = albani(h); return !g || gradeKind(g.grade) === 'good'; }) : items;
     list.replaceChildren();
     let upto = 0;
@@ -308,16 +336,16 @@
     const art = el('article', 'hadith');
     const top = el('div', 'hadith-top');
     top.append(el('b', 'hadith-num', `${bookName(b)} ${numText(h)}`));
-    (h.grades || []).forEach((g) => {
-      const c = el('span', `grade is-${gradeKind(g.grade)}`, `${gradeText(g.grade)}`);
-      c.title = I.isEn ? g.name : (SCHOLARS[g.name] || g.name);
-      c.prepend(el('small', '', `${I.isEn ? g.name.replace(/^Al-/, '') : SCHOLARS[g.name] || g.name}: `));
-      top.append(c);
-    });
+    top.append(...gradeChips(h));
     const ar = el('p', 'hadith-ar', h.ar);
     ar.lang = 'ar'; ar.dir = 'rtl';
     art.append(top, ar);
     if (S.en && h.en) { const e = el('p', 'hadith-en', h.en); e.lang = 'en'; e.dir = 'ltr'; art.append(e); }
+    art.append(hadithActs(b, h));
+    return art;
+  }
+  // Save, copy, share as a card, add to the memorising cards: under each hadith, here and in the reader.
+  function hadithActs(b, h, noCopy) {
     const acts = el('div', 'hadith-acts');
     const ref = `${bookName(b)} ${numText(h)}`;
     const marked = () => S.marks.some((m) => m.b === b.id && m.n === h.hadithnumber);
@@ -327,16 +355,118 @@
       save();
       markBtn.textContent = T(marked() ? 'إزالة من المحفوظات' : 'حفظ');
     });
-    acts.append(markBtn,
-      button('link-btn', T('نسخ'), async () => { try { await navigator.clipboard.writeText(`${h.ar}\n[${ref}]`); toast(T('نُسخ الحديث.')); } catch (_) { toast(T('تعذّر النسخ.')); } }),
+    acts.append(markBtn);
+    if (!noCopy) acts.append(button('link-btn', T('نسخ'), async () => { try { await navigator.clipboard.writeText(`${h.ar}\n[${ref}]`); toast(T('نُسخ الحديث.')); } catch (_) { toast(T('تعذّر النسخ.')); } }));
+    acts.append(
       button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('حديث شريف'), title: ref, body: matn(h.ar), ref: gradeLine(h) })),
       button('link-btn', T('أضف للكروت'), () => {
         const ok = window.noonCards && window.noonCards.add(T('أحاديث للحفظ'), `${ref}\n${T('ما نص الحديث؟')}`, matn(h.ar));
         toast(T(ok ? 'أُضيف الحديث إلى مجموعة «أحاديث للحفظ».' : 'هذا الحديث موجود في الكروت.'));
       }));
-    art.append(acts);
-    return art;
+    return acts;
   }
+  function gradeChips(h) {
+    return (h.grades || []).map((g) => {
+      const c = el('span', `grade is-${gradeKind(g.grade)}`, `${gradeText(g.grade)}`);
+      c.title = I.isEn ? g.name : (SCHOLARS[g.name] || g.name);
+      c.prepend(el('small', '', `${I.isEn ? g.name.replace(/^Al-/, '') : SCHOLARS[g.name] || g.name}: `));
+      return c;
+    });
+  }
+
+  // ---- a hadith book in the reader (js/book-reader.js): its chapters are the parts, its hadiths the pages ----
+  // A page is [hadith number, 0, its standard number, [[chapter id, title]?, text], { g: gradings, en }].
+  // A long chapter (the Musnad has one of 8,000 hadiths) reads in blocks of 150, so the phone holds a few
+  // hundred hadiths at a time.
+  const BLOCK = 150;
+  const hbooks = new Map();
+  function hadithBook(id) {
+    const b = bookOf(id);
+    if (!b) return null;
+    if (hbooks.has(id)) return hbooks.get(id);
+    // Each chapter's length comes with the index (tools/build_library.py; the Musnad's from its numbers).
+    const parts = [], firstOf = [];
+    b.sections.forEach((s, k) => {
+      const n = s[7] !== undefined ? s[7] : Math.max(1, Math.floor(Number(s[4])) - Math.floor(Number(s[3])) + 1);
+      firstOf.push(parts.length);
+      for (let i = 0; i < Math.max(1, n); i += BLOCK) parts.push({ k, i, n: Math.min(BLOCK, n - i), first: i === 0, last: i + BLOCK >= n });
+    });
+    const fc = parts.map((p) => Math.max(0, p.n));
+    const rowsAll = async (k) => (await section(id, b.sections[k][0])).filter((h) => h.ar);
+    const pagesOf = (f, rows) => rows.map((h, j) => [h.hadithnumber, 0, String(h.arabicnumber || h.hadithnumber).split('.')[0],
+      j === 0 && parts[f].first ? [[parts[f].k + 1, secName(b.sections[parts[f].k])], h.ar] : [h.ar], { g: h.grades || [], en: h.en || '', an: h.arabicnumber }]);
+    // A block's rows; the chapter's last block also takes any beyond the count given.
+    const cut = (f, rows) => rows.slice(parts[f].i, parts[f].last ? undefined : parts[f].i + BLOCK);
+    const blockAt = (k, j) => firstOf[k] + Math.min(Math.floor(j / BLOCK), parts.filter((p) => p.k === k).length - 1);
+    const H = {
+      kind: 'hadith', id, slug: `h:${id}`, ar: b.ar, en: b.en, author: b.authorAr, authorEn: b.authorEn,
+      files: parts.length, fc, pages: fc.reduce((a, n) => a + n, 0), note: '',
+      async load(f) { return pagesOf(f, cut(f, await rowsAll(parts[f].k))); },
+      // For searching: the whole book at once (one file of the same edition), block by block.
+      async allParts() {
+        const per = b.sections.map(() => []);
+        if (b.src) {
+          for (let k = 0; k < b.sections.length; k += 8) (await Promise.all(b.sections.slice(k, k + 8).map((_, i) => rowsAll(k + i)))).forEach((rows, i) => { per[k + i] = rows; });
+        } else {
+          const j = await get(`${API}ara-${id}.min.json`);
+          const at = new Map(b.sections.map((s, k) => [String(s[0]), k]));
+          j.hadiths.forEach((h) => {
+            const ar = tidy(h.text), k = at.get(String(h.reference && h.reference.book));
+            if (ar && k !== undefined) per[k].push({ hadithnumber: h.hadithnumber, arabicnumber: h.arabicnumber, ar, en: '', grades: h.grades || [] });
+          });
+        }
+        return parts.map((p, f) => pagesOf(f, cut(f, per[p.k])));
+      },
+      toc: () => b.sections.map((s, k) => [k + 1, 1, secName(s), firstOf[k]]),
+      label: (pg) => `${T('حديث')} ${I.num(pg[2])}`,
+      // Under each hadith: its gradings, the English when chosen, and its buttons.
+      decorate(pg) {
+        const x = pg[4] || {}, out = [];
+        const h = { hadithnumber: pg[0], arabicnumber: x.an, ar: pg[3][pg[3].length - 1], grades: x.g || [] };
+        if (h.grades.length) { const g = el('div', 'br-grades'); g.append(...gradeChips(h)); out.push(g); }
+        if (S.en && x.en) { const e = el('p', 'br-en', x.en); e.lang = 'en'; e.dir = 'ltr'; out.push(e); }
+        const acts = hadithActs(b, h, true);
+        acts.classList.add('br-hacts');
+        out.push(acts);
+        return out;
+      },
+      plain: (pg) => { const g = (pg[4] && pg[4].g) || []; return g.length ? g.map((x) => `${SCHOLARS[x.name] || x.name}: ${gradeText(x.grade)}`).join(' · ') : ''; },
+      urls(f) {
+        const sec = b.sections[parts[f].k][0];
+        if (b.src === 'ab') return [`${AB}${b.path}.json`];
+        if (b.src === 'local') return [BOOKS + `${b.slug}/h${sec}.json.gz` + (LOCAL.ahmad && LOCAL.ahmad.v ? `?v=${LOCAL.ahmad.v}` : '')];
+        return [`${API}ara-${id}/sections/${sec}.min.json`, `${API}eng-${id}/sections/${sec}.min.json`];
+      },
+      forget() { cache.clear(); gzCache.clear(); },
+      // The blocks of the chapter a block belongs to (for saving a chapter as text).
+      span(f) { const k = parts[f].k; let z = firstOf[k]; while (parts[z + 1] && parts[z + 1].k === k) z++; return [firstOf[k], z]; },
+      // A hadith by its standard number, or by its place in the data: its chapter, then its block.
+      async findNumber(n) {
+        const k = b.sections.findIndex((x) => n >= Math.floor(Number(x[5])) && n <= Math.floor(Number(x[6])));
+        if (k < 0) return null;
+        const rows = await rowsAll(k), j = rows.findIndex((x) => Math.floor(Number(x.arabicnumber)) === n);
+        return j < 0 ? null : { f: blockAt(k, j), page: rows[j].hadithnumber };
+      },
+      async findHadith(k, hn) {
+        const j = (await rowsAll(k)).findIndex((x) => x.hadithnumber === hn);
+        return { f: blockAt(k, Math.max(0, j)), page: hn };
+      },
+      firstPart: (k) => firstOf[k]
+    };
+    hbooks.set(id, H);
+    return H;
+  }
+  async function readHadith(s) {
+    const b = bookOf(s.book), H = hadithBook(s.book), k = Math.max(0, b.sections.findIndex((x) => x[0] === s.sec));
+    let opts = { f: H.firstPart(k) };
+    try {
+      if (s.focus) opts = await H.findHadith(k, s.focus);
+      else if (s.focusNumber) opts = (await H.findNumber(s.focusNumber)) || opts;
+    } catch (_) { /* offline: the chapter's start, where the reader says what is missing */ }
+    window.noonBookReader.open(`h:${b.id}`, opts);
+  }
+  const anyBook = (slug) => (String(slug).startsWith('h:') ? hadithBook(slug.slice(2)) : shelfBook(slug));
+
   // The Prophet's words, when the text marks them with quotes; otherwise the whole text.
   function matn(t) {
     const m = /«\s*([^»]{20,})»/.exec(String(t));
@@ -584,22 +714,22 @@
   // For the home screen's cards (js/today.js): the book read last, a book to open, and the list to pin one from.
   function lastBook() {
     const e = Object.entries(S.books || {}).sort((x, y) => y[1].at - x[1].at)[0];
-    const b = e && shelfBook(e[0]);
+    const b = e && anyBook(e[0]);
     return b ? { slug: b.slug, ar: b.ar, en: b.en, label: e[1].label || '' } : null;
   }
   function openBook(slug, resume) {
-    const b = shelfBook(slug);
+    const b = anyBook(slug);
     if (!b) return;
     window.noonUI.go('library');
     const place = S.books && S.books[slug];
-    if (resume && place) read({ slug, resume: true }); else go({ name: 'shelf', slug });
+    if (resume && place) read({ slug, resume: true }); else go(b.kind === 'hadith' ? { name: 'book', book: b.id } : { name: 'shelf', slug });
   }
   window.noonLibrary = {
     open: (name, tool) => { window.noonUI.go('library'); go({ name: name || 'home', tool }); },
     lastBook, openBook, book: (slug) => shelfBook(slug), books: () => SHELF.books.map((b) => ({ slug: b.slug, ar: b.ar, en: b.en, cat: b.cat })),
     // For js/book-reader.js: the files, the saved places and marks (synced with the rest of the library).
-    _data: { gz, url: (path, v) => BOOKS + path + (v ? `?v=${v}` : ''), shelfBook, pageLabel, norm, MARKS, state: () => S, save,
-      showBook: (slug) => { window.noonUI.go('library'); go({ name: 'shelf', slug }); } }
+    _data: { gz, url: (path, v) => BOOKS + path + (v ? `?v=${v}` : ''), shelfBook, book: anyBook, pageLabel, norm, MARKS, state: () => S, save,
+      showBook: (slug) => { window.noonUI.go('library'); go(String(slug).startsWith('h:') ? { name: 'book', book: slug.slice(2) } : { name: 'shelf', slug }); } }
   };
   render();
 })();

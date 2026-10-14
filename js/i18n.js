@@ -1433,6 +1433,13 @@
     'تعديل الملاحظة': 'Edit note',
     'أضف ملاحظة': 'Add a note',
     'نوع الخط': 'Typeface',
+    // Hadith books in the reader (2.7.1)
+    'وقفت عند': 'Stopped at',
+    'هذا الباب': 'This chapter',
+    'أبواب': 'chapters',
+    'رقم الحديث': 'Hadith number',
+    'اذهب إلى حديث برقمه': 'Go to a hadith by its number',
+    'ملف نصي (txt) بنص الأحاديث وأبوابها وأرقامها، يُفتح بأي برنامج.': 'A text file (txt) with the hadiths, their chapters and numbers, opens in any program.',
     // Language switch
     'English': 'العربية'
   };
