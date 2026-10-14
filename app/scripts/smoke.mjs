@@ -137,6 +137,8 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
   const tap = (p) => adb(`shell input tap ${p[0]} ${p[1] + Math.min(off, 200)}`);
   const pageNow = () => js('window.noonMushafBook ? window.noonMushafBook.page() + (document.getElementById("mushafBook") && !document.getElementById("mushafBook").hidden ? "" : " closed") : "missing"');
   const t = { steps: [] };
+  // A reminder card that comes due meanwhile (a prayer time) would sit over the pages: close it as it shows.
+  await js("window.__noCards = setInterval(() => { if (window.noonCard && document.querySelector('.rc:not([hidden])')) window.noonCard.close(); }, 250); true");
   try {
     await js("window.noonUI.go('quran'); true"); await sleep(1500);
     const mode = await at('.q-mode', 'تقليب الصفحات');
@@ -176,6 +178,7 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
     t.screenBack += ' > ' + await js("document.body.dataset.screen");
     t.screenBackAppOpen = (() => { try { return adb(`shell pidof io.github.micro4tricks.muslimtodo`).trim() !== ''; } catch { return false; } })();
   } catch (e) { t.error = String(e.message || e).slice(0, 200); }
+  await js("clearInterval(window.__noCards); true");
   report.mushafTouch = t;
   console.log('page-turning Mushaf by touch:', JSON.stringify(t));
 }
