@@ -149,8 +149,14 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
       const r = (n) => n ? [Math.round(n.getBoundingClientRect().left), Math.round(n.getBoundingClientRect().top), Math.round(n.getBoundingClientRect().width), Math.round(n.getBoundingClientRect().height)] : null;
       const hit = p ? document.elementFromPoint(innerWidth / 2, innerHeight / 2) : null;
       return { stage: r(s), page: r(p), bar: r(b), dpr: devicePixelRatio, inner: [innerWidth, innerHeight], hit: hit ? hit.className || hit.tagName : null, lite: matchMedia('(pointer: coarse)').matches }; })()`);
+    // What the drag starts on (in CSS px), and the screen just before it, for when it does not turn.
+    t.dragFrom = await js(`(() => { const d = devicePixelRatio, x = ${Math.round(w * 0.15)} / d, y = ${Math.round(h * 0.5)} / d - (screen.height - innerHeight) / 2;
+      const n = document.elementFromPoint(x, y); return [Math.round(x), Math.round(y), n ? (n.className || n.tagName) + '' : null, (getSelection() + '').slice(0, 20), document.activeElement && document.activeElement.tagName]; })()`);
+    adb(`exec-out screencap -p > ${out}/3-mushaf-before-drag.png`);
+    const p0 = await pageNow();
     adb(`shell input swipe ${Math.round(w * 0.15)} ${Math.round(h * 0.5)} ${Math.round(w * 0.85)} ${Math.round(h * 0.5)} 350`); await sleep(1500);
     t.steps.push(['drag right', await pageNow()]);
+    if (String(await pageNow()) === String(p0)) t.dragAgain = await (async () => { adb(`shell input swipe ${Math.round(w * 0.2)} ${Math.round(h * 0.45)} ${Math.round(w * 0.8)} ${Math.round(h * 0.45)} 500`); await sleep(1500); return pageNow(); })();
     const next = await at('#mushafBook .mb-bar button', 'التالية');
     if (next) { tap(next); await sleep(1500); }
     t.steps.push(['tap next', await pageNow(), next]);
@@ -369,6 +375,8 @@ await phase('Listen: the Quran radios on the native player', async () => {
     return { video: v && !v.hidden ? { time: Math.round(v.currentTime), width: v.videoWidth, height: v.videoHeight, paused: v.paused, error: v.error && v.error.code } : 'hidden',
       youtube: !!document.querySelector('#view-listen .tv-yt'), note: document.querySelector('#view-listen .tv-frame + .hint').textContent,
       swap: document.querySelector('#view-listen button.tv-swap').textContent }; })()`;
+  // The channels draw once live.json and mp3quran.net answer; wait for them rather than a fixed time.
+  report.tvReadyMs = await js(`(async () => { const t0 = Date.now(); while (!document.querySelector('#view-listen .tv-chan') && Date.now() - t0 < 15000) await new Promise((r) => setTimeout(r, 250)); return document.querySelector('#view-listen .tv-chan') ? Date.now() - t0 : -1; })()`);
   await gesture("document.querySelector('#view-listen .tv-chan').click()"); await sleep(25000);
   report.liveTv = await js(tvInfo);
   console.log('live TV (official stream):', JSON.stringify(report.liveTv));
