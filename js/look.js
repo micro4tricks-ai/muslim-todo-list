@@ -79,7 +79,7 @@
   const SLOT_DEFAULTS = { classic: { A: 'prayer' }, minimal: { A: 'prayer', B: 'hijri', C: 'moon', D: 'none' }, modern: { A: 'qibla', B: 'prayer', C: 'sun' } };
   const SLOT_NAMES = { minimal: ['الخانة العلوية', 'الخانة اليمنى', 'الخانة السفلية', 'الخانة اليسرى'] };
 
-  let L = { bg: 'mist', dial: 'ceramic', metal: 'steel', mode: 'auto', scale: 1, fontAr: 'plex', fontEn: 'same', face: 'classic', theme: 'pearl', slots: null };
+  let L = { bg: 'girih', dial: 'navy', metal: 'gold', mode: 'auto', scale: 1, fontAr: 'plex', fontEn: 'same', face: 'classic', theme: 'pearl', slots: null };
   try { Object.assign(L, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
   let customImage = null;
   try { customImage = localStorage.getItem(IMG_KEY); } catch (_) {}
