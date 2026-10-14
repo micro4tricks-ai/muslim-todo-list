@@ -1562,7 +1562,7 @@
   @media (max-width: 860px) {
     body:not([data-screen="home"]) .left-pane, body:not([data-screen="home"]) .todo-head, body:not([data-screen="home"]) .sync-panel, body:not([data-screen="home"]) .sunnah-strip { display: none !important; }
     body:not([data-screen="home"]) .todo-pane { padding-top: 0; border-top: none; }
-    body:not([data-screen="home"]) .screen-bar { display: flex; align-items: center; gap: 6px; position: sticky; top: 0; z-index: 25; margin: 0 -16px -10px; /* with .todo's 22px gap: 12px under the bar */ padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px; background: color-mix(in srgb, var(--paper) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+    body:not([data-screen="home"]) .screen-bar { display: flex; align-items: center; gap: 6px; position: sticky; top: 0; z-index: 25; margin: 0 -16px -10px; /* with .todo's 22px gap: 12px under the bar */ padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px; background: var(--paper); border-bottom: 1px solid var(--line); /* solid: a blur repaints on every scroll frame on phones */ }
     .screen-back { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 50%; border: none; background: transparent; color: var(--ink); }
     .screen-back:active { background: var(--accent-wash); }
     .screen-back svg { width: 24px; height: 24px; }
@@ -1602,7 +1602,7 @@
   /* The slim bar with the time and the next prayer, once the clock has scrolled away (js/nav.js). */
   .mini-clock { display: none; }
   @media (max-width: 860px) {
-    .mini-clock:not([hidden]) { display: flex; align-items: baseline; gap: 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 24; box-sizing: border-box; min-height: 48px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; border: none; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: var(--ink); font: inherit; text-align: start; animation: mini-in 0.18s ease-out; }
+    .mini-clock:not([hidden]) { display: flex; align-items: baseline; gap: 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 24; box-sizing: border-box; min-height: 48px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; border: none; border-bottom: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; text-align: start; animation: mini-in 0.18s ease-out; }
     .mini-time { font-size: 18px; font-variant-numeric: tabular-nums; }
     .mini-next { min-width: 0; font-size: 13px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     body.qr-open .mini-clock, body.st-open .mini-clock, body.fm-open .mini-clock, body.more-open .mini-clock { display: none; }
