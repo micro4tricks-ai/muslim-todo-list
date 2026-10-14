@@ -499,7 +499,8 @@
         sec.append(h);
       });
       if (pageLabel(pg)) sec.append(el('span', 'lib-pg-n', pageLabel(pg)));
-      if (screen.page && pg[0] === screen.page) target = target || sec;
+      // The first page of a part opens at the top, with the book's title and buttons in view.
+      if (screen.page && pg[0] === screen.page && pg !== pages[0]) target = target || sec;
       box.append(sec);
     });
     root.append(nav('is-bottom'));
