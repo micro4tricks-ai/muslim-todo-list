@@ -4,7 +4,7 @@
   const { I } = window.noonUI;
   const $ = (id) => document.getElementById(id);
   const native = !!window.noonNative;
-  const standalone = native || matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const standalone = native || matchMedia('(display-mode: standalone)').matches || navigator.standalone === true || window.__noonDesktop === true; // the desktop app (desktop/) is installed already
   if (standalone) document.documentElement.classList.add('is-app');
 
   // Offline copy of the page (the Android app already carries its files).
