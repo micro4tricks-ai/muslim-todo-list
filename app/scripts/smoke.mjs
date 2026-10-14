@@ -193,6 +193,7 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
     const open = ['quranReader', 'mushafBook', 'settingsScreen'].filter((id) => { const n = document.getElementById(id); return n && !n.hidden; });
     if (document.querySelector('.qb:not([hidden])')) open.push('qibla');
     if (document.querySelector('.kh:not([hidden])')) open.push('khatma');
+    if (document.querySelector('.br:not([hidden])')) open.push('bookReader');
     const bar = document.querySelector('.screen-bar'), under = bar && bar.offsetParent ? bar.getBoundingClientRect().bottom : 0;
     return { view: v ? v.dataset.view : null, top: v ? Math.round(v.getBoundingClientRect().top - under) : null, open, screen: document.body.dataset.screen };
   })()`);
@@ -290,6 +291,30 @@ await phase('Library: Sahih al-Bukhari, first book', async () => {
   await gesture("document.querySelector('.lib-sec').click()"); await sleep(4000);
   await js('scrollTo(0, document.documentElement.scrollHeight); true');
 }, 6000);
+// The book reader (2.7.0): a book opens, the next parts load as it scrolls, the page bar jumps,
+// a word is found and marked, and the place is kept.
+await phase('Book reader: scroll through parts, jump, search', async () => {
+  report.bookReader = await js(`(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    try {
+      window.noonBookReader.open('ad-da-wad-dawa', { f: 0 }); await wait(4000);
+      const body = document.querySelector('.br-body');
+      for (let k = 0; k < 8; k++) { body.scrollTop = body.scrollHeight; await wait(700); }
+      const parts = document.querySelectorAll('.br-part').length;
+      window.noonBookReader.jump(100); await wait(2500);
+      const at = window.noonBookReader.current();
+      document.querySelector('.br-search input').value = 'الدعاء';
+      document.querySelector('.br-search').requestSubmit(); await wait(4000);
+      const results = document.querySelectorAll('.br-hitrow').length;
+      document.querySelector('.br-hitrow') && document.querySelector('.br-hitrow').click(); await wait(2500);
+      const marked = document.querySelectorAll('mark.br-hit').length;
+      window.noonBookReader.close(); await wait(800);
+      const kept = (JSON.parse(localStorage.getItem('noon-sweep-library') || '{}').books || {})['ad-da-wad-dawa'];
+      return { parts, ord: at && at.ord, results, marked, kept: !!(kept && kept.p) };
+    } catch (e) { return 'ERR ' + e.message; }
+  })()`);
+  console.log('book reader:', JSON.stringify(report.bookReader));
+}, 4000);
 // The Listen tab: the mp3quran.net lists load, a station plays, and the adhan can reach the page.
 await phase('Listen: the Quran radios on the native player', async () => {
   await gesture("window.noonUI.go('listen')"); await sleep(1500);
@@ -474,7 +499,8 @@ if (!isOpen(tp.prayer, 'settingsScreen')) cardFails.push('prayer');
 if (!isOpen(tp.qibla, 'qibla')) cardFails.push('qibla');
 if (!(isOpen(tp.quran, 'quranReader') || isOpen(tp.quran, 'mushafBook') || near(tp.quran, 'quran'))) cardFails.push('quran');
 if (!near(tp.adhkar, 'adhkar')) cardFails.push('adhkar');
-['library', 'hadith', 'book'].forEach((k) => { if (!near(tp[k], 'library')) cardFails.push(k); });
+['hadith', 'book'].forEach((k) => { if (!near(tp[k], 'library')) cardFails.push(k); });
+if (!(isOpen(tp.library, 'bookReader') || near(tp.library, 'library'))) cardFails.push('library');
 if (!(tp.radio && tp.radio.view === 'listen')) cardFails.push('radio');
 if (!(tp.tasbih && tp.tasbih.after === tp.tasbih.before + 1)) cardFails.push('tasbih');
 if (!isOpen(tp.khatma, 'khatma')) cardFails.push('khatma');
@@ -484,6 +510,8 @@ if (cd.compass && cd.compass.available && !(cd.compass.events > 0)) problems.pus
 if (!(Math.abs(mt.adhkarTop) <= 12)) problems.push(`the bottom bar's «الأذكار» left its section at ${mt.adhkarTop}px from the top`);
 if (!report.reminder || report.reminder.booked !== true || !(report.reminder.inMinutes >= 55 && report.reminder.inMinutes <= 61)) problems.push(`a reminder was not booked with the phone: ${JSON.stringify(report.reminder)}`);
 if (!report.afterRendererCrash.appRunning) problems.push('the app closed after the renderer crash');
+const br = report.bookReader || {};
+if (!(br.parts >= 2 && br.ord === 100 && br.results > 0 && br.marked > 0 && br.kept)) problems.push(`the book reader: ${JSON.stringify(report.bookReader)}`);
 report.problems = problems;
 writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));

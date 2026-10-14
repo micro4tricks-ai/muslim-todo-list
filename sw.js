@@ -2,7 +2,7 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v34';
+const VERSION = 'v35';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
@@ -17,7 +17,7 @@ const FILES = [
   'js/prayer-alerts.js', 'js/report.js', 'js/focus-mode.js', 'js/config.js', 'js/vendor/supabase.js',
   'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
-  'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js',
+  'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js', 'js/book-reader.js',
   'js/extras-data.js', 'js/tools.js', 'js/prayers.js', 'js/listen.js', 'js/settings.js', 'js/device.js', 'js/today.js', 'js/nav.js', 'js/hifz.js', 'js/khatma.js', 'js/challenge.js', 'js/a11y.js', 'js/clock-core.js', 'js/reminders-core.js', 'js/reminders.js',
   'js/tajweed-core.js', 'js/tajweed-rules.js', 'js/mushaf-core.js', 'js/mushaf-book.js', 'js/library-books.js', 'js/library-local.js',
   'js/wmm-data.js', 'js/compass-core.js', 'js/today-core.js',

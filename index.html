@@ -16,8 +16,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.6.0.1">
-<link rel="stylesheet" href="fonts/extra.css?v=2.6.0.1">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.7.0.1">
+<link rel="stylesheet" href="fonts/extra.css?v=2.7.0.1">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -1353,7 +1353,7 @@
   @keyframes lp-pulse { 50% { opacity: 0.6; } }
   @keyframes lp-in { from { transform: translateY(12px); opacity: 0; } }
   body.lp-on { padding-bottom: calc(var(--dock-h) + 76px + env(safe-area-inset-bottom, 0px)); }
-  body.qr-open .lp, body.fm-open .lp { display: none; }
+  body.qr-open .lp, body.fm-open .lp, body.br-open .lp { display: none; }
   @media (max-width: 420px) {
     .lp { gap: 2px; padding: 5px 6px; }
     .lp .lp-eq { display: none; }
@@ -1547,7 +1547,7 @@
     .lp { bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px) + 8px); }
     body.snd-on .lp, body.dock-open .lp { bottom: calc(var(--bnav-h) + var(--dock-h) + env(safe-area-inset-bottom, 0px) + 8px); }
     body.lp-on { padding-bottom: calc(var(--bnav-h) + 76px + env(safe-area-inset-bottom, 0px)); }
-    body.qr-open .bnav, body.fm-open .bnav, body.st-open .bnav { display: none; }
+    body.qr-open .bnav, body.fm-open .bnav, body.st-open .bnav, body.br-open .bnav { display: none; }
     .more-veil:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 40; background: rgba(10, 12, 16, 0.45); animation: nav-fade 0.2s; }
     .more:not([hidden]) { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); border-radius: 22px 22px 0 0; background: var(--paper); color: var(--ink); box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.25); animation: nav-sheet 0.22s ease-out; }
     .more-grab { display: block; width: 40px; height: 4px; margin: 4px auto 10px; border-radius: 2px; background: var(--line); }
@@ -1602,10 +1602,102 @@
     .mini-clock:not([hidden]) { display: flex; align-items: baseline; gap: 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 24; box-sizing: border-box; min-height: 48px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; border: none; border-bottom: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; text-align: start; animation: mini-in 0.18s ease-out; }
     .mini-time { font-size: 18px; font-variant-numeric: tabular-nums; }
     .mini-next { min-width: 0; font-size: 13px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    body.qr-open .mini-clock, body.st-open .mini-clock, body.fm-open .mini-clock, body.more-open .mini-clock { display: none; }
+    body.qr-open .mini-clock, body.br-open .mini-clock, body.st-open .mini-clock, body.fm-open .mini-clock, body.more-open .mini-clock { display: none; }
   }
   @keyframes mini-in { from { transform: translateY(-100%); } }
   @media (prefers-reduced-motion: reduce) { .mini-clock:not([hidden]) { animation: none; } }
+  /* ---- The book reader (js/book-reader.js): a whole book on one page, like a PDF viewer ---- */
+  body.br-open { overflow: hidden; }
+  .br { --bbg: #FBF8F1; --bink: #26241F; --bsoft: #6F6656; --bline: #E6DDC8; --bacc: #A67C2E; --bbar: #FFFDF8;
+    position: fixed; inset: 0; z-index: 72; display: flex; flex-direction: column; background: var(--bbg); color: var(--bink); }
+  .br[data-theme="sepia"] { --bbg: #F3E7CC; --bink: #3A2E1C; --bsoft: #7C6647; --bline: #DCCBA6; --bbar: #F7EDD6; }
+  .br[data-theme="night"] { --bbg: #121416; --bink: #E6E1D5; --bsoft: #9A958A; --bline: #2B2F33; --bacc: #D2AE62; --bbar: #191C1F; }
+  .br-top { display: flex; align-items: center; gap: 2px; padding: calc(6px + env(safe-area-inset-top, 0px)) 6px 6px; background: var(--bbar); border-bottom: 1px solid var(--bline); }
+  .br-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; line-height: 1.3; }
+  .br-title b { max-width: 100%; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .br-title span { max-width: 100%; font-size: 12px; color: var(--bsoft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+  .br-ic { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: none; border-radius: 50%; background: transparent; color: var(--bink); padding: 0; }
+  .br-ic svg { width: 22px; height: 22px; }
+  .br-ic:active { background: var(--bline); }
+  .br-markbtn.is-on { color: var(--bacc); }
+  .br-markbtn.is-on path { fill: currentColor; }
+  .br-search { display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--bbar); border-bottom: 1px solid var(--bline); }
+  .br-search input { flex: 1; min-width: 0; min-height: 42px; font: inherit; font-size: 16px; padding: 6px 12px; border: 1.5px solid var(--bacc); border-radius: 10px; background: var(--bbg); color: var(--bink); }
+  .br-sgo { flex: none; min-height: 42px; }
+  .br-scount { flex: none; min-width: 2.5em; font-size: 13px; color: var(--bsoft); text-align: center; font-variant-numeric: tabular-nums; }
+  .br-results { position: absolute; inset-inline: 0; top: calc(116px + env(safe-area-inset-top, 0px)); bottom: 0; z-index: 3; overflow-y: auto; background: var(--bbg); padding: 6px 10px 24px; }
+  .br-rhead { margin: 6px 4px 10px; font-size: 13px; color: var(--bsoft); }
+  .br-hitrow { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; text-align: start; font: inherit; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--bline); border-radius: 12px; background: var(--bbar); color: var(--bink); }
+  .br-hitrow b { font-size: 12.5px; color: var(--bacc); }
+  .br-snip { font-family: var(--bff); font-size: 17px; line-height: 1.9; }
+  .br-snip mark, mark.br-hit { background: #F6D776; color: #1E1A10; border-radius: 3px; }
+  mark.br-hit.is-now { background: #F0A93B; outline: 2px solid #C77D10; }
+  .br-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 0; outline: none; }
+  .br-body::-webkit-scrollbar { display: none; }
+  .br-doc { position: relative; max-width: 44em; margin: 0 auto; padding: 8px 22px 40vh 30px; font-family: var(--bff); font-size: var(--bf, 21px); line-height: var(--blh, 2);
+    text-align: justify; -webkit-user-select: text; user-select: text; }
+  .br-doc p { margin: 0 0 0.6em; }
+  .br-h { margin: 1.1em 0 0.5em; font-size: 1.12em; line-height: 1.6; color: var(--bacc); text-align: start; }
+  .br-pg { margin: 0; }
+  .br-pgn { display: flex; align-items: center; gap: 10px; margin: 0.4em 0 1.1em; font-family: var(--font); font-size: 12px; line-height: 1; color: var(--bsoft); -webkit-user-select: none; user-select: none; }
+  .br-pgn::before, .br-pgn::after { content: ''; flex: 1; border-top: 1px dashed var(--bline); }
+  .br-wait { padding: 40px 10px; text-align: center; color: var(--bsoft); font-family: var(--font); font-size: 15px; }
+  mark.br-hl { color: inherit; border-radius: 3px; padding: 0 1px; }
+  mark.br-hl.is-gold { background: rgba(240, 196, 70, 0.42); }
+  mark.br-hl.is-green { background: rgba(92, 184, 122, 0.36); }
+  mark.br-hl.is-rose { background: rgba(232, 120, 120, 0.34); }
+  mark.br-hl.has-note { border-bottom: 2px dotted var(--bacc); }
+  mark.br-hl.is-flash { outline: 2px solid var(--bacc); }
+  /* The page bar, on the left like the scroll bar of an Arabic page. */
+  .br-rail { position: absolute; left: 0; top: 60px; bottom: 44px; width: 30px; z-index: 2; touch-action: none; cursor: grab; }
+  .br-rail::before { content: ''; position: absolute; left: 13px; top: 0; bottom: 0; width: 3px; border-radius: 2px; background: var(--bline); opacity: 0.6; }
+  .br-thumb { position: absolute; left: 6px; top: 0; width: 17px; height: 46px; border-radius: 9px; background: var(--bacc); opacity: 0.55; transition: opacity 0.2s; }
+  .br.is-moving .br-thumb, .br.is-dragging .br-thumb, .br-rail:focus-visible .br-thumb { opacity: 0.95; }
+  .br-bubble { position: absolute; left: 32px; top: 2px; white-space: nowrap; padding: 8px 12px; border-radius: 10px; background: var(--bink); color: var(--bbg); font-family: var(--font); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; pointer-events: none; }
+  .br-foot { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 14px calc(4px + env(safe-area-inset-bottom, 0px)); background: var(--bbar); border-top: 1px solid var(--bline); font-size: 12.5px; color: var(--bsoft); }
+  .br-foot > span:first-child { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .br-prog { flex: none; width: 80px; height: 4px; border-radius: 2px; background: var(--bline); overflow: hidden; }
+  .br-prog i { display: block; height: 100%; background: var(--bacc); }
+  .br.is-calm .br-top, .br.is-calm .br-foot, .br.is-calm .br-search { display: none; }
+  .br.is-calm .br-rail { top: env(safe-area-inset-top, 0px); bottom: 0; }
+  /* What can be done with selected text, at the bottom, clear of the phone's own menu at the top. */
+  .br-selbar { position: absolute; inset-inline: 8px; bottom: calc(52px + env(safe-area-inset-bottom, 0px)); z-index: 4; display: flex; align-items: center; justify-content: space-around; gap: 2px; padding: 6px; border-radius: 16px; background: var(--bink); color: var(--bbg); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
+  .br-selb { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 48px; min-height: 48px; justify-content: center; border: none; background: transparent; color: inherit; font: inherit; font-size: 11.5px; padding: 2px 4px; border-radius: 10px; }
+  .br-selb svg { width: 20px; height: 20px; }
+  .br-dot { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.85); padding: 0; }
+  .br-dot.is-gold { background: #F0C446; } .br-dot.is-green { background: #5CB87A; } .br-dot.is-rose { background: #E87878; }
+  .br-dot[aria-pressed="true"] { outline: 3px solid var(--bacc); outline-offset: 2px; }
+  .br-veil { position: absolute; inset: 0; z-index: 5; background: rgba(0, 0, 0, 0.35); }
+  .br-sheet { position: absolute; inset-inline: 0; bottom: 0; z-index: 6; max-height: 78%; display: flex; flex-direction: column; border-radius: 18px 18px 0 0; background: var(--bbar); color: var(--bink); box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.2); font-family: var(--font); }
+  .br-sheet.is-wide { max-height: 88%; height: 88%; }
+  .br-sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 4px 16px; }
+  .br-sheet-head b { font-size: 16px; }
+  .br-sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; }
+  .br-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .br-row > span { font-weight: 600; font-size: 14px; }
+  .br-size { min-width: 2em; text-align: center; font-size: 16px; }
+  .br-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+  .br-hint { margin: 0; font-size: 13px; color: var(--bsoft); line-height: 1.7; }
+  .br-tabs { align-self: flex-start; }
+  .br-pane { display: flex; flex-direction: column; gap: 2px; }
+  .br-toc { display: block; width: 100%; text-align: start; font: inherit; font-size: 14.5px; line-height: 1.6; padding: 9px 12px; border: none; border-radius: 10px; background: transparent; color: var(--bink); min-height: 40px; }
+  .br-toc.is-top { font-weight: 700; }
+  .br-toc.is-now { background: var(--bline); color: var(--bacc); }
+  .br-sub { margin: 10px 2px 4px; font-size: 13px; color: var(--bsoft); }
+  .br-mrow { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--bline); }
+  .br-mgo { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: start; font: inherit; padding: 10px 4px; border: none; background: transparent; color: var(--bink); }
+  .br-mgo b { font-size: 12.5px; color: var(--bacc); }
+  .br-mtext { font-family: var(--bff); font-size: 16px; line-height: 1.8; border-radius: 4px; padding: 0 3px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .br-mtext.is-gold { background: rgba(240, 196, 70, 0.3); } .br-mtext.is-green { background: rgba(92, 184, 122, 0.28); } .br-mtext.is-rose { background: rgba(232, 120, 120, 0.26); }
+  .br-mnote, .br-note { font-size: 13px; color: var(--bsoft); white-space: pre-wrap; }
+  .br-ta { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 10px; border: 1px solid var(--bline); border-radius: 10px; background: var(--bbg); color: var(--bink); resize: vertical; }
+  .br-block { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--bline); border-radius: 14px; }
+  .br-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .br-range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+  .br-range input { width: 90px; min-height: 40px; font: inherit; padding: 4px 8px; border: 1px solid var(--bline); border-radius: 8px; background: var(--bbg); color: var(--bink); }
+  .br .btn.danger { color: #B4542F; }
+  @media (min-width: 900px) { .br-sheet { inset-inline: auto 24px; width: 420px; bottom: 24px; border-radius: 18px; } .br-sheet.is-wide { height: 80%; } }
+  .lib-book-q { flex: 1; min-height: 46px; font-size: 16px !important; }
   @keyframes nav-sheet { from { transform: translateY(100%); } }
   @keyframes nav-fade { from { opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .more:not([hidden]), .more-veil:not([hidden]) { animation: none; } }
@@ -2152,60 +2244,61 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.6.0.1"></script>
-<script src="js/a11y.js?v=2.6.0.1"></script>
-<script src="js/clock-core.js?v=2.6.0.1"></script>
-<script src="js/clock.js?v=2.6.0.1"></script>
-<script src="js/astro.js?v=2.6.0.1"></script>
-<script src="js/look.js?v=2.6.0.1"></script>
-<script src="js/sounds.js?v=2.6.0.1"></script>
-<script src="js/tasks.js?v=2.6.0.1"></script>
-<script src="js/views.js?v=2.6.0.1"></script>
-<script src="js/remind-card.js?v=2.6.0.1"></script>
-<script src="js/reminders-core.js?v=2.6.0.1"></script>
-<script src="js/reminders.js?v=2.6.0.1"></script>
-<script src="js/notes.js?v=2.6.0.1"></script>
-<script src="js/cards.js?v=2.6.0.1"></script>
-<script src="js/adhkar-data.js?v=2.6.0.1"></script>
-<script src="js/adhkar.js?v=2.6.0.1"></script>
-<script src="js/habits.js?v=2.6.0.1"></script>
-<script src="js/prayers.js?v=2.6.0.1"></script>
-<script src="js/focus-plus.js?v=2.6.0.1"></script>
-<script src="js/native.js?v=2.6.0.1"></script>
-<script src="js/prayer-alerts.js?v=2.6.0.1"></script>
-<script src="js/device.js?v=2.6.0.1"></script>
-<script src="js/extras-data.js?v=2.6.0.1"></script>
-<script src="js/quran-meta.js?v=2.6.0.1"></script>
-<script src="js/hifz.js?v=2.6.0.1"></script>
-<script src="js/khatma.js?v=2.6.0.1"></script>
-<script src="js/challenge.js?v=2.6.0.1"></script>
-<script src="js/tajweed-core.js?v=2.6.0.1"></script>
-<script src="js/tajweed-rules.js?v=2.6.0.1"></script>
-<script src="js/quran.js?v=2.6.0.1"></script>
-<script src="js/mushaf-core.js?v=2.6.0.1"></script>
-<script src="js/mushaf-book.js?v=2.6.0.1"></script>
-<script src="js/sunnah-data.js?v=2.6.0.1"></script>
-<script src="js/sunnah.js?v=2.6.0.1"></script>
-<script src="js/wmm-data.js?v=2.6.0.1"></script>
-<script src="js/compass-core.js?v=2.6.0.1"></script>
-<script src="js/qibla.js?v=2.6.0.1"></script>
-<script src="js/library-meta.js?v=2.6.0.1"></script>
-<script src="js/salah-data.js?v=2.6.0.1"></script>
-<script src="js/tools.js?v=2.6.0.1"></script>
-<script src="js/library-books.js?v=2.6.0.1"></script>
-<script src="js/library-local.js?v=2.6.0.1"></script>
-<script src="js/library.js?v=2.6.0.1"></script>
-<script src="js/listen.js?v=2.6.0.1"></script>
-<script src="js/report.js?v=2.6.0.1"></script>
-<script src="js/focus-mode.js?v=2.6.0.1"></script>
-<script src="js/config.js?v=2.6.0.1"></script>
-<script src="js/vendor/supabase.js?v=2.6.0.1" defer></script>
-<script src="js/sync-core.js?v=2.6.0.1" defer></script>
-<script src="js/sync.js?v=2.6.0.1" defer></script>
-<script src="js/app.js?v=2.6.0.1" defer></script>
-<script src="js/settings.js?v=2.6.0.1" defer></script>
-<script src="js/today-core.js?v=2.6.0.1" defer></script>
-<script src="js/today.js?v=2.6.0.1" defer></script>
-<script src="js/nav.js?v=2.6.0.1" defer></script>
+<script src="js/i18n.js?v=2.7.0.1"></script>
+<script src="js/a11y.js?v=2.7.0.1"></script>
+<script src="js/clock-core.js?v=2.7.0.1"></script>
+<script src="js/clock.js?v=2.7.0.1"></script>
+<script src="js/astro.js?v=2.7.0.1"></script>
+<script src="js/look.js?v=2.7.0.1"></script>
+<script src="js/sounds.js?v=2.7.0.1"></script>
+<script src="js/tasks.js?v=2.7.0.1"></script>
+<script src="js/views.js?v=2.7.0.1"></script>
+<script src="js/remind-card.js?v=2.7.0.1"></script>
+<script src="js/reminders-core.js?v=2.7.0.1"></script>
+<script src="js/reminders.js?v=2.7.0.1"></script>
+<script src="js/notes.js?v=2.7.0.1"></script>
+<script src="js/cards.js?v=2.7.0.1"></script>
+<script src="js/adhkar-data.js?v=2.7.0.1"></script>
+<script src="js/adhkar.js?v=2.7.0.1"></script>
+<script src="js/habits.js?v=2.7.0.1"></script>
+<script src="js/prayers.js?v=2.7.0.1"></script>
+<script src="js/focus-plus.js?v=2.7.0.1"></script>
+<script src="js/native.js?v=2.7.0.1"></script>
+<script src="js/prayer-alerts.js?v=2.7.0.1"></script>
+<script src="js/device.js?v=2.7.0.1"></script>
+<script src="js/extras-data.js?v=2.7.0.1"></script>
+<script src="js/quran-meta.js?v=2.7.0.1"></script>
+<script src="js/hifz.js?v=2.7.0.1"></script>
+<script src="js/khatma.js?v=2.7.0.1"></script>
+<script src="js/challenge.js?v=2.7.0.1"></script>
+<script src="js/tajweed-core.js?v=2.7.0.1"></script>
+<script src="js/tajweed-rules.js?v=2.7.0.1"></script>
+<script src="js/quran.js?v=2.7.0.1"></script>
+<script src="js/mushaf-core.js?v=2.7.0.1"></script>
+<script src="js/mushaf-book.js?v=2.7.0.1"></script>
+<script src="js/sunnah-data.js?v=2.7.0.1"></script>
+<script src="js/sunnah.js?v=2.7.0.1"></script>
+<script src="js/wmm-data.js?v=2.7.0.1"></script>
+<script src="js/compass-core.js?v=2.7.0.1"></script>
+<script src="js/qibla.js?v=2.7.0.1"></script>
+<script src="js/library-meta.js?v=2.7.0.1"></script>
+<script src="js/salah-data.js?v=2.7.0.1"></script>
+<script src="js/tools.js?v=2.7.0.1"></script>
+<script src="js/library-books.js?v=2.7.0.1"></script>
+<script src="js/library-local.js?v=2.7.0.1"></script>
+<script src="js/library.js?v=2.7.0.1"></script>
+<script src="js/book-reader.js?v=2.7.0.1"></script>
+<script src="js/listen.js?v=2.7.0.1"></script>
+<script src="js/report.js?v=2.7.0.1"></script>
+<script src="js/focus-mode.js?v=2.7.0.1"></script>
+<script src="js/config.js?v=2.7.0.1"></script>
+<script src="js/vendor/supabase.js?v=2.7.0.1" defer></script>
+<script src="js/sync-core.js?v=2.7.0.1" defer></script>
+<script src="js/sync.js?v=2.7.0.1" defer></script>
+<script src="js/app.js?v=2.7.0.1" defer></script>
+<script src="js/settings.js?v=2.7.0.1" defer></script>
+<script src="js/today-core.js?v=2.7.0.1" defer></script>
+<script src="js/today.js?v=2.7.0.1" defer></script>
+<script src="js/nav.js?v=2.7.0.1" defer></script>
 </body>
 </html>

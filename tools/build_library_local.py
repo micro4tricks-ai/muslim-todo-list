@@ -229,7 +229,7 @@ def build_book(b, cats):
     print(f"{b['slug']}: {len(pages)} pages, {len(files)} files, {len(toc_out)} headings, {chars / 1e6:.1f}M chars, {total / 1e6:.1f} MB", flush=True)
     return {'slug': b['slug'], 'ar': info['title'], 'en': b['en'], 'author': info['author'], 'authorEn': b['authorEn'],
             'death': info['death'], 'edition': info['edition'], 'cat': b['cat'], 'files': len(files), 'pages': len(pages),
-            'size': total}
+            'size': total, 'fc': [len(chunk) for chunk in files]}  # pages in each file, for the reader's page bar
 
 
 # ---- a hadith book, by section and hadith number ----

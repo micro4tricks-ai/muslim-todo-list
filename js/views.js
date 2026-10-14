@@ -179,6 +179,8 @@
   // inside a tab (a book, a reciter) steps back. Settings and the Mushaf use the page's history instead.
   window.noonBack = () => {
     if (document.body.classList.contains('st-open') || document.body.classList.contains('qr-open')) return false;
+    // The book reader closes its panels first; then the page's history closes it.
+    if (document.body.classList.contains('br-open')) return !!(window.noonBookReader && window.noonBookReader.back());
     const fm = window.noonFocusMode;
     if (fm && fm.isOpen && fm.isOpen()) { fm.close(); return true; }
     const b = document.querySelector(`.view[data-view="${current}"]:not([hidden]) [data-back]`);

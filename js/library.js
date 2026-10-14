@@ -130,6 +130,8 @@
     renderHome();
   }
   const go = (s) => { window.dispatchEvent(new Event('noon-library-screen')); screen = s; render(); root.scrollIntoView({ block: 'start' }); };
+  // A book's text opens in the full-screen reader (js/book-reader.js); the page below is its fallback.
+  const read = (s) => { if (window.noonBookReader) window.noonBookReader.open(s.slug, s); else go(Object.assign({ name: 'read' }, s)); };
   const back = (label, to) => { const b = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T(label)}`, () => go(to)); b.dataset.back = ''; return b; };
 
   function renderHome() {
@@ -373,7 +375,8 @@
     root.append(el('p', 'hint', T('نصوص هذه الكتب من المكتبة الشاملة، لمؤلفين توفّوا قبل أكثر من سبعين سنة، بنصّ المؤلف وحده دون حواشي المحققين ومقدماتهم. يُحمَّل كل جزء عند فتحه أول مرة ثم يبقى للقراءة دون إنترنت.')));
   }
   function bookCard(b, withPlace) {
-    const c = button('lib-book lib-full', '', () => go({ name: 'shelf', slug: b.slug }));
+    // In «تابع القراءة» a book opens where it was left; elsewhere on its page (contents, search).
+    const c = button('lib-book lib-full', '', () => (withPlace && S.books && S.books[b.slug] ? read({ slug: b.slug, resume: true }) : go({ name: 'shelf', slug: b.slug })));
     c.dataset.cat = b.cat;
     const by = [I.isEn ? b.authorEn : b.author, deathText(b.death)].filter(Boolean).join(' · ');
     c.append(el('b', '', I.isEn ? b.en : b.ar), el('span', '', by));
@@ -395,12 +398,13 @@
     card.append(el('p', 'hint', `${T('من المكتبة الشاملة، بنص المؤلف دون حواشي المحقق.')} ${I.num(b.pages)} ${T('صفحة')} · ${sizeText(b.size)}`));
     const place = S.books && S.books[b.slug];
     const acts = el('div', 'hadith-acts');
-    acts.append(button('btn btn-primary', T(place ? 'تابع القراءة' : 'ابدأ القراءة'), () => go({ name: 'read', slug: b.slug, f: place ? place.f : 0, page: place ? place.p : null })));
+    acts.append(button('btn btn-primary', T(place ? 'تابع القراءة' : 'ابدأ القراءة'), () => read(place ? { slug: b.slug, resume: true } : { slug: b.slug, f: 0 })));
     card.append(acts);
     root.append(card);
     // Search in the book: all its files, one at a time, stopping at 60 results.
     const form = el('form', 'lib-tools');
-    const q = el('input'); q.type = 'search'; q.placeholder = T('ابحث في الكتاب'); q.setAttribute('aria-label', T('ابحث في الكتاب'));
+    root.append(el('h3', 'lib-h', T('ابحث في الكتاب')));
+    const q = el('input'); q.type = 'search'; q.placeholder = T('كلمة أو جملة من الكتاب'); q.className = 'lib-book-q'; q.setAttribute('aria-label', T('ابحث في الكتاب'));
     const out = el('div', 'lib-results');
     form.append(q, button('btn btn-primary', T('بحث')));
     form.lastChild.type = 'submit';
@@ -423,7 +427,7 @@
       hits.forEach((h) => {
         // The snippet near the match (positions in the marked text drift a little; close enough for a snippet).
         const i = Math.max(0, norm(h.t).indexOf(needle));
-        const r = button('lib-hit', '', () => go({ name: 'read', slug: b.slug, f: h.f, page: h.page }));
+        const r = button('lib-hit', '', () => read({ slug: b.slug, f: h.f, page: h.page, q: q.value.trim() }));
         r.append(el('b', '', h.where || T('نتيجة')), el('span', '', `…${h.t.slice(Math.max(0, i - 60), i + 100)}…`));
         out.append(r);
       });
@@ -444,7 +448,7 @@
     const toc = idx.toc;
     if (!toc.length) { tocBox.append(el('p', 'hint', T('لا فهرس لهذا الكتاب؛ اقرأه من أوله.'))); return; }
     const top = Math.min(...toc.map((x) => x[1]));
-    const link = (x) => button('lib-sec lib-toc-link', x[2], () => go({ name: 'read', slug: b.slug, f: x[3], toc: x[0] }));
+    const link = (x) => button('lib-sec lib-toc-link', x[2], () => read({ slug: b.slug, f: x[3], toc: x[0] }));
     toc.forEach((x, k) => {
       if (x[1] !== top) return;
       const kids = [];
@@ -588,11 +592,14 @@
     if (!b) return;
     window.noonUI.go('library');
     const place = S.books && S.books[slug];
-    go(resume && place ? { name: 'read', slug, f: place.f, page: place.p } : { name: 'shelf', slug });
+    if (resume && place) read({ slug, resume: true }); else go({ name: 'shelf', slug });
   }
   window.noonLibrary = {
     open: (name, tool) => { window.noonUI.go('library'); go({ name: name || 'home', tool }); },
-    lastBook, openBook, book: (slug) => shelfBook(slug), books: () => SHELF.books.map((b) => ({ slug: b.slug, ar: b.ar, en: b.en, cat: b.cat }))
+    lastBook, openBook, book: (slug) => shelfBook(slug), books: () => SHELF.books.map((b) => ({ slug: b.slug, ar: b.ar, en: b.en, cat: b.cat })),
+    // For js/book-reader.js: the files, the saved places and marks (synced with the rest of the library).
+    _data: { gz, url: (path, v) => BOOKS + path + (v ? `?v=${v}` : ''), shelfBook, pageLabel, norm, MARKS, state: () => S, save,
+      showBook: (slug) => { window.noonUI.go('library'); go({ name: 'shelf', slug }); } }
   };
   render();
 })();
