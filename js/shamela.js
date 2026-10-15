@@ -24,6 +24,7 @@
   const byShelf = new Map();    // shelf -> its books
   const busy = new Map();       // shelf -> [bytes so far, all bytes] while downloading
   let ready = null, redraw = null;
+  let all = null; // { done, total } while the whole library downloads
 
   async function loadShelf(c) {
     const res = await fetch(`${BASE}cat-${c}.json`);
@@ -77,6 +78,17 @@
         box.append(el('p', 'empty', T(online ? 'لم تُنشر كتب المكتبة الشاملة بعد.' : 'تحتاج قائمة الأقسام اتصالاً بالإنترنت أول مرة.')));
         return;
       }
+      // Every shelf at once, for whoever wants the whole library (one after the other, like the buttons below).
+      {
+        const left = shelves.filter((s) => !installed.has(s.id));
+        if (left.length && !all) {
+          const size = left.reduce((a, s) => a + s.size, 0);
+          const b = button('btn btn-primary sh-all', `${T('تحميل المكتبة كاملة')} (${sizeText(size)})`, () => installAll(left));
+          const row = el('div', 'hadith-acts');
+          row.append(b);
+          box.append(row, el('p', 'hint', T('تحتاج مساحة كافية على الجهاز واتصالاً جيداً؛ يمكنك متابعة القراءة أثناء التحميل.')));
+        } else if (all) box.append(el('p', 'hint sh-all-prog', `${T('جارٍ تحميل المكتبة كاملة…')} ${I.num(all.done)} / ${I.num(all.total)}`));
+      }
       // A filter over the titles and authors of every shelf (those not downloaded say so).
       {
         const q = el('input'); q.type = 'search'; q.className = 'lib-book-q'; q.placeholder = T('ابحث عن كتاب أو مؤلف'); q.setAttribute('aria-label', T('ابحث عن كتاب أو مؤلف'));
@@ -93,6 +105,12 @@
         box.append(f, found);
       }
       shelves.forEach((s) => box.append(shelf(s)));
+      // Opened from a book's page («القسم»): that shelf, open and in sight.
+      if (ui.shelf != null) {
+        const d = box.querySelector(`[data-shelf="${ui.shelf}"]`);
+        ui.shelf = null;
+        if (d) { d.open = true; setTimeout(() => d.scrollIntoView({ block: 'start' }), 50); }
+      }
     };
     function card(b) {
       // A book of a shelf not downloaded yet: its title, and the way to its shelf's download button.
@@ -134,18 +152,32 @@
       if (p) d.open = true;
       return d;
     }
-    async function install(s) {
+    async function install(s, quiet) {
       busy.set(s.id, [0, s.size]);
-      draw();
+      if (root.isConnected) draw();
+      let ok = true;
       try {
         await invoke('shamela_install', { cat: s.id });
         busy.delete(s.id);
         await refresh();
-        toast(`${T('حُمِّل')}: ${s.name}`);
+        if (!quiet) toast(`${T('حُمِّل')}: ${s.name}`);
       } catch (e) {
+        ok = false;
         busy.delete(s.id);
         toast(T('تعذّر التحميل. تأكد من الاتصال بالإنترنت وحاول مرة أخرى.'));
       }
+      if (root.isConnected) draw();
+      return ok;
+    }
+    async function installAll(list) {
+      all = { done: 0, total: list.length };
+      for (const s of list) {
+        if (!(await install(s, true))) break; // no connection or no room: stop, what came stays
+        all.done++;
+      }
+      const done = all.done === all.total;
+      all = null;
+      if (done) toast(T('حُمِّلت المكتبة كاملة.'));
       if (root.isConnected) draw();
     }
     async function remove(s) {
@@ -168,6 +200,7 @@
     owns: (path) => /^s\d+\//.test(path) && books.has(path.split('/')[0]),
     url: (path) => `${BASE}books/${path}`,
     ready: () => ready || refresh(),
+    shelfName: (c) => (shelves.find((s) => String(s.id) === String(c)) || {}).name || '',
     render
   };
 })();

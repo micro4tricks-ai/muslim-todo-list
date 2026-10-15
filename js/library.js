@@ -12,7 +12,7 @@
   const KEY = 'noon-sweep-library';
   const API = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/';
   const root = $('view-library');
-  let S = Object.assign({ marks: [], en: I.isEn, onlyAccepted: false, books: {} }, load(KEY, {}));
+  let S = Object.assign({ marks: [], en: I.isEn, onlyAccepted: false, books: {}, favs: [] }, load(KEY, {}));
   const SHELF = window.NOON_BOOKS || { cats: [], books: [] };
   // The whole Musnad of Ahmad (al-Risalah numbering) takes the place of the caliphs' part.
   const LOCAL = window.NOON_LIBRARY_LOCAL || {};
@@ -141,7 +141,7 @@
     if (screen.name === 'shelf') return renderShelf();
     if (screen.name === 'read') return renderRead();
     if (screen.name === 'shamela' && window.noonShamela) {
-      return window.noonShamela.render(root, { T, I, el, button, toast, skeleton, back, norm, sizeText, deathText, open: (slug) => go({ name: 'shelf', slug }) });
+      return window.noonShamela.render(root, { T, I, el, button, toast, skeleton, back, norm, sizeText, deathText, shelf: screen.shelf, open: (slug) => go({ name: 'shelf', slug }) });
     }
     if (screen.name === 'tool' && window.noonTools) return window.noonTools.render(screen.tool, root, back('المكتبة', { name: 'home' }));
     renderHome();
@@ -493,7 +493,28 @@
   const catName = (c) => { const x = SHELF.cats.find((y) => y[0] === c); return x ? (I.isEn ? x[2] : x[1]) : c; };
   const deathText = (d) => (d && d < 9000 ? `${I.isEn ? 'd.' : 'ت'} ${I.num(d)}${I.isEn ? ' AH' : 'هـ'}` : '');
   const sizeText = (n) => (n >= 1e6 ? `${I.num((n / 1e6).toFixed(1))} ${T('ميجابايت')}` : `${I.num(Math.max(1, Math.round(n / 1e3)))} ${T('كيلوبايت')}`);
+  let shamelaRead = false; // the Shamela list was read once, so books kept from it can show
   function renderShelves() {
+    const SH = window.noonShamela;
+    // With the Shamela library on this device, its shelves hold every book: here, only your own.
+    if (SH) {
+      if (!shamelaRead) SH.ready().then(() => { shamelaRead = true; if (screen.name === 'home' && root.isConnected) render(); });
+      root.append(el('h3', 'lib-h', T('كتبي')));
+      const recent = Object.entries(S.books || {}).sort((a, b) => b[1].at - a[1].at).map(([k]) => shelfBook(k)).filter(Boolean).slice(0, 4);
+      if (recent.length) {
+        const row = el('div', 'lib-grid');
+        recent.forEach((b) => row.append(bookCard(b, true)));
+        root.append(el('p', 'view-sub', T('تابع القراءة')), row);
+      }
+      root.append(el('p', 'view-sub', T('المفضلة')));
+      const favs = S.favs || [];
+      if (favs.length) {
+        const row = el('div', 'lib-grid');
+        favs.forEach((f) => row.append(bookCard(shelfBook(f.slug) || f)));
+        root.append(row);
+      } else root.append(el('p', 'hint', T('اضغط «أضف إلى المفضلة» في صفحة أي كتاب ليبقى هنا في متناولك.')));
+      return;
+    }
     if (!SHELF.books.length) return;
     root.append(el('h3', 'lib-h', T('كتب كاملة من المكتبة الشاملة')));
     // Recently read first.
@@ -524,24 +545,51 @@
     const by = [I.isEn ? b.authorEn : b.author, deathText(b.death)].filter(Boolean).join(' · ');
     c.append(el('b', '', I.isEn ? b.en : b.ar), el('span', '', by));
     const place = S.books && S.books[b.slug];
-    c.append(el('small', '', withPlace && place && place.label ? place.label : `${I.num(b.pages)} ${T('صفحة')} · ${sizeText(b.size)}`));
+    c.append(el('small', '', withPlace && place && place.label ? place.label : b.pages ? `${I.num(b.pages)} ${T('صفحة')} · ${sizeText(b.size)}` : bookShelfName(b)));
     return c;
+  }
+  // The shelf a book sits on: Shamela's on this device, or the website's own.
+  function bookShelfName(b) {
+    return b.shamela && window.noonShamela ? window.noonShamela.shelfName(b.cat) : catName(b.cat);
   }
 
   // One book: its source, where you stopped, its contents and a search.
   async function renderShelf() {
-    const b = shelfBook(screen.slug);
-    if (!b) return go({ name: 'home' });
+    let b = shelfBook(screen.slug);
+    // A favourite or a book read before, opened before the Shamela list was read: wait for it.
+    if (!b && window.noonShamela) { root.append(skeleton(T('جارٍ تحميل القائمة…'), 2)); await window.noonShamela.ready(); root.replaceChildren(); b = shelfBook(screen.slug); }
+    if (!b) {
+      const f = (S.favs || []).find((x) => x.slug === screen.slug);
+      if (f && window.noonShamela) { toast(T('حمِّل هذا القسم أولاً لتقرأ كتبه.')); return go({ name: 'shamela', shelf: f.cat }); }
+      return go({ name: 'home' });
+    }
     const head = el('div', 'view-head');
     head.append(b.shamela ? back('المكتبة الشاملة', { name: 'shamela' }) : back('المكتبة', { name: 'home' }), el('h2', '', I.isEn ? b.en : b.ar));
     root.append(head);
     const card = el('div', 'lib-about');
     card.append(el('p', '', `${T('المؤلف')}: ${I.isEn ? b.authorEn : b.author}${b.death && b.death < 9000 ? ` (${deathText(b.death)})` : ''}`));
     if (b.edition) card.append(el('p', '', `${T('الطبعة')}: ${b.edition.replace(/^ت\s+/, T('تحقيق') + ' ').replace(/^ط\s+/, T('طبعة') + ' ')}`));
+    // Its shelf, one tap away.
+    const shelfName = bookShelfName(b);
+    if (shelfName) {
+      const p = el('p', '');
+      p.append(`${T('القسم')}: `, button('link-btn', shelfName, () => go(b.shamela && window.noonShamela ? { name: 'shamela', shelf: b.cat } : { name: 'home' })));
+      card.append(p);
+    }
     card.append(el('p', 'hint', `${T('من المكتبة الشاملة، بنص المؤلف دون حواشي المحقق.')} ${I.num(b.pages)} ${T('صفحة')} · ${sizeText(b.size)}`));
     const place = S.books && S.books[b.slug];
     const acts = el('div', 'hadith-acts');
     acts.append(button('btn btn-primary', T(place ? 'تابع القراءة' : 'ابدأ القراءة'), () => read(place ? { slug: b.slug, resume: true } : { slug: b.slug, f: 0 })));
+    // Favourites: kept with what a card needs, so they show before the Shamela list is read.
+    const isFav = () => (S.favs || []).some((f) => f.slug === b.slug);
+    const fav = button('btn btn-quiet', '', () => {
+      S.favs = isFav() ? S.favs.filter((f) => f.slug !== b.slug)
+        : [{ slug: b.slug, ar: b.ar, en: b.en, author: b.author, authorEn: b.authorEn, death: b.death, cat: b.cat, shamela: !!b.shamela }].concat(S.favs || []);
+      save(); paintFav();
+    });
+    const paintFav = () => { fav.textContent = isFav() ? `★ ${T('في المفضلة')}` : `☆ ${T('أضف إلى المفضلة')}`; fav.setAttribute('aria-pressed', String(isFav())); };
+    paintFav();
+    acts.append(fav);
     card.append(acts);
     root.append(card);
     // Search in the book: all its files, one at a time, stopping at 60 results.
