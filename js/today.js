@@ -221,11 +221,14 @@
       longPress(c, id);
       cards.push(c);
     }
+    // Four cards at most by default, so the focus timer under them stays in sight (Settings › «كروت يومي»).
+    cards.splice(maxCards() || cards.length);
     if (!cards.some((c) => c.dataset.card === 'qibla')) { if (qObserver) qObserver.disconnect(); if (qWatch) { qWatch(); qWatch = null; } }
     box.replaceChildren(...cards);
   }
 
   // ---- Settings › «كروت يومي» ----
+  const maxCards = () => (cfg.max === undefined ? 4 : Number(cfg.max) || 0); // 0: all of them
   function customize() { if (window.noonSettings) window.noonSettings.open('today'); }
   function buildSettings(host) {
     const draw = () => {
@@ -249,6 +252,18 @@
         list.append(row);
       });
       host.append(list);
+      // How many of the shown cards appear at once (the first ones in this order that have something to say).
+      {
+        const g = el('section', 'st-group');
+        g.append(el('h3', 'st-group-name', T('عدد الكروت تحت الساعة')));
+        const sel = el('select', 'td-set-book');
+        sel.setAttribute('aria-label', T('عدد الكروت تحت الساعة'));
+        [[2, I.num(2)], [4, I.num(4)], [6, I.num(6)], [0, T('كلها')]].forEach(([v, label]) => sel.append(new Option(label, String(v))));
+        sel.value = String(maxCards());
+        sel.addEventListener('change', () => { cfg.max = Number(sel.value); save(); render(); });
+        g.append(sel, el('p', 'st-note', T('تظهر أوائل الكروت المختارة بهذا الترتيب، فيبقى مؤقت التركيز ظاهراً تحتها.')));
+        host.append(g);
+      }
       // The pinned book.
       const B = window.noonLibrary;
       if (B && B.books) {
