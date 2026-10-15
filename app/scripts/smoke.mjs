@@ -438,6 +438,8 @@ await phase('Settings: every page, a font, the back key', async () => {
   report.settings.appStillOpen = alive() && (adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '').includes(pkg);
   // Reliability: what the phone allows, as the adhan page shows it.
   report.settings.device = await js("(async () => { try { return await Capacitor.Plugins.Device.status(); } catch (e) { return 'ERR ' + e.message; } })()");
+  // Do Not Disturb for focus sessions (QuietPlugin): reachable, and asks before it may act.
+  report.settings.quiet = await js("(async () => { try { return Object.assign(await Capacitor.Plugins.Quiet.status(), { button: !!document.querySelector('.fm-dnd') }); } catch (e) { return 'ERR ' + e.message; } })()");
   report.settings.reliabilityCard = await js("(document.querySelector('.rel .rel-head b') || {}).textContent || 'none'");
   // A minute added to Fajr moves Fajr by exactly one minute, then back.
   report.settings.offset = await js(`(async () => {
@@ -538,6 +540,7 @@ if (!report.settings || report.settings.appStillOpen !== true) problems.push('th
 if (report.permCard !== 'shown, closed') problems.push(`first-launch permission card: ${report.permCard}`);
 if (!/> done$/.test(report.welcome || '')) problems.push(`welcome steps: ${report.welcome}`);
 if (report.adhanCall !== 'ok') problems.push(`adhan: ${report.adhanCall}`);
+if (!report.settings || !report.settings.quiet || typeof report.settings.quiet !== 'object' || !report.settings.quiet.button) problems.push(`Do Not Disturb for focus: ${JSON.stringify(report.settings && report.settings.quiet)}`);
 if (!report.settings || !report.settings.device || typeof report.settings.device !== 'object') problems.push(`device status: ${report.settings && report.settings.device}`);
 if (!report.settings || report.settings.offset !== 1) problems.push(`a minute added to Fajr moved it by ${report.settings && report.settings.offset}`);
 if (!report.widgetHasTimes) problems.push('the widget has no prayer times');

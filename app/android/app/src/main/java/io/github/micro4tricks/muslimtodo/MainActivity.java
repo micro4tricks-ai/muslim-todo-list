@@ -49,6 +49,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(CompassPlugin.class);
         // ... and downloads the Shamela library's shelves for reading offline through this one.
         registerPlugin(ShamelaPlugin.class);
+        // ... and quiets the phone (Do Not Disturb) during a focus session, when asked, through this one.
+        registerPlugin(QuietPlugin.class);
         keep(getIntent());
         super.onCreate(savedInstanceState);
         // When Android stops the page's renderer (usually to free memory), reopen the

@@ -249,6 +249,42 @@
   window.addEventListener('noon-reminders', () => scheduleReminders());
   window.addEventListener('noon-place', () => { schedulePrayers(true); scheduleSunnah(true); });
 
+  // ---- focus: Do Not Disturb while a focus session runs, if the person turned it on (QuietPlugin) ----
+  const Quiet = plugin('Quiet');
+  const QUIET_KEY = 'noon-focus-dnd'; // this phone only
+  let quietSig = '';
+  function applyQuiet() {
+    const ctl = window.noonFocusControl;
+    if (!Quiet || !ctl) return;
+    let want = false;
+    try { want = localStorage.getItem(QUIET_KEY) === '1'; } catch (_) {}
+    const s = ctl.state();
+    const until = want && s.running && s.mode === 'focus' && s.remaining > 3000 ? Date.now() + s.remaining : 0;
+    const sig = until ? String(Math.round(until / 5000)) : 'off';
+    if (sig === quietSig) return;
+    quietSig = sig;
+    quiet(until ? Quiet.start({ until }) : Quiet.stop());
+  }
+  window.addEventListener('noon-focus', applyQuiet);
+  window.noonQuiet = Quiet && {
+    on: () => { try { return localStorage.getItem(QUIET_KEY) === '1'; } catch (_) { return false; } },
+    // Turning it on asks Android for the right first (a screen of its own, once).
+    async set(on) {
+      if (on) {
+        const st = await Quiet.status().catch(() => ({ allowed: false }));
+        if (!st.allowed) {
+          window.noonUI.toast(T('اسمح للتطبيق بالوصول إلى «عدم الإزعاج» في الشاشة التالية، ثم ارجع وفعّله.'));
+          await quiet(Quiet.openAccess());
+          return false;
+        }
+      }
+      try { localStorage.setItem(QUIET_KEY, on ? '1' : '0'); } catch (_) {}
+      quietSig = '';
+      applyQuiet();
+      return on;
+    }
+  };
+
   // ---- focus: a notice when the running session ends ----
   let focusSig = '';
   window.addEventListener('noon-focus', () => {

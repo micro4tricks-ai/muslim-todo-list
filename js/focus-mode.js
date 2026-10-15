@@ -40,7 +40,21 @@
   soundBtn.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2zM11.5 5.5a3.5 3.5 0 0 1 0 5M13 3.5a6 6 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const exitBtn = button('fm-icon', '', () => close(), T('خروج من وضع التركيز'));
   exitBtn.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-  tools.append(soundBtn, fsBtn, exitBtn);
+  tools.append(soundBtn, fsBtn);
+  // On the phone: Do Not Disturb while a focus session runs, if the person wants it (js/native.js).
+  if (window.noonQuiet) {
+    const Q = window.noonQuiet;
+    const dnd = button('fm-icon fm-dnd', '', async () => {
+      const on = await Q.set(!Q.on());
+      paint();
+      toast(T(on ? 'سيُفعَّل «عدم الإزعاج» أثناء جلسات التركيز.' : '«عدم الإزعاج» لن يُفعَّل أثناء التركيز.'));
+    }, T('عدم الإزعاج أثناء التركيز'));
+    dnd.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+    const paint = () => dnd.setAttribute('aria-pressed', String(Q.on()));
+    paint();
+    tools.append(dnd);
+  }
+  tools.append(exitBtn);
   top.append(info, tools);
 
   const modes = el('div', 'fm-modes');

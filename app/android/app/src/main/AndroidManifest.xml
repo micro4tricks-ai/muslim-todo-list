@@ -23,6 +23,8 @@
         </activity>
 
         <!-- The adhan: booked with the alarm clock, played by a short foreground service. -->
+        <!-- The end of a quiet focus session: Do Not Disturb goes back as it was (QuietPlugin). -->
+        <receiver android:name=".QuietPlugin$End" android:exported="false" />
         <receiver android:name=".AdhanReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -102,6 +104,8 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- Installing its own updates, downloaded from the website (Settings › About). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Do Not Disturb during a focus session, when the person turns it on. -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <!-- "Use my location" for prayer times. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
