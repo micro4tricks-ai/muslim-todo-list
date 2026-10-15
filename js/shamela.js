@@ -45,12 +45,15 @@
   }
   // Every shelf's titles (tools/build_shamela_packs.py, on the website): listed before a shelf is downloaded.
   let titles = {};
-  const titlesReady = fetch(`${SITE}books/shamela-titles.json`).then((r) => (r.ok ? r.json() : {})).then((t) => { titles = t; }).catch(() => {});
+  let titlesP = null;
+  const titlesReady = () => (titlesP = titlesP || fetch(`${SITE}books/shamela-titles.json`).then((r) => (r.ok ? r.json() : {})).then((t) => { titles = t; }).catch(() => { titlesP = null; }));
   const listed = (c) => (titles[c] || []).map(([id, ar, author, death, pages]) => ({ slug: `s${id}`, ar, author, death, pages, cat: c, away: true }));
   const progress = (c, got, all) => { busy.set(c, [got, all]); if (redraw) redraw(c); };
   if (tauri && tauri.event) tauri.event.listen('shamela-progress', (ev) => progress(...ev.payload));
   if (cap) cap.addListener('progress', (p) => progress(p.cat, p.got, p.total));
-  refresh();
+  // Nothing at start (the app opens as fast as before): the list is read when the library is opened,
+  // or a while after the start, so a book read last can open from the home screen.
+  setTimeout(() => { if (!ready) refresh(); }, 20000);
 
   // ---- the screen: the shelves to download, and the books of those on this computer ----
   function render(root, ui) {
@@ -152,7 +155,7 @@
       if (d && p) d.textContent = `${T('جارٍ التحميل…')} ${p[1] ? Math.round((p[0] / p[1]) * 100) : 0}%`;
     };
     box.append(ui.skeleton(T('جارٍ تحميل القائمة…'), 3));
-    Promise.all([ready || refresh(), titlesReady]).then(() => { if (root.isConnected) draw(); });
+    Promise.all([ready || refresh(), titlesReady()]).then(() => { if (root.isConnected) draw(); });
   }
 
   window.noonShamela = {
@@ -160,7 +163,7 @@
     // Is this file one of the library's on this computer (books/s<id>/...)?
     owns: (path) => /^s\d+\//.test(path) && books.has(path.split('/')[0]),
     url: (path) => `${BASE}books/${path}`,
-    ready: () => ready,
+    ready: () => ready || refresh(),
     render
   };
 })();
