@@ -3,6 +3,8 @@
 // notifications. Closing the window keeps the app in the tray, so the adhan and reminders still come.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod shamela;
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -38,11 +40,11 @@ fn set_adblock(app: &AppHandle, on: bool) {
         };
     }
 }
-// For the build's own check: does a known ad address still load in the window?
-#[cfg(windows)]
-// The answer comes back as a page address the app writes to the file MUSLIM_ADBLOCK_PROBE names.
-#[cfg(windows)]
-const PROBE: &str = "if(location.search.indexOf('adblock-probe')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?adblock-probe='+r};fetch('https://googleads.g.doubleclick.net/pagead/id',{mode:'no-cors',cache:'no-store'}).then(function(){go('loaded')},function(){go('blocked')})},12000);";
+// For the build's own checks (MUSLIM_PROBE names one, MUSLIM_PROBE_OUT the file for its answer, which
+// comes back as a page address «?probe=...»): does a known ad address still load in the window, and
+// can the website reach the library on this computer (its commands and shamela://)?
+const PROBE_ADBLOCK: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+r};fetch('https://googleads.g.doubleclick.net/pagead/id',{mode:'no-cors',cache:'no-store'}).then(function(){go('loaded')},function(){go('blocked')})},12000);";
+const PROBE_SHAMELA: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+encodeURIComponent(r)};var base=navigator.userAgent.indexOf('Windows')>=0?'https://shamela.localhost/':'shamela://localhost/';var a=window.__TAURI__.core.invoke('shamela_catalog').then(function(c){return 'cmd-ok'+(c.online?'-online':'')},function(e){return 'cmd-fail:'+e});var b=fetch(base+'ping').then(function(r){return r.text()}).then(function(t){return 'file-'+t},function(e){return 'file-fail:'+e});Promise.all([a,b]).then(function(x){go(x.join('|'))})},8000);";
 
 fn show(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
@@ -62,6 +64,9 @@ fn main() {
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![HIDDEN])))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
+        // The Shamela library on this computer (src/shamela.rs).
+        .register_asynchronous_uri_scheme_protocol("shamela", shamela::serve)
+        .invoke_handler(tauri::generate_handler![shamela::shamela_catalog, shamela::shamela_install, shamela::shamela_remove])
         .setup(|app| {
             let hidden = std::env::args().any(|a| a == HIDDEN);
             let builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(SITE.parse().unwrap()))
@@ -82,15 +87,18 @@ fn main() {
             } else {
                 builder
             };
-            #[cfg(windows)]
-            let builder = match std::env::var_os("MUSLIM_ADBLOCK_PROBE") {
-                Some(out) => builder.initialization_script(PROBE).on_navigation(move |url| {
-                    if let Some((_, r)) = url.query_pairs().find(|(k, _)| k == "adblock-probe") {
-                        let _ = std::fs::write(&out, r.as_bytes());
-                    }
-                    true
-                }),
-                None => builder,
+            // The library's files are served as https://shamela.localhost/ on Windows (the website is https).
+            let builder = builder.use_https_scheme(true);
+            let builder = match (std::env::var("MUSLIM_PROBE").ok(), std::env::var_os("MUSLIM_PROBE_OUT")) {
+                (Some(kind), Some(out)) => builder
+                    .initialization_script(if kind == "shamela" { PROBE_SHAMELA } else { PROBE_ADBLOCK })
+                    .on_navigation(move |url| {
+                        if let Some((_, r)) = url.query_pairs().find(|(k, _)| k == "probe") {
+                            let _ = std::fs::write(&out, r.as_bytes());
+                        }
+                        true
+                    }),
+                _ => builder,
             };
             builder.build()?;
 

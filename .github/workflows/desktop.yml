@@ -86,10 +86,11 @@ jobs:
           $res = (Resolve-Path ..\..\..\src-tauri).Path
           New-Item -ItemType Directory -Force -Path .\extensions | Out-Null
           Copy-Item -Recurse -Force "$res\extensions\*" .\extensions\
-          function Probe($on) {
-            $out = Join-Path $env:RUNNER_TEMP ("probe-" + $on + ".txt")
+          function Probe($kind, $on) {
+            $out = Join-Path $env:RUNNER_TEMP ("probe-" + $kind + "-" + $on + ".txt")
             Remove-Item $out -ErrorAction SilentlyContinue
-            $env:MUSLIM_ADBLOCK_PROBE = $out
+            $env:MUSLIM_PROBE = $kind
+            $env:MUSLIM_PROBE_OUT = $out
             if ($on) { $env:MUSLIM_ADBLOCK = '1' } else { Remove-Item Env:MUSLIM_ADBLOCK -ErrorAction SilentlyContinue }
             $p = Start-Process -FilePath .\muslim-todo.exe -PassThru
             for ($i = 0; $i -lt 60 -and -not (Test-Path $out); $i++) { Start-Sleep -Seconds 1 }
@@ -97,10 +98,26 @@ jobs:
             Start-Sleep -Seconds 3
             if (Test-Path $out) { (Get-Content $out -Raw).Trim() } else { 'no answer' }
           }
-          $off = Probe $false
-          $on = Probe $true
+          $off = Probe 'adblock' $false
+          $on = Probe 'adblock' $true
           Write-Host "blocker off: $off / blocker on: $on"
           if ($off -ne 'loaded' -or $on -ne 'blocked') { Write-Error "The ad blocker does not work as it should"; exit 1 }
+
+      # The website in the window reaches the library on this computer: its commands and its files.
+      - name: Library on this computer (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: desktop/src-tauri/target/release
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'probe-shamela.txt'
+          $env:MUSLIM_PROBE = 'shamela'
+          $env:MUSLIM_PROBE_OUT = $out
+          $p = Start-Process -FilePath .\muslim-todo.exe -PassThru
+          for ($i = 0; $i -lt 60 -and -not (Test-Path $out); $i++) { Start-Sleep -Seconds 1 }
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          $r = if (Test-Path $out) { (Get-Content $out -Raw).Trim() } else { 'no answer' }
+          Write-Host "library: $r"
+          if (-not ($r -like 'cmd-ok*|file-ok')) { Write-Error "The website cannot reach the library on this computer"; exit 1 }
 
       - name: Collect the installers
         run: |
