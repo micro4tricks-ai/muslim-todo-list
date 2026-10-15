@@ -1,14 +1,24 @@
-// ---------- The Shamela library on this computer (the desktop app only) ----------
-// The desktop app (desktop/, src/shamela.rs) downloads a shelf of classical books when asked, keeps it
-// in its data folder and serves its files as shamela://; the books are the website's own format
-// (tools/build_shamela_packs.py), so the library's book page and the reader open them as they are.
-// On the website and on Android there is no such library and this file does nothing.
+// ---------- The Shamela library on this device (the desktop app and the Android app) ----------
+// The app downloads a shelf of classical books when asked and keeps it on the device: the desktop app
+// (desktop/, src/shamela.rs) serves its files as shamela://, the Android app (ShamelaPlugin.java) keeps
+// them in its own storage, read through Capacitor's file address. The books are the website's own
+// format (tools/build_shamela_packs.py), so the library's book page and the reader open them as they are.
+// On the website there is no such library and this file does nothing.
 (() => {
   'use strict';
-  const tauri = window.__TAURI__;
-  if (!tauri || !tauri.core) return;
-  const BASE = navigator.userAgent.includes('Windows') ? 'https://shamela.localhost/' : 'shamela://localhost/';
-  const invoke = (cmd, args) => tauri.core.invoke(cmd, args);
+  const tauri = window.__TAURI__ && window.__TAURI__.core ? window.__TAURI__ : null;
+  const cap = !tauri && window.noonNative && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Shamela;
+  if (!tauri && !cap) return;
+  let BASE = tauri ? (navigator.userAgent.includes('Windows') ? 'https://shamela.localhost/' : 'shamela://localhost/') : '';
+  const NAMES = { shamela_catalog: 'catalog', shamela_install: 'install', shamela_remove: 'remove' };
+  const invoke = async (cmd, args) => {
+    if (tauri) return tauri.core.invoke(cmd, args);
+    const r = await cap[NAMES[cmd]](args || {});
+    // The folder on the phone, as the page may read it.
+    if (r && r.base && !BASE) BASE = window.Capacitor.convertFileSrc(r.base.replace(/\/?$/, '/'));
+    return r;
+  };
+  const SITE = window.Capacitor ? 'https://micro4tricks-ai.github.io/muslim-todo-list/' : '';
   let shelves = [], installed = new Set(), online = false;
   const books = new Map();      // slug -> the book, for the library and the reader
   const byShelf = new Map();    // shelf -> its books
@@ -35,9 +45,11 @@
   }
   // Every shelf's titles (tools/build_shamela_packs.py, on the website): listed before a shelf is downloaded.
   let titles = {};
-  const titlesReady = fetch('books/shamela-titles.json').then((r) => (r.ok ? r.json() : {})).then((t) => { titles = t; }).catch(() => {});
+  const titlesReady = fetch(`${SITE}books/shamela-titles.json`).then((r) => (r.ok ? r.json() : {})).then((t) => { titles = t; }).catch(() => {});
   const listed = (c) => (titles[c] || []).map(([id, ar, author, death, pages]) => ({ slug: `s${id}`, ar, author, death, pages, cat: c, away: true }));
-  if (tauri.event) tauri.event.listen('shamela-progress', (ev) => { const [c, got, all] = ev.payload; busy.set(c, [got, all]); if (redraw) redraw(c); });
+  const progress = (c, got, all) => { busy.set(c, [got, all]); if (redraw) redraw(c); };
+  if (tauri && tauri.event) tauri.event.listen('shamela-progress', (ev) => progress(...ev.payload));
+  if (cap) cap.addListener('progress', (p) => progress(p.cat, p.got, p.total));
   refresh();
 
   // ---- the screen: the shelves to download, and the books of those on this computer ----

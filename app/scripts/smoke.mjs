@@ -336,6 +336,25 @@ await phase('Book reader: scroll through parts, jump, search', async () => {
   if (report.bookReader && typeof report.bookReader === 'object') report.bookReader.hadith = hadith;
   console.log('book reader:', JSON.stringify(report.bookReader));
 }, 4000);
+// The Shamela library on the phone (2.7.3): the smallest shelf downloads, unpacks and one of its books reads.
+await phase('Shamela library: download a shelf, read a book', async () => {
+  report.shamela = await js(`(async () => {
+    try {
+      const P = Capacitor.Plugins.Shamela;
+      const c = await P.catalog();
+      const s = c.shelves.slice().sort((x, y) => x.size - y.size)[0];
+      await P.install({ cat: s.id });
+      const base = Capacitor.convertFileSrc(c.base.endsWith('/') ? c.base : c.base + '/');
+      const list = await (await fetch(base + 'cat-' + s.id + '.json')).json();
+      const bytes = (await (await fetch(base + 'books/' + list[0].slug + '/0.json.gz')).arrayBuffer()).byteLength;
+      const after = await P.catalog();
+      await P.remove({ cat: s.id });
+      const gone = (await P.catalog()).installed.indexOf(s.id) < 0;
+      return { shelves: c.shelves.length, shelf: s.id, books: list.length, bytes, installed: after.installed.indexOf(s.id) >= 0, removed: gone };
+    } catch (e) { return 'ERR ' + (e.code || '') + ' ' + e.message; }
+  })()`);
+  console.log('shamela:', JSON.stringify(report.shamela));
+}, 4000);
 // The Listen tab: the mp3quran.net lists load, a station plays, and the adhan can reach the page.
 await phase('Listen: the Quran radios on the native player', async () => {
   await gesture("window.noonUI.go('listen')"); await sleep(1500);
@@ -495,6 +514,7 @@ if ((report.cspBlocked || []).length) problems.push(`the content security policy
 report.phases.forEach((p) => { if (!p.appRunning) problems.push(`app not running after "${p.name}"`); if (p.error) problems.push(`${p.name}: ${p.error}`); });
 ((report.listen && report.listen.radios) || []).forEach((r) => { if (!/^playing/.test(r.state)) problems.push(`radio not playing: ${r.state}`); });
 if (!report.listen || !report.listen.radios) problems.push('the radio check did not run');
+{ const sh = report.shamela; if (!sh || typeof sh !== 'object' || !(sh.shelves > 30) || !(sh.bytes > 100) || !sh.installed || !sh.removed) problems.push(`Shamela library on the phone: ${JSON.stringify(sh)}`); }
 if (!report.listen || !report.listen.download || !report.listen.download.listed || !(report.listen.download.size > 10000)) problems.push(`download: ${JSON.stringify(report.listen && report.listen.download)}`);
 if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== false) problems.push('live TV did not play');
 if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');

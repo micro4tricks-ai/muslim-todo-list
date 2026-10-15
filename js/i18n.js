@@ -1440,6 +1440,7 @@
     'رقم الحديث': 'Hadith number',
     'اذهب إلى حديث برقمه': 'Go to a hadith by its number',
     'على هذا الكمبيوتر': 'On this computer',
+    'على هذا الجهاز': 'On this device',
     'المكتبة الشاملة': 'The Shamela library',
     'آلاف من كتب المتقدّمين: حمِّل القسم الذي تريده، ثم اقرأ وابحث دون إنترنت': 'Thousands of classical books: download a subject, then read and search offline',
     'كتب المتقدّمين من المكتبة الشاملة: لمؤلفين توفّوا قبل سنة ١٣٥٠هـ، بنص المؤلف وحده دون حواشي المحققين ومقدماتهم. حمِّل القسم الذي تريده مرة واحدة، ثم اقرأ كتبه وابحث فيها دون إنترنت.': 'Classical books from al-Maktaba al-Shamela, by authors who died before 1350 AH: the author\'s text only, without the editors\' notes and introductions. Download a subject once, then read and search its books offline (in Arabic).',
