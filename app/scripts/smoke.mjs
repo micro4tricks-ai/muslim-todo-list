@@ -210,7 +210,7 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
   try {
     // Every card on, a book pinned and one read, so each has something to show.
     await js(`(() => { const C = window.noonTodayCore; const on = {}; C.ALL.forEach((id) => { on[id] = true; });
-      localStorage.setItem('noon-sweep-today', JSON.stringify({ on, book: 'al-arbain-an-nawawiyyah' }));
+      localStorage.setItem('noon-sweep-today', JSON.stringify({ on, max: 0, book: 'al-arbain-an-nawawiyyah' }));
       const L = JSON.parse(localStorage.getItem('noon-sweep-library') || '{}'); L.books = { 'tawhid': { f: 0, p: 1, at: Date.now(), label: 'x' } };
       localStorage.setItem('noon-sweep-library', JSON.stringify(L)); return true; })()`);
     await send('Page.reload'); await sleep(8000);
@@ -415,6 +415,7 @@ await phase('Settings: every page, a font, the back key', async () => {
     await gesture(`document.querySelector('#settingsScreen .st-row[data-page="${id}"]').click()`); await sleep(1200);
     report.settings.pages[id] = await js("document.querySelector('#settingsScreen .st-title').textContent + ' | ' + Math.round(document.querySelector('#settingsScreen .st-body').scrollHeight) + 'px'");
     // The account page: which of its parts shows (none at all = a blank page).
+    if (id === 'account') adb(`exec-out screencap -p > ${out}/7-account.png`);
     if (id === 'account') report.settings.account = await js("(() => { const g = (i) => document.getElementById(i); return { off: g('syncOff').hidden, offText: g('syncOffText').textContent, signedOut: g('syncSignedOut').hidden, signedIn: g('syncSignedIn').hidden, label: g('syncLabel').textContent, supabase: typeof window.supabase, failed: window.__syncFailed || null }; })()");
     adb('shell input keyevent BACK'); await sleep(1200);
   }
@@ -424,6 +425,15 @@ await phase('Settings: every page, a font, the back key', async () => {
   await gesture("[...document.querySelectorAll('#settingsScreen .st-choice')][0].click()"); await sleep(800);
   adb('shell input keyevent BACK'); await sleep(1000);
   adb('shell input keyevent BACK'); await sleep(1500);
+  // The account page opened from another section's screen (a phone rule once hid it there: a blank page).
+  report.settings.accountElsewhere = await js(`(async () => {
+    window.noonUI.go('library'); await new Promise((r) => setTimeout(r, 600));
+    window.noonSettings.open('account'); await new Promise((r) => setTimeout(r, 800));
+    const p = document.getElementById('syncPanel'), out = { screen: document.body.dataset.screen, display: getComputedStyle(p).display, height: Math.round(p.getBoundingClientRect().height) };
+    history.back(); await new Promise((r) => setTimeout(r, 300)); history.back(); await new Promise((r) => setTimeout(r, 300));
+    window.noonUI.go('tasks');
+    return out;
+  })()`);
   report.settings.closedByBack = await js("document.getElementById('settingsScreen').hidden");
   report.settings.appStillOpen = alive() && (adb('shell dumpsys activity activities').split('\n').find((l) => /ResumedActivity/.test(l)) || '').includes(pkg);
   // Reliability: what the phone allows, as the adhan page shows it.
@@ -520,6 +530,8 @@ if (!report.listen || !report.listen.radios) problems.push('the radio check did 
 if (!report.listen || !report.listen.download || !report.listen.download.listed || !(report.listen.download.size > 10000)) problems.push(`download: ${JSON.stringify(report.listen && report.listen.download)}`);
 if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== false) problems.push('live TV did not play');
 const ac = (report.settings || {}).account || {};
+const ae = (report.settings || {}).accountElsewhere || {};
+if (ae.display === 'none' || !(ae.height > 100)) problems.push(`the account page is blank when opened from another screen: ${JSON.stringify(ae)}`);
 if (ac.off !== false && ac.signedOut !== false && ac.signedIn !== false) problems.push(`the account page is blank: ${JSON.stringify(ac)}`);
 if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');
 if (!report.settings || report.settings.appStillOpen !== true) problems.push('the back key closed the app');
