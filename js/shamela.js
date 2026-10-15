@@ -33,6 +33,10 @@
     })().catch(() => {});
     return ready;
   }
+  // Every shelf's titles (tools/build_shamela_packs.py, on the website): listed before a shelf is downloaded.
+  let titles = {};
+  const titlesReady = fetch('books/shamela-titles.json').then((r) => (r.ok ? r.json() : {})).then((t) => { titles = t; }).catch(() => {});
+  const listed = (c) => (titles[c] || []).map(([id, ar, author, death, pages]) => ({ slug: `s${id}`, ar, author, death, pages, cat: c, away: true }));
   if (tauri.event) tauri.event.listen('shamela-progress', (ev) => { const [c, got, all] = ev.payload; busy.set(c, [got, all]); if (redraw) redraw(c); });
   refresh();
 
@@ -55,15 +59,16 @@
         box.append(el('p', 'empty', T(online ? 'لم تُنشر كتب المكتبة الشاملة بعد.' : 'تحتاج قائمة الأقسام اتصالاً بالإنترنت أول مرة.')));
         return;
       }
-      // A filter over the titles and authors of the books on this computer.
-      if (books.size) {
+      // A filter over the titles and authors of every shelf (those not downloaded say so).
+      {
         const q = el('input'); q.type = 'search'; q.className = 'lib-book-q'; q.placeholder = T('ابحث عن كتاب أو مؤلف'); q.setAttribute('aria-label', T('ابحث عن كتاب أو مؤلف'));
         const found = el('div', 'lib-grid');
         q.addEventListener('input', () => {
           const n = ui.norm(q.value.trim()).trim();
           found.replaceChildren();
           if (n.length < 2) return;
-          [...books.values()].filter((b) => ui.norm(`${b.ar} ${b.author}`).includes(n)).slice(0, 60).forEach((b) => found.append(card(b)));
+          const all = shelves.flatMap((s) => (installed.has(s.id) ? byShelf.get(s.id) || [] : listed(s.id)));
+          all.filter((b) => ui.norm(`${b.ar} ${b.author}`).includes(n)).slice(0, 60).forEach((b) => found.append(card(b)));
           if (!found.childNodes.length) found.append(el('p', 'hint', T('لا نتائج.')));
         });
         const f = el('div', 'lib-tools'); f.append(q);
@@ -72,9 +77,15 @@
       shelves.forEach((s) => box.append(shelf(s)));
     };
     function card(b) {
-      const c = button('lib-book lib-full', '', () => open(b.slug));
+      // A book of a shelf not downloaded yet: its title, and the way to its shelf's download button.
+      const c = button(`lib-book lib-full${b.away ? ' is-away' : ''}`, '', () => {
+        if (!b.away) { open(b.slug); return; }
+        toast(T('حمِّل هذا القسم أولاً لتقرأ كتبه.'));
+        const d = box.querySelector(`[data-shelf="${b.cat}"]`);
+        if (d) { d.open = true; d.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+      });
       c.append(el('b', '', b.ar), el('span', '', [b.author, deathText(b.death)].filter(Boolean).join(' · ')),
-        el('small', '', `${I.num(b.pages)} ${T('صفحة')}`));
+        el('small', '', b.away ? `${I.num(b.pages)} ${T('صفحة')} · ${T('يحتاج تحميل القسم')}` : `${I.num(b.pages)} ${T('صفحة')}`));
       return c;
     }
     function shelf(s) {
@@ -91,8 +102,8 @@
       if (!has && !p) acts.append(button('btn btn-primary', `${T('تحميل')} (${sizeText(s.size)})`, () => install(s)));
       if (has) acts.append(button('btn btn-quiet', T('حذف من الجهاز'), () => remove(s)));
       d.append(acts, prog);
-      if (has) {
-        const list = byShelf.get(s.id) || [];
+      {
+        const list = has ? byShelf.get(s.id) || [] : listed(s.id);
         const grid = el('div', 'lib-grid');
         let upto = 0;
         const more = button('btn btn-quiet lib-more', T('المزيد'), () => page());
@@ -129,7 +140,7 @@
       if (d && p) d.textContent = `${T('جارٍ التحميل…')} ${p[1] ? Math.round((p[0] / p[1]) * 100) : 0}%`;
     };
     box.append(ui.skeleton(T('جارٍ تحميل القائمة…'), 3));
-    (ready || refresh()).then(() => { if (root.isConnected) draw(); });
+    Promise.all([ready || refresh(), titlesReady]).then(() => { if (root.isConnected) draw(); });
   }
 
   window.noonShamela = {

@@ -89,7 +89,24 @@ def main():
         print(f'{cat} {name}: {len(recs)} books, {size / 1e6:.0f} MB', flush=True)
         order = [c for c, _ in shelves()]
         json.dump([catalog[c] for c in order if c in catalog], open(cat_path, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+    titles()
+
+
+def titles():
+    """books/shamela-titles.json on the website: every shelf's titles, so the app lists them before a download.
+    {"shelf id": [[book id, title, author, death year, pages], ...]}"""
+    out = {}
+    for c, _ in shelves():
+        f = os.path.join(OUT, f'cat-{c}.json')
+        if os.path.exists(f):
+            out[str(c)] = [[r['id'], r['ar'], r['author'], r['death'], r['pages']] for r in json.load(open(f, encoding='utf-8'))]
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'books', 'shamela-titles.json')
+    json.dump(out, open(path, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+    print(f'{path}: {sum(len(v) for v in out.values())} titles, {os.path.getsize(path) / 1e3:.0f} KB')
 
 
 if __name__ == '__main__':
-    main()
+    if sys.argv[1:] == ['--titles']:
+        titles()
+    else:
+        main()

@@ -1454,6 +1454,8 @@
     'جارٍ تحميل القائمة…': 'Loading the list…',
     'لم تُنشر كتب المكتبة الشاملة بعد.': 'The Shamela books are not published yet.',
     'تحتاج قائمة الأقسام اتصالاً بالإنترنت أول مرة.': 'The list of subjects needs the internet the first time.',
+    'حمِّل هذا القسم أولاً لتقرأ كتبه.': 'Download this subject first to read its books.',
+    'يحتاج تحميل القسم': 'download its subject to read',
     'ملف نصي (txt) بنص الأحاديث وأبوابها وأرقامها، يُفتح بأي برنامج.': 'A text file (txt) with the hadiths, their chapters and numbers, opens in any program.',
     // Language switch
     'English': 'العربية'
