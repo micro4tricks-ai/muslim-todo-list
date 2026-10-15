@@ -45,6 +45,8 @@ fn set_adblock(app: &AppHandle, on: bool) {
 // can the website reach the library on this computer (its commands and shamela://)?
 const PROBE_ADBLOCK: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+r};fetch('https://googleads.g.doubleclick.net/pagead/id',{mode:'no-cors',cache:'no-store'}).then(function(){go('loaded')},function(){go('blocked')})},12000);";
 const PROBE_SHAMELA: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+encodeURIComponent(r)};var base=navigator.userAgent.indexOf('Windows')>=0?'https://shamela.localhost/':'shamela://localhost/';var a=window.__TAURI__.core.invoke('shamela_catalog').then(function(c){return 'cmd-ok'+(c.online?'-online':'')},function(e){return 'cmd-fail:'+e});var b=fetch(base+'ping').then(function(r){return r.text()}).then(function(t){return 'file-'+t},function(e){return 'file-fail:'+e});Promise.all([a,b]).then(function(x){go(x.join('|'))})},8000);";
+// Downloads the smallest shelf the way the website does, then reads one of its books from shamela://.
+const PROBE_INSTALL: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+encodeURIComponent(r)};var base='https://shamela.localhost/';var T=window.__TAURI__.core;T.invoke('shamela_catalog').then(function(c){var s=c.shelves.slice().sort(function(x,y){return x.size-y.size})[0];return T.invoke('shamela_install',{cat:s.id}).then(function(){return fetch(base+'cat-'+s.id+'.json')}).then(function(r){return r.json()}).then(function(l){return fetch(base+'books/'+l[0].slug+'/0.json.gz')}).then(function(r){return r.arrayBuffer()}).then(function(b){return T.invoke('shamela_catalog').then(function(c2){go('installed-'+s.id+'|'+(c2.installed.indexOf(s.id)>=0)+'|bytes-'+b.byteLength)})})}).catch(function(e){go('fail:'+e)})},8000);";
 
 fn show(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
@@ -91,7 +93,11 @@ fn main() {
             let builder = builder.use_https_scheme(true);
             let builder = match (std::env::var("MUSLIM_PROBE").ok(), std::env::var_os("MUSLIM_PROBE_OUT")) {
                 (Some(kind), Some(out)) => builder
-                    .initialization_script(if kind == "shamela" { PROBE_SHAMELA } else { PROBE_ADBLOCK })
+                    .initialization_script(match kind.as_str() {
+                        "shamela" => PROBE_SHAMELA,
+                        "install" => PROBE_INSTALL,
+                        _ => PROBE_ADBLOCK,
+                    })
                     .on_navigation(move |url| {
                         if let Some((_, r)) = url.query_pairs().find(|(k, _)| k == "probe") {
                             let _ = std::fs::write(&out, r.as_bytes());

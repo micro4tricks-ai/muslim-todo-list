@@ -118,6 +118,16 @@ jobs:
           $r = if (Test-Path $out) { (Get-Content $out -Raw).Trim() } else { 'no answer' }
           Write-Host "library: $r"
           if (-not ($r -like 'cmd-ok*|file-ok')) { Write-Error "The website cannot reach the library on this computer"; exit 1 }
+          # Download the smallest shelf from the release and read a book of it.
+          $out = Join-Path $env:RUNNER_TEMP 'probe-install.txt'
+          $env:MUSLIM_PROBE = 'install'
+          $env:MUSLIM_PROBE_OUT = $out
+          $p = Start-Process -FilePath .\muslim-todo.exe -PassThru
+          for ($i = 0; $i -lt 240 -and -not (Test-Path $out); $i++) { Start-Sleep -Seconds 1 }
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          $r = if (Test-Path $out) { (Get-Content $out -Raw).Trim() } else { 'no answer' }
+          Write-Host "install: $r"
+          if (-not ($r -match '^installed-\d+\|true\|bytes-[1-9]')) { Write-Error "A shelf could not be downloaded and read"; exit 1 }
 
       - name: Collect the installers
         run: |
