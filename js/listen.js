@@ -626,9 +626,13 @@
   }
   // In the app: the broadcaster's own stream on Aloula (up to 1080p, no ads). Aloula's player service
   // signs the address for each viewer; it answers the app's native requests but not other websites.
-  const HTTP = window.noonNative && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+  // The desktop app (desktop/, src/media.rs) asks Aloula the same way, so it plays the same stream.
+  const NATIVE_HTTP = window.noonNative && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+  const DESK = window.__TAURI__ && window.__TAURI__.core;
+  const HTTP = NATIVE_HTTP || DESK;
   async function aloulaUrl(id) {
-    const r = await HTTP.request({ url: `https://aloula.faulio.com/api/v1.1/channels/${id}/player/live`, method: 'GET', headers: { Accept: 'application/json' } });
+    if (!NATIVE_HTTP) return DESK.invoke('aloula_live', { channel: id });
+    const r = await NATIVE_HTTP.request({ url: `https://aloula.faulio.com/api/v1.1/channels/${id}/player/live`, method: 'GET', headers: { Accept: 'application/json' } });
     const d = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
     const u = d && d.streams && d.streams.hls;
     if (r.status !== 200 || !/^https:\/\//.test(u || '')) throw new Error('no stream');

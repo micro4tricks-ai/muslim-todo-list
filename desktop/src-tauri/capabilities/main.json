@@ -12,6 +12,7 @@
     "opener:default",
     "allow-shamela-catalog",
     "allow-shamela-install",
-    "allow-shamela-remove"
+    "allow-shamela-remove",
+    "allow-aloula-live"
   ]
 }

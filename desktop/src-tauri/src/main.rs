@@ -3,6 +3,7 @@
 // notifications. Closing the window keeps the app in the tray, so the adhan and reminders still come.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod media;
 mod shamela;
 mod update;
 
@@ -18,11 +19,10 @@ const INIT: &str = include_str!("init.js");
 // Started with the computer: straight to the tray, no window.
 const HIDDEN: &str = "--hidden";
 static TOLD: AtomicBool = AtomicBool::new(false);
-// Started again by the app itself: waits for the old copy to close, so it is not taken for a second launch.
-const RESTARTED: &str = "--restarted";
 
-// The optional ad blocker (Windows): uBlock Origin Lite, shipped with the app in resources/extensions
-// and loaded into the window only while «منع الإعلانات» is checked. Off until the user turns it on.
+// The optional ad blocker (Windows): uBlock Origin Lite, shipped with the app in resources/extensions,
+// always loaded with the window and switched on only while «منع الإعلانات» is checked (src/media.rs).
+// Off until the user turns it on.
 #[cfg(windows)]
 fn adblock_flag(app: &AppHandle) -> Option<std::path::PathBuf> {
     app.path().app_config_dir().ok().map(|d| d.join("adblock-on"))
@@ -46,6 +46,8 @@ fn set_adblock(app: &AppHandle, on: bool) {
 // can the website reach the library on this computer (its commands and shamela://)?
 const PROBE_ADBLOCK: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+r};fetch('https://googleads.g.doubleclick.net/pagead/id',{mode:'no-cors',cache:'no-store'}).then(function(){go('loaded')},function(){go('blocked')})},12000);";
 const PROBE_SHAMELA: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+encodeURIComponent(r)};var base=navigator.userAgent.indexOf('Windows')>=0?'https://shamela.localhost/':'shamela://localhost/';var a=window.__TAURI__.core.invoke('shamela_catalog').then(function(c){return 'cmd-ok'+(c.online?'-online':'')},function(e){return 'cmd-fail:'+e});var b=fetch(base+'ping').then(function(r){return r.text()}).then(function(t){return 'file-'+t},function(e){return 'file-fail:'+e});Promise.all([a,b]).then(function(x){go(x.join('|'))})},8000);";
+// Live TV: the ad-free stream's address from Aloula, and the stream itself read from the page.
+const PROBE_TV: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+encodeURIComponent(r)};window.__TAURI__.core.invoke('aloula_live',{channel:7}).then(function(u){return fetch(u).then(function(r){return r.text()})}).then(function(t){go(t.indexOf('#EXTM3U')===0?'tv-ok':'tv-bad')},function(e){go('tv-fail:'+e)})},8000);";
 // Downloads the smallest shelf the way the website does, then reads one of its books from shamela://.
 const PROBE_INSTALL: &str = "if(location.search.indexOf('probe=')<0)setTimeout(function(){var go=function(r){location.href=location.pathname+'?probe='+encodeURIComponent(r)};var base='https://shamela.localhost/';var T=window.__TAURI__.core;T.invoke('shamela_catalog').then(function(c){var s=c.shelves.slice().sort(function(x,y){return x.size-y.size})[0];return T.invoke('shamela_install',{cat:s.id}).then(function(){return fetch(base+'cat-'+s.id+'.json')}).then(function(r){return r.json()}).then(function(l){return fetch(base+'books/'+l[0].slug+'/0.json.gz')}).then(function(r){return r.arrayBuffer()}).then(function(b){return T.invoke('shamela_catalog').then(function(c2){go('installed-'+s.id+'|'+(c2.installed.indexOf(s.id)>=0)+'|bytes-'+b.byteLength)})})}).catch(function(e){go('fail:'+e)})},8000);";
 
@@ -58,9 +60,6 @@ fn show(app: &AppHandle) {
 }
 
 fn main() {
-    if std::env::args().any(|a| a == RESTARTED) {
-        std::thread::sleep(std::time::Duration::from_millis(1500));
-    }
     tauri::Builder::default()
         // A second launch brings the open window forward instead of starting another copy.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show(app)))
@@ -70,7 +69,7 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         // The Shamela library on this computer (src/shamela.rs).
         .register_asynchronous_uri_scheme_protocol("shamela", shamela::serve)
-        .invoke_handler(tauri::generate_handler![shamela::shamela_catalog, shamela::shamela_install, shamela::shamela_remove])
+        .invoke_handler(tauri::generate_handler![shamela::shamela_catalog, shamela::shamela_install, shamela::shamela_remove, media::aloula_live])
         .setup(|app| {
             let hidden = std::env::args().any(|a| a == HIDDEN);
             let builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(SITE.parse().unwrap()))
@@ -85,12 +84,7 @@ fn main() {
                 "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows",
             );
             #[cfg(windows)]
-            let builder = if adblock_on(app.handle()) {
-                let ext = app.path().resource_dir()?.join("extensions");
-                builder.browser_extensions_enabled(true).extensions_path(ext)
-            } else {
-                builder
-            };
+            let builder = builder.browser_extensions_enabled(true).extensions_path(app.path().resource_dir()?.join("extensions"));
             // The library's files are served as https://shamela.localhost/ on Windows (the website is https).
             let builder = builder.use_https_scheme(true);
             let builder = match (std::env::var("MUSLIM_PROBE").ok(), std::env::var_os("MUSLIM_PROBE_OUT")) {
@@ -98,6 +92,7 @@ fn main() {
                     .initialization_script(match kind.as_str() {
                         "shamela" => PROBE_SHAMELA,
                         "install" => PROBE_INSTALL,
+                        "tv" => PROBE_TV,
                         _ => PROBE_ADBLOCK,
                     })
                     .on_navigation(move |url| {
@@ -108,7 +103,18 @@ fn main() {
                     }),
                 _ => builder,
             };
-            builder.build()?;
+            let _window = builder.build()?;
+            // The blocker is added as the window starts: set it as chosen once it is there, and again a little later.
+            #[cfg(windows)]
+            {
+                let (w, on) = (_window.clone(), adblock_on(app.handle()));
+                std::thread::spawn(move || {
+                    for wait in [2, 4, 8] {
+                        std::thread::sleep(std::time::Duration::from_secs(wait));
+                        media::set_blocker(&w, on);
+                    }
+                });
+            }
 
             let open = MenuItem::with_id(app, "open", "فتح مهام المسلم", true, None::<&str>)?;
             let auto = CheckMenuItem::with_id(app, "auto", "التشغيل مع بدء الجهاز", true, app.autolaunch().is_enabled().unwrap_or(false), None::<&str>)?;
@@ -122,6 +128,8 @@ fn main() {
             #[cfg(not(windows))]
             let menu = Menu::with_items(app, &[&open, &auto, &upd, &sep, &quit])?;
             let auto_item = auto.clone();
+            #[cfg(windows)]
+            let ads_item = ads.clone();
             update::watch(app.handle().clone(), upd.clone());
             TrayIconBuilder::with_id("tray")
                 .icon(app.default_window_icon().unwrap().clone())
@@ -136,14 +144,16 @@ fn main() {
                         let _ = if on { m.disable() } else { m.enable() };
                         let _ = auto_item.set_checked(m.is_enabled().unwrap_or(!on));
                     }
-                    // The blocker is loaded when the window is made: the app starts again to apply it.
+                    // On or off at once; the page reloads so the video starts again with the new choice.
                     #[cfg(windows)]
                     "ads" => {
-                        set_adblock(app, !adblock_on(app));
-                        if let Ok(exe) = std::env::current_exe() {
-                            let _ = std::process::Command::new(exe).arg(RESTARTED).spawn();
+                        let on = !adblock_on(app);
+                        set_adblock(app, on);
+                        let _ = ads_item.set_checked(on);
+                        if let Some(w) = app.get_webview_window("main") {
+                            media::set_blocker(&w, on);
+                            let _ = w.eval("setTimeout(function(){location.reload()},600)");
                         }
-                        app.exit(0);
                     }
                     "update" => update::install(app.clone()),
                     "quit" => app.exit(0),

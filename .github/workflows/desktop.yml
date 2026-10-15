@@ -135,6 +135,16 @@ jobs:
           $r = if (Test-Path $out) { (Get-Content $out -Raw).Trim() } else { 'no answer' }
           Write-Host "install: $r"
           if (-not ($r -match '^installed-\d+\|true\|bytes-[1-9]')) { Write-Error "A shelf could not be downloaded and read"; exit 1 }
+          # Live TV without ads: the broadcaster's stream address, asked by the app, plays in the page.
+          $out = Join-Path $env:RUNNER_TEMP 'probe-tv.txt'
+          $env:MUSLIM_PROBE = 'tv'
+          $env:MUSLIM_PROBE_OUT = $out
+          $p = Start-Process -FilePath .\muslim-todo.exe -PassThru
+          for ($i = 0; $i -lt 60 -and -not (Test-Path $out); $i++) { Start-Sleep -Seconds 1 }
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          $r = if (Test-Path $out) { (Get-Content $out -Raw).Trim() } else { 'no answer' }
+          Write-Host "tv: $r"
+          if ($r -ne 'tv-ok') { Write-Warning "The ad-free live TV stream did not answer from GitHub's servers: $r" }
 
       - name: Collect the installers
         run: |
