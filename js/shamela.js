@@ -47,7 +47,10 @@
   let titles = {};
   let titlesP = null;
   const titlesReady = () => (titlesP = titlesP || fetch(`${SITE}books/shamela-titles.json`).then((r) => (r.ok ? r.json() : {})).then((t) => { titles = t; }).catch(() => { titlesP = null; }));
-  const listed = (c) => (titles[c] || []).map(([id, ar, author, death, pages]) => ({ slug: `s${id}`, ar, author, death, pages, cat: c, away: true }));
+  const listed = (c) => (titles[c] || []).map(([id, ar, author, death, pages, edition]) => ({ slug: `s${id}`, ar, author, death, pages, edition, cat: c, away: true }));
+  // Shamela's short marks for an edition: "ت فلان" (edited by) and "ط دار" (printed by), written out,
+  // so the copies of one book (six of تلبيس إبليس) can be told apart.
+  const editionText = (e) => String(e || '').trim().replace(/^ت\s+/, 'تحقيق: ').replace(/^ط\s+/, 'طبعة ');
   const progress = (c, got, all) => { busy.set(c, [got, all]); if (redraw) redraw(c); };
   if (tauri && tauri.event) tauri.event.listen('shamela-progress', (ev) => progress(...ev.payload));
   if (cap) cap.addListener('progress', (p) => progress(p.cat, p.got, p.total));
@@ -83,7 +86,7 @@
           found.replaceChildren();
           if (n.length < 2) return;
           const all = shelves.flatMap((s) => (installed.has(s.id) ? byShelf.get(s.id) || [] : listed(s.id)));
-          all.filter((b) => ui.norm(`${b.ar} ${b.author}`).includes(n)).slice(0, 60).forEach((b) => found.append(card(b)));
+          all.filter((b) => ui.norm(`${b.ar} ${b.author} ${b.edition || ''}`).includes(n)).slice(0, 60).forEach((b) => found.append(card(b)));
           if (!found.childNodes.length) found.append(el('p', 'hint', T('لا نتائج.')));
         });
         const f = el('div', 'lib-tools'); f.append(q);
@@ -99,8 +102,9 @@
         const d = box.querySelector(`[data-shelf="${b.cat}"]`);
         if (d) { d.open = true; d.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
       });
-      c.append(el('b', '', b.ar), el('span', '', [b.author, deathText(b.death)].filter(Boolean).join(' · ')),
-        el('small', '', b.away ? `${I.num(b.pages)} ${T('صفحة')} · ${T('يحتاج تحميل القسم')}` : `${I.num(b.pages)} ${T('صفحة')}`));
+      c.append(el('b', '', b.ar), el('span', '', [b.author, deathText(b.death)].filter(Boolean).join(' · ')));
+      if (b.edition) c.append(el('span', 'lib-edition', editionText(b.edition)));
+      c.append(el('small', '', b.away ? `${I.num(b.pages)} ${T('صفحة')} · ${T('يحتاج تحميل القسم')}` : `${I.num(b.pages)} ${T('صفحة')}`));
       return c;
     }
     function shelf(s) {
