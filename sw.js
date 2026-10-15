@@ -19,7 +19,7 @@ const FILES = [
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',
   'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js', 'js/book-reader.js',
   'js/extras-data.js', 'js/tools.js', 'js/prayers.js', 'js/listen.js', 'js/settings.js', 'js/device.js', 'js/today.js', 'js/nav.js', 'js/hifz.js', 'js/khatma.js', 'js/challenge.js', 'js/a11y.js', 'js/clock-core.js', 'js/reminders-core.js', 'js/reminders.js',
-  'js/tajweed-core.js', 'js/tajweed-rules.js', 'js/mushaf-core.js', 'js/mushaf-book.js', 'js/library-books.js', 'js/library-local.js',
+  'js/tajweed-core.js', 'js/tajweed-rules.js', 'js/mushaf-core.js', 'js/mushaf-book.js', 'js/library-books.js', 'js/library-local.js', 'js/shamela.js',
   'js/wmm-data.js', 'js/compass-core.js', 'js/today-core.js',
   'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',

@@ -27,6 +27,9 @@
   }
   // The books live on the website; the Android app leaves them out and reads them from there.
   const BOOKS = window.Capacitor ? 'https://micro4tricks-ai.github.io/muslim-todo-list/books/' : 'books/';
+  // In the desktop app, the Shamela library on the computer (js/shamela.js) has books of its own.
+  const SH = (path) => !!(window.noonShamela && window.noonShamela.owns(path));
+  const bookUrl = (path, v) => (SH(path) ? window.noonShamela.url(path) : BOOKS + path + (v ? `?v=${v}` : ''));
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); };
   let screen = { name: 'home' }; // home | book | section | salah | marks | shelf (a full book) | read (its text)
 
@@ -72,11 +75,12 @@
   // A gzipped JSON file under books/ (kept on the phone after the first read, for reading offline).
   const gzCache = new Map();
   function gz(path, v) {
-    const url = BOOKS + path + (v ? `?v=${v}` : '');
+    const url = bookUrl(path, v);
     if (!gzCache.has(url)) {
       const p = (async () => {
         let res = null;
-        const box = typeof caches !== 'undefined' ? await caches.open('library-v1').catch(() => null) : null;
+        // The desktop app's Shamela books are on this computer already: nothing to keep.
+        const box = typeof caches !== 'undefined' && !SH(path) ? await caches.open('library-v1').catch(() => null) : null;
         if (box) res = await box.match(url).catch(() => null);
         if (!res) {
           res = await fetch(url);
@@ -136,6 +140,9 @@
     if (screen.name === 'marks') return renderMarks();
     if (screen.name === 'shelf') return renderShelf();
     if (screen.name === 'read') return renderRead();
+    if (screen.name === 'shamela' && window.noonShamela) {
+      return window.noonShamela.render(root, { T, I, el, button, toast, skeleton, back, norm, sizeText, deathText, open: (slug) => go({ name: 'shelf', slug }) });
+    }
     if (screen.name === 'tool' && window.noonTools) return window.noonTools.render(screen.tool, root, back('المكتبة', { name: 'home' }));
     renderHome();
   }
@@ -193,6 +200,12 @@
     });
     root.append(grid);
     root.append(el('p', 'hint', T('الأربعينات ورياض الصالحين وبلوغ المرام والأدب المفرد والشمائل والمشكاة وسنن الدارمي من مشروع hadith-json المفتوح، بنصّها كما هو (وفيه تخريج المصنّف)، ومن غير أحكام إضافية. ومسند الإمام أحمد كاملاً بترقيم طبعة الرسالة، نصّه من المكتبة الشاملة دون حواشي المحققين.')));
+    if (window.noonShamela) {
+      const sh = button('lib-salah lib-shamela', '', () => go({ name: 'shamela' }));
+      sh.append(el('span', 'lib-salah-kicker', T('على هذا الكمبيوتر')), el('b', '', T('المكتبة الشاملة')),
+        el('span', '', T('آلاف من كتب المتقدّمين: حمِّل الفن الذي تريده، ثم اقرأ وابحث دون إنترنت')));
+      root.append(sh);
+    }
     renderShelves();
     if (S.marks.length) root.append(button('btn btn-quiet', `${T('الأحاديث المحفوظة')} (${I.num(S.marks.length)})`, () => go({ name: 'marks' })));
     root.append(el('p', 'credit', T('النصوص والأحكام من مشروع hadith-api المفتوح (github.com/fawazahmed0/hadith-api)، وعناوين الكتب بالعربية من hadith-json. الترجمة الإنجليزية كما في sunnah.com. يُحمَّل كل باب عند فتحه أول مرة، ثم يبقى للقراءة دون إنترنت.')));
@@ -476,7 +489,7 @@
 
 
   // ================= the full books (from Shamela) =================
-  const shelfBook = (slug) => SHELF.books.find((x) => x.slug === slug);
+  const shelfBook = (slug) => SHELF.books.find((x) => x.slug === slug) || (window.noonShamela && window.noonShamela.book(slug));
   const catName = (c) => { const x = SHELF.cats.find((y) => y[0] === c); return x ? (I.isEn ? x[2] : x[1]) : c; };
   const deathText = (d) => (d && d < 9000 ? `${I.isEn ? 'd.' : 'ت'} ${I.num(d)}${I.isEn ? ' AH' : 'هـ'}` : '');
   const sizeText = (n) => (n >= 1e6 ? `${I.num((n / 1e6).toFixed(1))} ${T('ميجابايت')}` : `${I.num(Math.max(1, Math.round(n / 1e3)))} ${T('كيلوبايت')}`);
@@ -520,7 +533,7 @@
     const b = shelfBook(screen.slug);
     if (!b) return go({ name: 'home' });
     const head = el('div', 'view-head');
-    head.append(back('المكتبة', { name: 'home' }), el('h2', '', I.isEn ? b.en : b.ar));
+    head.append(b.shamela ? back('المكتبة الشاملة', { name: 'shamela' }) : back('المكتبة', { name: 'home' }), el('h2', '', I.isEn ? b.en : b.ar));
     root.append(head);
     const card = el('div', 'lib-about');
     card.append(el('p', '', `${T('المؤلف')}: ${I.isEn ? b.authorEn : b.author}${b.death && b.death < 9000 ? ` (${deathText(b.death)})` : ''}`));
@@ -728,7 +741,7 @@
     open: (name, tool) => { window.noonUI.go('library'); go({ name: name || 'home', tool }); },
     lastBook, openBook, book: (slug) => shelfBook(slug), books: () => SHELF.books.map((b) => ({ slug: b.slug, ar: b.ar, en: b.en, cat: b.cat })),
     // For js/book-reader.js: the files, the saved places and marks (synced with the rest of the library).
-    _data: { gz, url: (path, v) => BOOKS + path + (v ? `?v=${v}` : ''), shelfBook, book: anyBook, pageLabel, norm, MARKS, state: () => S, save,
+    _data: { gz, url: bookUrl, shelfBook, book: anyBook, pageLabel, norm, MARKS, state: () => S, save,
       showBook: (slug) => { window.noonUI.go('library'); go(String(slug).startsWith('h:') ? { name: 'book', book: slug.slice(2) } : { name: 'shelf', slug }); } }
   };
   render();
