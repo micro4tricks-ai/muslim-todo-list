@@ -4,6 +4,15 @@
 // get changes live; the rest catch up when they next open the page.
 (() => {
   'use strict';
+  // Anything that stops this file half-way would leave the account page empty (all of its parts
+  // start hidden): say so on the page instead, and keep the error for the emulator check.
+  try { setup(); } catch (e) {
+    window.__syncFailed = String((e && e.stack) || e).slice(0, 400);
+    const off = document.getElementById('syncOff'), txt = document.getElementById('syncOffText');
+    const T = window.noonI18n ? window.noonI18n.t : (s) => s;
+    if (off && txt) { txt.textContent = `${T('تعذّر تشغيل المزامنة على هذا الجهاز:')} ${(e && e.message) || e}`; off.hidden = false; }
+  }
+  function setup() {
   const I = window.noonI18n, T = I.t;
   const core = window.noonSyncCore;
   const $ = (id) => document.getElementById(id);
@@ -408,4 +417,5 @@
   // For the group khatma (js/khatma.js): the same client and the signed-in account.
   window.noonSync = { client: () => client, user: () => (confirmed ? user : null) };
   renderUI();
+  }
 })();

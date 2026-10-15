@@ -146,6 +146,7 @@
     'آخر مزامنة:': 'Last synced:',
     'المزامنة غير مفعّلة في هذه النسخة من الصفحة.': 'Sync isn’t set up in this copy of the page.',
     'تعذّر تحميل خدمة المزامنة. تأكد من اتصال الإنترنت ثم أعد فتح الصفحة.': 'Couldn’t load the sync service. Check your connection and reopen the page.',
+    'تعذّر تشغيل المزامنة على هذا الجهاز:': 'Sync couldn’t start on this device:',
     'وصلت إعدادات جديدة من جهاز آخر، وستظهر عند إعادة فتح الصفحة.': 'New settings arrived from another device; they’ll show when you reopen the page.',
     'جارٍ الإرسال…': 'Sending…',
     'تعذّر إرسال الرابط:': 'Couldn’t send the link:',

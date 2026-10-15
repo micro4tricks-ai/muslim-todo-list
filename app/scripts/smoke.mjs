@@ -21,7 +21,7 @@ ws.addEventListener('message', (e) => {
   const m = JSON.parse(e.data);
   if (m.id && pend.has(m.id)) { pend.get(m.id)(m.result); pend.delete(m.id); }
   if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text);
-  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') errors.push('console: ' + m.params.args.map((a) => a.value || a.description).join(' '));
+  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') errors.push('console: ' + m.params.args.map((a) => a.value || a.description || (a.preview && JSON.stringify(a.preview.properties.map((p) => p.name + '=' + p.value)))).join(' '));
 });
 const send = (method, params = {}) => new Promise((r) => { const i = ++id; pend.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
 // Every call gives up after 20 s, so a page that went away fails the check instead of hanging it.
@@ -414,6 +414,8 @@ await phase('Settings: every page, a font, the back key', async () => {
   for (const id of ids || []) {
     await gesture(`document.querySelector('#settingsScreen .st-row[data-page="${id}"]').click()`); await sleep(1200);
     report.settings.pages[id] = await js("document.querySelector('#settingsScreen .st-title').textContent + ' | ' + Math.round(document.querySelector('#settingsScreen .st-body').scrollHeight) + 'px'");
+    // The account page: which of its parts shows (none at all = a blank page).
+    if (id === 'account') report.settings.account = await js("(() => { const g = (i) => document.getElementById(i); return { off: g('syncOff').hidden, offText: g('syncOffText').textContent, signedOut: g('syncSignedOut').hidden, signedIn: g('syncSignedIn').hidden, label: g('syncLabel').textContent, supabase: typeof window.supabase, failed: window.__syncFailed || null }; })()");
     adb('shell input keyevent BACK'); await sleep(1200);
   }
   await gesture("document.querySelector('#settingsScreen .st-row[data-page=\"fonts\"]').click()"); await sleep(1200);
@@ -517,6 +519,8 @@ if (!report.listen || !report.listen.radios) problems.push('the radio check did 
 { const sh = report.shamela; if (!sh || typeof sh !== 'object' || !(sh.shelves > 30) || !(sh.bytes > 100) || !sh.installed || !sh.removed) problems.push(`Shamela library on the phone: ${JSON.stringify(sh)}`); }
 if (!report.listen || !report.listen.download || !report.listen.download.listed || !(report.listen.download.size > 10000)) problems.push(`download: ${JSON.stringify(report.listen && report.listen.download)}`);
 if (!report.liveTv || !report.liveTv.video || report.liveTv.video.paused !== false) problems.push('live TV did not play');
+const ac = (report.settings || {}).account || {};
+if (ac.off !== false && ac.signedOut !== false && ac.signedIn !== false) problems.push(`the account page is blank: ${JSON.stringify(ac)}`);
 if (!report.settings || report.settings.closedByBack !== true) problems.push('the back key did not close Settings');
 if (!report.settings || report.settings.appStillOpen !== true) problems.push('the back key closed the app');
 if (report.permCard !== 'shown, closed') problems.push(`first-launch permission card: ${report.permCard}`);
