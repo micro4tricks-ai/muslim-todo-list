@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The website in the main window may show system notifications and open links in the browser; nothing else.",
+  "description": "The website in the main window may show system notifications, open links in the browser, and use the Shamela library on this computer; nothing else.",
   "windows": ["main"],
   "remote": {
     "urls": ["https://micro4tricks-ai.github.io/*"]
@@ -9,6 +9,9 @@
   "permissions": [
     "core:default",
     "notification:default",
-    "opener:default"
+    "opener:default",
+    "allow-shamela-catalog",
+    "allow-shamela-install",
+    "allow-shamela-remove"
   ]
 }
