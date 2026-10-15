@@ -56,8 +56,15 @@ jobs:
           unzip -q "$RUNNER_TEMP"/uBOLite_*.edge.zip -d src-tauri/extensions/ubol
           test -f src-tauri/extensions/ubol/manifest.json
 
+      # Signed for the app's own updates (key in muslim-todo-keystore); a desktop-vX.Y.Z tag sets the version.
       - name: Build
-        run: npx tauri build ${{ matrix.args }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          ver=1.0.0
+          case "$GITHUB_REF" in refs/tags/desktop-v*) ver="${GITHUB_REF_NAME#desktop-v}" ;; esac
+          npx tauri build ${{ matrix.args }} -c "{\"version\":\"$ver\"}"
 
       # The app opens, shows the website, and is still running after a while.
       - name: Open it once (Windows)
@@ -134,10 +141,13 @@ jobs:
           mkdir -p ../out
           if [ "$RUNNER_OS" = Windows ]; then
             cp src-tauri/target/release/bundle/nsis/*.exe ../out/Muslim-Activity-Windows-setup.exe
+            cp src-tauri/target/release/bundle/nsis/*.exe.sig ../out/Muslim-Activity-Windows-setup.exe.sig
             cp src-tauri/target/release/bundle/msi/*.msi ../out/Muslim-Activity-Windows.msi
             cp ../desktop-windows.png ../out/ || true
           else
             cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../out/Muslim-Activity-macOS.dmg
+            cp src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz ../out/Muslim-Activity-macOS.app.tar.gz
+            cp src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz.sig ../out/Muslim-Activity-macOS.app.tar.gz.sig
           fi
           ls -la ../out
 
@@ -167,3 +177,18 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" Muslim-Activity-* --title "Muslim Activity for desktop $GITHUB_REF_NAME" --notes "$notes" --latest=false
           fi
+
+      # What the installed apps read to find this version: latest.json in the desktop-updates release.
+      - name: Tell the installed apps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver="${GITHUB_REF_NAME#desktop-v}"
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME"
+          jq -n --arg v "$ver" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)"             --rawfile ws Muslim-Activity-Windows-setup.exe.sig --rawfile ms Muslim-Activity-macOS.app.tar.gz.sig             --arg wu "$base/Muslim-Activity-Windows-setup.exe" --arg mu "$base/Muslim-Activity-macOS.app.tar.gz"             '{version: $v, notes: "مهام المسلم للكمبيوتر \($v)", pub_date: $d, platforms: {
+              "windows-x86_64": {signature: $ws, url: $wu},
+              "darwin-aarch64": {signature: $ms, url: $mu},
+              "darwin-x86_64": {signature: $ms, url: $mu}}}' > latest.json
+          cat latest.json
+          gh release view desktop-updates --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create desktop-updates --repo "$GITHUB_REPOSITORY" --title "Desktop app updates" --notes "latest.json for the desktop app's updater; the installers are in the desktop-v* releases." --latest=false
+          gh release upload desktop-updates --repo "$GITHUB_REPOSITORY" latest.json --clobber

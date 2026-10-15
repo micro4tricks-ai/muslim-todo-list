@@ -4,6 +4,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod shamela;
+mod update;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
@@ -66,6 +67,7 @@ fn main() {
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec![HIDDEN])))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // The Shamela library on this computer (src/shamela.rs).
         .register_asynchronous_uri_scheme_protocol("shamela", shamela::serve)
         .invoke_handler(tauri::generate_handler![shamela::shamela_catalog, shamela::shamela_install, shamela::shamela_remove])
@@ -112,13 +114,15 @@ fn main() {
             let auto = CheckMenuItem::with_id(app, "auto", "التشغيل مع بدء الجهاز", true, app.autolaunch().is_enabled().unwrap_or(false), None::<&str>)?;
             #[cfg(windows)]
             let ads = CheckMenuItem::with_id(app, "ads", "منع الإعلانات أثناء المشاهدة", true, adblock_on(app.handle()), None::<&str>)?;
+            let upd = MenuItem::with_id(app, "update", "التحقق من التحديثات", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "خروج", true, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
             #[cfg(windows)]
-            let menu = Menu::with_items(app, &[&open, &auto, &ads, &sep, &quit])?;
+            let menu = Menu::with_items(app, &[&open, &auto, &ads, &upd, &sep, &quit])?;
             #[cfg(not(windows))]
-            let menu = Menu::with_items(app, &[&open, &auto, &sep, &quit])?;
+            let menu = Menu::with_items(app, &[&open, &auto, &upd, &sep, &quit])?;
             let auto_item = auto.clone();
+            update::watch(app.handle().clone(), upd.clone());
             TrayIconBuilder::with_id("tray")
                 .icon(app.default_window_icon().unwrap().clone())
                 .tooltip("مهام المسلم")
@@ -141,6 +145,7 @@ fn main() {
                         }
                         app.exit(0);
                     }
+                    "update" => update::install(app.clone()),
                     "quit" => app.exit(0),
                     _ => {}
                 })

@@ -15,7 +15,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi", "dmg", "app"],
+    "targets": [
+      "nsis",
+      "msi",
+      "dmg",
+      "app"
+    ],
     "publisher": "micro4tricks-ai",
     "copyright": "micro4tricks-ai",
     "category": "Lifestyle",
@@ -29,10 +34,24 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "webviewInstallMode": { "type": "downloadBootstrapper" }
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
     },
     "macOS": {
       "minimumSystemVersion": "11.0"
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJCNkM1OUNDRTc1QTY3QjEKUldTeFoxcm56RmxzdXhZaXpFQUw5eGIwNGxBRUlKeGdsTzVjd0I5RTRma21RNEFNT25wUkM4L1cK",
+      "endpoints": [
+        "https://github.com/micro4tricks-ai/muslim-todo-list/releases/download/desktop-updates/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
