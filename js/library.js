@@ -203,7 +203,7 @@
     if (window.noonShamela) {
       const sh = button('lib-salah lib-shamela', '', () => go({ name: 'shamela' }));
       sh.append(el('span', 'lib-salah-kicker', T('على هذا الكمبيوتر')), el('b', '', T('المكتبة الشاملة')),
-        el('span', '', T('آلاف من كتب المتقدّمين: حمِّل الفن الذي تريده، ثم اقرأ وابحث دون إنترنت')));
+        el('span', '', T('آلاف من كتب المتقدّمين: حمِّل القسم الذي تريده، ثم اقرأ وابحث دون إنترنت')));
       root.append(sh);
     }
     renderShelves();

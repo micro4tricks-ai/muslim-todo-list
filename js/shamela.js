@@ -43,16 +43,16 @@
     head.append(back('المكتبة', { name: 'home' }), el('h2', '', T('المكتبة الشاملة')));
     root.append(head);
     const intro = el('div', 'lib-about');
-    intro.append(el('p', '', T('كتب المتقدّمين من المكتبة الشاملة: لمؤلفين توفّوا قبل سنة ١٣٥٠هـ، بنص المؤلف وحده دون حواشي المحققين ومقدماتهم. حمِّل الفن الذي تريده مرة واحدة، ثم اقرأ كتبه وابحث فيها دون إنترنت.')));
+    intro.append(el('p', '', T('كتب المتقدّمين من المكتبة الشاملة: لمؤلفين توفّوا قبل سنة ١٣٥٠هـ، بنص المؤلف وحده دون حواشي المحققين ومقدماتهم. حمِّل القسم الذي تريده مرة واحدة، ثم اقرأ كتبه وابحث فيها دون إنترنت.')));
     const total = shelves.reduce((a, s) => a + s.size, 0);
-    if (shelves.length) intro.append(el('p', 'hint', `${I.num(shelves.length)} ${T('فنّاً')} · ${I.num(shelves.reduce((a, s) => a + s.books, 0))} ${T('كتاباً')} · ${sizeText(total)}`));
+    if (shelves.length) intro.append(el('p', 'hint', `${I.num(shelves.length)} ${T('قسماً')} · ${I.num(shelves.reduce((a, s) => a + s.books, 0))} ${T('كتاباً')} · ${sizeText(total)}`));
     root.append(intro);
     const box = el('div', 'sh-list');
     root.append(box);
     const draw = () => {
       box.replaceChildren();
       if (!shelves.length) {
-        box.append(el('p', 'empty', T(online ? 'لم تُنشر كتب المكتبة الشاملة بعد.' : 'تحتاج قائمة الفنون اتصالاً بالإنترنت أول مرة.')));
+        box.append(el('p', 'empty', T(online ? 'لم تُنشر كتب المكتبة الشاملة بعد.' : 'تحتاج قائمة الأقسام اتصالاً بالإنترنت أول مرة.')));
         return;
       }
       // A filter over the titles and authors of the books on this computer.

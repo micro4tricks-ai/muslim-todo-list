@@ -1441,9 +1441,9 @@
     'اذهب إلى حديث برقمه': 'Go to a hadith by its number',
     'على هذا الكمبيوتر': 'On this computer',
     'المكتبة الشاملة': 'The Shamela library',
-    'آلاف من كتب المتقدّمين: حمِّل الفن الذي تريده، ثم اقرأ وابحث دون إنترنت': 'Thousands of classical books: download a subject, then read and search offline',
-    'كتب المتقدّمين من المكتبة الشاملة: لمؤلفين توفّوا قبل سنة ١٣٥٠هـ، بنص المؤلف وحده دون حواشي المحققين ومقدماتهم. حمِّل الفن الذي تريده مرة واحدة، ثم اقرأ كتبه وابحث فيها دون إنترنت.': 'Classical books from al-Maktaba al-Shamela, by authors who died before 1350 AH: the author\'s text only, without the editors\' notes and introductions. Download a subject once, then read and search its books offline (in Arabic).',
-    'فنّاً': 'subjects',
+    'آلاف من كتب المتقدّمين: حمِّل القسم الذي تريده، ثم اقرأ وابحث دون إنترنت': 'Thousands of classical books: download a subject, then read and search offline',
+    'كتب المتقدّمين من المكتبة الشاملة: لمؤلفين توفّوا قبل سنة ١٣٥٠هـ، بنص المؤلف وحده دون حواشي المحققين ومقدماتهم. حمِّل القسم الذي تريده مرة واحدة، ثم اقرأ كتبه وابحث فيها دون إنترنت.': 'Classical books from al-Maktaba al-Shamela, by authors who died before 1350 AH: the author\'s text only, without the editors\' notes and introductions. Download a subject once, then read and search its books offline (in Arabic).',
+    'قسماً': 'subjects',
     'ابحث عن كتاب أو مؤلف': 'Find a book or an author',
     'لا نتائج.': 'No results.',
     'على جهازك': 'on this computer',
@@ -1453,7 +1453,7 @@
     'تعذّر التحميل. تأكد من الاتصال بالإنترنت وحاول مرة أخرى.': 'Could not download. Check the internet connection and try again.',
     'جارٍ تحميل القائمة…': 'Loading the list…',
     'لم تُنشر كتب المكتبة الشاملة بعد.': 'The Shamela books are not published yet.',
-    'تحتاج قائمة الفنون اتصالاً بالإنترنت أول مرة.': 'The list of subjects needs the internet the first time.',
+    'تحتاج قائمة الأقسام اتصالاً بالإنترنت أول مرة.': 'The list of subjects needs the internet the first time.',
     'ملف نصي (txt) بنص الأحاديث وأبوابها وأرقامها، يُفتح بأي برنامج.': 'A text file (txt) with the hadiths, their chapters and numbers, opens in any program.',
     // Language switch
     'English': 'العربية'
