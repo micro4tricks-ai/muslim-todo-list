@@ -192,3 +192,5 @@ jobs:
           cat latest.json
           gh release view desktop-updates --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||             gh release create desktop-updates --repo "$GITHUB_REPOSITORY" --title "Desktop app updates" --notes "latest.json for the desktop app's updater; the installers are in the desktop-v* releases." --latest=false
           gh release upload desktop-updates --repo "$GITHUB_REPOSITORY" latest.json --clobber
+          # The same installers under fixed names there: the install page links to them.
+          gh release upload desktop-updates --repo "$GITHUB_REPOSITORY" Muslim-Activity-Windows-setup.exe Muslim-Activity-Windows.msi Muslim-Activity-macOS.dmg --clobber
