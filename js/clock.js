@@ -1127,16 +1127,16 @@
     const a0 = minuteTrackAngle(f.startEpoch);
     ctx.save();
     ctx.lineCap = 'round';
-    ctx.lineWidth = R * 0.018;
+    ctx.lineWidth = R * 0.032; // thick enough to see at a glance that a session runs
     // Over an hour, each further hour continues on a ring a little further in.
     laps.forEach(({ lap, len, done }) => {
-      const rr = R * (0.978 - lap * 0.06);
+      const rr = R * (0.968 - lap * 0.06);
       const span = len / 60 * TAU, d = done / 60 * TAU;
       if (d > 0.001) { ctx.strokeStyle = rgba(col, 0.28); ctx.beginPath(); ctx.arc(CX, CY, rr, a0, a0 + d); ctx.stroke(); }
       if (span - d > 0.001) { ctx.strokeStyle = rgba(col, 0.95); ctx.beginPath(); ctx.arc(CX, CY, rr, a0 + d, a0 + span); ctx.stroke(); }
     });
     const last = laps[laps.length - 1];
-    const rEnd = R * (0.978 - last.lap * 0.06), aEnd = a0 + last.len / 60 * TAU;
+    const rEnd = R * (0.968 - last.lap * 0.06), aEnd = a0 + last.len / 60 * TAU;
     ctx.strokeStyle = col;
     ctx.lineWidth = R * 0.01;
     ctx.beginPath();
@@ -1144,7 +1144,7 @@
     ctx.lineTo(CX + Math.cos(a0) * R * 1.01, CY + Math.sin(a0) * R * 1.01);
     ctx.stroke();
     ctx.fillStyle = col;
-    ctx.beginPath(); ctx.arc(CX + Math.cos(aEnd) * rEnd, CY + Math.sin(aEnd) * rEnd, R * 0.024, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(CX + Math.cos(aEnd) * rEnd, CY + Math.sin(aEnd) * rEnd, R * 0.03, 0, TAU); ctx.fill();
     // Two time labels inside the dial; pushed apart when the session is short.
     const [aStartLabel, aEndLabel] = window.noonClockCore.spreadLabels(a0, aEnd, 0.6);
     const label = (a, rr, t) => {

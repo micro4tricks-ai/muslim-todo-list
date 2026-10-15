@@ -407,6 +407,23 @@
     noteTimer = setTimeout(() => { $('focusNote').textContent = ''; }, 2500);
   }
 
+  // Round dial or large digits: a choice of this device only (like the rest of the focus timer).
+  const VIEW_KEY = 'noon-focus-view';
+  function setView(v) {
+    focusEl.dataset.view = v;
+    const b = $('focusView');
+    b.setAttribute('aria-pressed', String(v === 'digital'));
+    b.textContent = T(v === 'digital' ? 'عرض دائري' : 'عرض رقمي');
+  }
+  let savedView = 'dial';
+  try { savedView = localStorage.getItem(VIEW_KEY) === 'digital' ? 'digital' : 'dial'; } catch (_) {}
+  setView(savedView);
+  $('focusView').addEventListener('click', () => {
+    const v = focusEl.dataset.view === 'digital' ? 'dial' : 'digital';
+    setView(v);
+    try { localStorage.setItem(VIEW_KEY, v); } catch (_) {}
+  });
+
   function renderFocus() {
     const remaining = F.running ? Math.max(0, F.endEpoch - Date.now()) : F.remainingMs;
     const deg = Math.min(360, (remaining / 3600000) * 360);
@@ -423,6 +440,7 @@
     knob.setAttribute('aria-valuetext', `${ar(mins)} ${T('دقيقة')}`);
     knob.setAttribute('aria-disabled', String(F.running));
     $('focusTime').textContent = fmtTimer(remaining);
+    $('focusBar').style.width = `${Math.min(100, (remaining / Math.max(modeMs(F.mode), remaining, 1)) * 100)}%`;
     const paused = !F.running && F.remainingMs < modeMs(F.mode);
     $('dialHint').textContent = T(F.running ? 'اضغط للإيقاف المؤقت' : paused ? 'اضغط للاستئناف' : 'اضغط للبدء');
     $('focusToggle').setAttribute('aria-label', T(F.running ? 'إيقاف مؤقت' : paused ? 'استئناف' : 'ابدأ الجلسة'));

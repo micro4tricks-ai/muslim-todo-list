@@ -149,6 +149,8 @@
     'تعذّر تشغيل المزامنة على هذا الجهاز:': 'Sync couldn’t start on this device:',
     'عدد الكروت تحت الساعة': 'Cards under the clock',
     'شروق': 'Sunrise',
+    'عرض رقمي': 'Digital',
+    'عرض دائري': 'Dial',
     'كلها': 'All',
     'تظهر أوائل الكروت المختارة بهذا الترتيب، فيبقى مؤقت التركيز ظاهراً تحتها.': 'The first chosen cards in this order are shown, so the focus timer stays in sight below them.',
     'وصلت إعدادات جديدة من جهاز آخر، وستظهر عند إعادة فتح الصفحة.': 'New settings arrived from another device; they’ll show when you reopen the page.',
