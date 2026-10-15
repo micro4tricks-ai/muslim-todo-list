@@ -703,17 +703,54 @@
     compKey = ''; keySec = -1;
   }
 
-  // Classic and minimal: the slot is a band above the centre, three lines like the old next-prayer text.
-  function drawSlotBand(g, rect, d) {
-    if (!d.main && !d.kicker) return;
-    const D = T.dial, cx = rect.x + rect.w / 2;
+  // Classic: above the centre, the day in large letters, then the Hijri date in Arabic and the
+  // Gregorian one in English, each whole (the small window used to cut both off).
+  function drawDayHeader(g, snap) {
+    const D = T.dial;
+    const tz = { timeZone: snap.place.tz };
+    const fmt = (loc, o) => { try { return new Intl.DateTimeFormat(loc, Object.assign({}, tz, o)).format(Date.now()); } catch (_) { return new Intl.DateTimeFormat(loc, o).format(Date.now()); } };
     g.direction = TEXT_DIR;
-    g.fillStyle = D.faint;
-    g.fillText(fitText(g, d.kicker || '', rect.w * 0.7, 0.05, 500), cx, rect.y + rect.h * 0.2);
     g.fillStyle = D.ink;
-    g.fillText(fitText(g, d.main || '', rect.w * 0.86, 0.075, 700), cx, rect.y + rect.h * 0.52);
+    g.fillText(fitText(g, fmt(I18 ? I18.locale : 'ar', { weekday: 'long' }), R * 0.7, 0.11, 700, 13), CX, CY - R * 0.5);
     g.fillStyle = D.accent;
-    g.fillText(fitText(g, d.sub || '', rect.w * 0.8, 0.054, 600), cx, rect.y + rect.h * 0.82);
+    g.fillText(fitText(g, snap.hijri, R * 0.86, 0.058, 600, 10), CX, CY - R * 0.375);
+    g.direction = 'ltr';
+    g.fillStyle = D.soft;
+    g.fillText(fitText(g, fmt('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), R * 0.8, 0.054, 600, 10), CX, CY - R * 0.27);
+    g.direction = TEXT_DIR;
+  }
+  // Classic: the slot (the next prayer unless another was chosen) in the framed window right of the centre.
+  function drawSlotWindow(g, rect, d) {
+    const { x, y, w, h } = rect;
+    const box = () => roundRectPath(g, x, y, w, h, R * 0.02);
+    g.save();
+    roundRectPath(g, x - R * 0.012, y - R * 0.012, w + R * 0.024, h + R * 0.024, R * 0.03);
+    g.fillStyle = metalGradient(g, x, y, x + w, y + h, [T.dial.index[1].length ? `rgb(${T.dial.index[1].join(',')})` : '#fff', `rgb(${T.dial.index[0].join(',')})`]);
+    setShadow(g, 'rgba(10,14,20,0.3)', R * 0.01, R * 0.003, R * 0.006);
+    g.fill();
+    g.restore();
+    g.fillStyle = '#FFFFFF';
+    box(); g.fill();
+    insetShadow(g, box, 0.22);
+    g.direction = TEXT_DIR;
+    g.fillStyle = '#23272E';
+    g.fillText(fitText(g, d.main || d.kicker || '', w * 0.9, 0.06, 700), rect.cx, y + h * 0.34);
+    g.fillStyle = '#2F6E4E';
+    g.fillText(fitText(g, d.main ? d.sub || '' : '', w * 0.9, 0.054, 600), rect.cx, y + h * 0.72);
+  }
+  // Classic: the fourth place on the dial, right under the moon (where the dial is wide): today's sunrise and sunset.
+  function drawSunTimes(g, snap) {
+    const sr = snap.today.sunrise, ss = snap.today.sunset;
+    if (!Number.isFinite(sr) || !Number.isFinite(ss)) return;
+    const D = T.dial, w = R * 0.9, h = R * 0.11, x = CX - w / 2, y = CY + R * 0.36 - h / 2;
+    const pill = () => roundRectPath(g, x, y, w, h, h / 2);
+    g.fillStyle = D.sub;
+    pill(); g.fill();
+    insetShadow(g, pill, 0.3);
+    g.direction = TEXT_DIR;
+    const text = `${tr('شروق')} ${snap.fmtHM(sr, false)}  ·  ${tr('غروب')} ${snap.fmtHM(ss, false)}`; // morning and evening go without saying
+    g.fillStyle = D.ink;
+    g.fillText(fitText(g, text, w * 0.9, 0.048, 600, 9), CX, y + h * 0.54);
   }
 
   // A day arc from sunrise (one end) to sunset (the other), the sun on it, and how long until the next one.
@@ -764,27 +801,6 @@
     }
   }
 
-  function drawDateWindow(g, snap) {
-    const w = R * 0.42, h = R * 0.22, x = CX + R * 0.37 - w / 2, y = CY - h / 2;
-    const box = () => roundRectPath(g, x, y, w, h, R * 0.02);
-    // polished frame
-    g.save();
-    roundRectPath(g, x - R * 0.012, y - R * 0.012, w + R * 0.024, h + R * 0.024, R * 0.03);
-    g.fillStyle = metalGradient(g, x, y, x + w, y + h, [T.dial.index[1].length ? `rgb(${T.dial.index[1].join(',')})` : '#fff', `rgb(${T.dial.index[0].join(',')})`]);
-    setShadow(g, 'rgba(10,14,20,0.3)', R * 0.01, R * 0.003, R * 0.006);
-    g.fill();
-    g.restore();
-    g.fillStyle = '#FFFFFF';
-    box(); g.fill();
-    insetShadow(g, box, 0.22);
-    g.fillStyle = '#23272E';
-    g.direction = 'ltr';
-    g.fillText(fitText(g, snap.dateEn, w * 0.9, 0.056, 700), CX + R * 0.37, y + h * 0.3);
-    g.direction = TEXT_DIR;
-    g.fillStyle = '#2F6E4E';
-    g.fillText(fitText(g, snap.hijri, w * 0.9, 0.058, 600), CX + R * 0.37, y + h * 0.72);
-  }
-
   // An icon-like moon: lit side with a soft edge, the dark side faintly visible (earthshine), light craters.
   function drawMoon(g, snap, at) {
     const mx = at ? at.x : CX, my = at ? at.y : CY + R * 0.3, rm = at ? at.r : R * 0.085;
@@ -828,10 +844,10 @@
     g.lineWidth = Math.max(0.6, R * 0.003);
     g.beginPath(); g.arc(0, 0, rm, 0, TAU); g.stroke();
     g.restore();
-    if (at) return;
+    if (at && !at.nameY) return; // a round slot's moon: no name under it
     g.direction = TEXT_DIR;
     g.fillStyle = T.dial.soft;
-    g.fillText(fitText(g, snap.moon.name, R * 0.5, 0.048, 600), mx, my + rm * 1.25 + R * 0.05);
+    g.fillText(fitText(g, snap.moon.name, R * 0.5, 0.048, 600), mx, at && at.nameY ? at.nameY : my + rm * 1.25 + R * 0.05);
   }
 
   function currentSlots() {
@@ -848,10 +864,11 @@
       for (const x of currentSlots()) drawSlotRound(g, x.rect, slotData(x.id, snap, true), x.id, style, snap);
       return c;
     }
-    for (const s of currentSlots()) drawSlotBand(g, s.rect, slotData(s.id, snap));
+    drawDayHeader(g, snap);
+    for (const s of currentSlots()) drawSlotWindow(g, s.rect, slotData(s.id, snap));
     drawSunDial(g, snap);
-    drawMoon(g, snap);
-    drawDateWindow(g, snap);
+    drawMoon(g, snap, { x: CX, y: CY + R * 0.19, r: R * 0.06, nameY: CY + R * 0.5 }); // its name under the sun times
+    drawSunTimes(g, snap);
     return c;
   }
   // ---------- The modern face (in the spirit of today's smartwatch faces; everything drawn here) ----------

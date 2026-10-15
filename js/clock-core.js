@@ -44,8 +44,9 @@
         return { id: 'ABC'[i], shape: 'circle', cx, cy, r, x: cx - r, y: cy - r, w: 2 * r, h: 2 * r };
       });
     }
-    const w = R * 0.74, h = R * 0.36, x = CX - w / 2, y = CY - R * 0.56;
-    return [{ id: 'A', shape: 'rect', x, y, w, h, cx: CX, cy: y + h / 2, r: h / 2 }];
+    // Classic: the slot is the window right of the centre (the day and both dates sit above the centre).
+    const w = R * 0.46, h = R * 0.26, cx = CX + R * 0.37, x = cx - w / 2, y = CY - h / 2;
+    return [{ id: 'A', shape: 'rect', x, y, w, h, cx, cy: CY, r: h / 2 }];
   }
 
   function hitSlot(rects, x, y) {
