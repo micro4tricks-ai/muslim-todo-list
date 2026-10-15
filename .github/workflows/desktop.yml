@@ -39,10 +39,22 @@ jobs:
           rustup default stable
           if [ "$RUNNER_OS" = macOS ]; then rustup target add aarch64-apple-darwin x86_64-apple-darwin; fi
 
-      - name: Icons from the app's own
+      - name: Icons (desktop/icon.svg)
         run: |
           npm install --no-audit --no-fund
-          npx tauri icon ../icons/icon-512.png
+          npx tauri icon icon.svg
+
+      # The optional ad blocker shipped with the Windows app: uBlock Origin Lite (GPL-3.0), unchanged.
+      - name: Ad blocker (Windows)
+        if: runner.os == 'Windows'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UBOL: '2026.1012.1545'
+        run: |
+          gh release download "$UBOL" --repo uBlockOrigin/uBOL-home --pattern '*.edge.zip' --dir "$RUNNER_TEMP"
+          mkdir -p src-tauri/extensions/ubol
+          unzip -q "$RUNNER_TEMP"/uBOLite_*.edge.zip -d src-tauri/extensions/ubol
+          test -f src-tauri/extensions/ubol/manifest.json
 
       - name: Build
         run: npx tauri build ${{ matrix.args }}
@@ -64,6 +76,31 @@ jobs:
           Write-Host "still running: $alive"
           if ($alive) { Stop-Process -Id $p.Id -Force }
           if (-not $alive) { Write-Error "The app closed by itself"; exit 1 }
+
+      # An ad address loads with the blocker off and is refused with it on.
+      - name: Ad blocker works (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: desktop/src-tauri/target/release
+        run: |
+          $res = (Resolve-Path ..\..\..\src-tauri).Path
+          New-Item -ItemType Directory -Force -Path .\extensions | Out-Null
+          Copy-Item -Recurse -Force "$res\extensions\*" .\extensions\
+          function Probe($on) {
+            $out = Join-Path $env:RUNNER_TEMP ("probe-" + $on + ".txt")
+            Remove-Item $out -ErrorAction SilentlyContinue
+            $env:MUSLIM_ADBLOCK_PROBE = $out
+            if ($on) { $env:MUSLIM_ADBLOCK = '1' } else { Remove-Item Env:MUSLIM_ADBLOCK -ErrorAction SilentlyContinue }
+            $p = Start-Process -FilePath .\muslim-todo.exe -PassThru
+            for ($i = 0; $i -lt 60 -and -not (Test-Path $out); $i++) { Start-Sleep -Seconds 1 }
+            if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+            Start-Sleep -Seconds 3
+            if (Test-Path $out) { (Get-Content $out -Raw).Trim() } else { 'no answer' }
+          }
+          $off = Probe $false
+          $on = Probe $true
+          Write-Host "blocker off: $off / blocker on: $on"
+          if ($off -ne 'loaded' -or $on -ne 'blocked') { Write-Error "The ad blocker does not work as it should"; exit 1 }
 
       - name: Collect the installers
         run: |

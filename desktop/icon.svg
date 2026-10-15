@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
+  <!-- The desktop app's icon: a golden crescent and a check on deep green. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d6b57"/>
+      <stop offset="1" stop-color="#0d3f33"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="110" fill="url(#bg)"/>
+  <path d="M300 96a170 170 0 1 0 0 320a140 140 0 1 1 0-320z" fill="#e9c46a"/>
+  <path d="M236 262l52 44 108-128" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
