@@ -6,6 +6,7 @@
   const PLACE_KEY = 'noon-sweep-place';
   const I = window.noonI18n, T = I.t;
   const ar = I.num;
+  const HIJRI_MONTHS_EN = ['Muharram', 'Safar', 'Rabi‘ al-Awwal', 'Rabi‘ al-Akhir', 'Jumada al-Ula', 'Jumada al-Akhirah', 'Rajab', 'Sha‘ban', 'Ramadan', 'Shawwal', 'Dhu al-Qa‘dah', 'Dhu al-Hijjah'];
   const countryName = (s) => I.tp('دولة', s);
   const methodName = (s) => I.tp('طريقة', s);
   const $ = (id) => document.getElementById(id);
@@ -278,11 +279,22 @@
       let adj = 0;
       try { adj = Number((JSON.parse(localStorage.getItem('noon-sweep-sunnah')) || {}).adj) || 0; } catch (_) {}
       const hEpoch = epoch + adj * 864e5;
-      hijri = new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'long' })).format(hEpoch);
-      hijriFull = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(hEpoch);
-      // The weekday stays today's.
-      const wd = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long' }));
-      if (adj) hijriFull = hijriFull.replace(wd.format(hEpoch), wd.format(epoch));
+      if (I.isEn) {
+        // In English the month is named here: some phones and computers have no English names for
+        // the Hijri months and print the Gregorian ones in their place («5 May» for 5 Jumada al-Ula).
+        const p = {};
+        for (const x of new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'numeric', year: 'numeric' })).formatToParts(hEpoch)) p[x.type] = x.value;
+        const month = HIJRI_MONTHS_EN[Number(p.month) - 1] || '';
+        const year = String(p.year || '').replace(/\D/g, '');
+        hijri = `${Number(p.day)} ${month}`;
+        hijriFull = `${new Intl.DateTimeFormat('en-GB', opt({ weekday: 'long' })).format(epoch)}, ${hijri} ${year} AH`;
+      } else {
+        hijri = new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'long' })).format(hEpoch);
+        hijriFull = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(hEpoch);
+        // The weekday stays today's.
+        const wd = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long' }));
+        if (adj) hijriFull = hijriFull.replace(wd.format(hEpoch), wd.format(epoch));
+      }
     } catch (_) {}
 
     const val = {

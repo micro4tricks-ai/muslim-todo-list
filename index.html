@@ -16,8 +16,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.7.4">
-<link rel="stylesheet" href="fonts/extra.css?v=2.7.4">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.7.4.1">
+<link rel="stylesheet" href="fonts/extra.css?v=2.7.4.1">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -356,49 +356,63 @@
   .modes { display: inline-flex; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
   .modes button { border: none; background: none; padding: 4px 12px; border-radius: 6px; font-size: 13px; color: var(--ink-soft); }
   .modes button[aria-selected="true"] { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(30,34,42,0.12); }
-  .dial-wrap { position: relative; width: min(150px, 38vw); max-width: 100%; aspect-ratio: 1; }
+  /* The focus timer looks like a desk timer, in two models (the «عرض رقمي» button switches):
+     the round view is a black timer with the minutes around it and a red ring of the time left;
+     the digital view is a white cube with a black screen, a coloured ring and large digits.
+     Both keep their own colours in the light and dark themes, like the devices. */
+  .dial-wrap { position: relative; width: min(184px, 46vw); max-width: 100%; aspect-ratio: 1; }
   .dial { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; overflow: visible; }
   .dial.dragging { cursor: grabbing; }
   .focus.is-running .dial { cursor: default; }
-  .dial-face { fill: var(--paper); stroke: var(--line); stroke-width: 1; }
-  .dial-track { fill: none; stroke: var(--surface); stroke-width: 18; }
-  .tick { stroke: var(--ink-faint); stroke-width: 1; }
-  .tick-major { stroke: var(--ink); stroke-width: 2; }
-  .dial-arc { fill: none; stroke: var(--accent); stroke-width: 18; transition: stroke 0.3s; }
-  .focus:not([data-mode="focus"]) .dial-arc { stroke: var(--done); }
+  .dial-case { fill: #1E1F22; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35)); }
+  .dial-face { fill: #050506; stroke: #2C2D31; stroke-width: 1; }
+  .dial-track { fill: none; stroke: #1B1C1F; stroke-width: 22; stroke-dasharray: 6 1.75; }
+  .tick { fill: #8D9097; }
+  .dial-num { fill: #F4F4F2; font: 600 15px/1 system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; direction: ltr; }
+  .dial-arc { fill: none; stroke: #F0441C; stroke-width: 22; stroke-dasharray: 6 1.75; transition: stroke 0.3s; }
+  .focus:not([data-mode="focus"]) .dial-arc { stroke: #3DBE72; }
   /* Fingers drag the knob through this larger grip; a swipe anywhere else on the dial scrolls the page. */
   .dial-grip { position: absolute; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; touch-action: none; z-index: 2; cursor: grab; }
   .focus.is-running .dial-grip { display: none; }
-  .dial-knob { fill: var(--paper); stroke: var(--accent); stroke-width: 3; cursor: grab; filter: drop-shadow(0 1px 2px rgba(30,34,42,0.35)); }
-  .focus:not([data-mode="focus"]) .dial-knob { stroke: var(--done); }
+  .dial-knob { fill: #FFFFFF; stroke: #F0441C; stroke-width: 3; cursor: grab; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+  .focus:not([data-mode="focus"]) .dial-knob { stroke: #3DBE72; }
   .focus.is-running .dial-knob { cursor: default; }
   .dial-knob:focus { outline: none; }
   .dial-knob:focus-visible { stroke-width: 5; }
   .dial-center {
     position: absolute;
-    inset: 28%;
+    inset: 31%;
     border-radius: 50%;
-    border: 1px solid var(--line);
-    background: var(--surface);
-    box-shadow: 0 2px 6px rgba(30, 34, 42, 0.14), inset 0 1px 0 #FFFFFF;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    color: var(--ink);
+    border: none;
+    background: #050506;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    color: #F4F4F2;
     padding: 0;
-    transition: transform 0.12s, box-shadow 0.12s;
+    transition: transform 0.12s;
   }
-  .dial-center:hover { background: var(--paper); box-shadow: 0 4px 10px rgba(30, 34, 42, 0.18), inset 0 1px 0 #FFFFFF; }
+  .dial-center:hover { background: #111214; }
   .dial-center:active { transform: scale(0.97); }
-  .focus-time { font-size: 22px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; direction: ltr; }
-  .dial-hint { font-size: 10px; color: var(--ink-soft); }
-  .dial-bar { display: none; }
-  /* Digital view (the «عرض رقمي» button): large digits and a bar instead of the round dial. */
-  .focus[data-view="digital"] .dial-wrap { aspect-ratio: auto; width: min(190px, 46vw); }
+  .focus-time { font-size: 22px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; direction: ltr; text-shadow: 0 0 6px rgba(255, 255, 255, 0.25); }
+  .dial-hint { font-size: 9.5px; color: rgba(244, 244, 242, 0.62); }
+  .dial-bar, .cube-ring, .cube-sub { display: none; }
+  /* Digital view: the white cube. */
+  .focus[data-view="digital"] .dial-wrap {
+    border-radius: 24%;
+    background: linear-gradient(160deg, #FFFFFF 0%, #ECEEF1 60%, #D9DCE1 100%);
+    box-shadow: 0 6px 16px rgba(20, 24, 32, 0.22), inset 0 -3px 0 rgba(20, 24, 32, 0.08), inset 0 2px 0 #FFFFFF;
+  }
   .focus[data-view="digital"] .dial, .focus[data-view="digital"] .dial-grip { display: none; }
-  .focus[data-view="digital"] .dial-center { position: static; width: 100%; border-radius: 16px; padding: 14px 12px 12px; gap: 6px; }
-  .focus[data-view="digital"] .focus-time { font-size: 44px; font-weight: 700; letter-spacing: 0.02em; }
-  .focus[data-view="digital"] .dial-bar { display: block; width: 100%; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-  .dial-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width 0.5s linear; }
-  .focus:not([data-mode="focus"]) .dial-bar i { background: var(--done); }
+  .focus[data-view="digital"] .dial-center {
+    inset: 8%; border-radius: 22%; overflow: hidden; gap: 4px;
+    background: radial-gradient(circle at 50% 40%, #16171A 0%, #050506 75%);
+    box-shadow: inset 0 0 0 3px #0B0B0D, inset 0 0 18px rgba(0, 0, 0, 0.8);
+  }
+  .focus[data-view="digital"] .cube-ring { display: block; position: absolute; inset: 4%; width: 92%; height: 92%; pointer-events: none; }
+  .cube-ring path { fill: none; stroke-width: 6.5; stroke-linecap: butt; opacity: 0.16; transition: opacity 0.3s; }
+  .cube-ring path.on { opacity: 1; filter: drop-shadow(0 0 1.5px currentColor); }
+  .focus[data-view="digital"] .focus-time { position: relative; font-size: clamp(26px, 9.5vw, 34px); font-weight: 300; letter-spacing: 0.04em; }
+  .focus[data-view="digital"] .dial-hint { display: none; }
+  .focus[data-view="digital"] .cube-sub { display: block; position: relative; font-size: 12px; font-variant-numeric: tabular-nums; color: rgba(244, 244, 242, 0.8); }
   .focus-label { margin: 0; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px; }
   .cycle { display: inline-flex; gap: 4px; }
   .cycle i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
@@ -823,7 +837,7 @@
   @media (max-width: 600px) {
     .clock-pane { height: min(96vw, 400px); min-height: 300px; }
     .focus { grid-template-columns: minmax(0, 1fr); grid-template-areas: "modes" "dial" "info"; justify-items: center; padding: 12px; }
-    .focus .dial-wrap { width: 168px; }
+    .focus .dial-wrap { width: 200px; }
     .focus-info { align-items: center; width: 100%; }
     .focus-info .focus-task, .focus-info .focus-note, .focus-info .focus-label { text-align: center; }
     .focus-info .focus-controls { justify-content: center; }
@@ -2065,8 +2079,9 @@
 
     <div class="dial-wrap" id="dialWrap">
       <svg class="dial" id="dial" viewBox="0 0 240 240">
-        <circle class="dial-face" cx="120" cy="120" r="116"></circle>
-        <circle class="dial-track" cx="120" cy="120" r="92"></circle>
+        <rect class="dial-case" x="2" y="2" width="236" height="236" rx="46"></rect>
+        <rect class="dial-face" x="10" y="10" width="220" height="220" rx="38"></rect>
+        <circle class="dial-track" cx="120" cy="120" r="74"></circle>
         <g id="dialTicks"></g>
         <path class="dial-arc" id="dialArc" d=""></path>
         <circle class="dial-knob" id="dialKnob" cx="120" cy="28" r="10" tabindex="0" role="slider"
@@ -2074,8 +2089,10 @@
       </svg>
       <span class="dial-grip" id="dialGrip" aria-hidden="true"></span>
       <button type="button" class="dial-center" id="focusToggle">
+        <svg class="cube-ring" id="cubeRing" viewBox="0 0 100 100" aria-hidden="true"></svg>
         <span class="focus-time" id="focusTime">25:00</span>
         <span class="dial-hint" id="dialHint">اضغط للبدء</span>
+        <span class="cube-sub" id="cubeSub" aria-hidden="true"></span>
         <span class="dial-bar" aria-hidden="true"><i id="focusBar"></i></span>
       </button>
     </div>
@@ -2281,62 +2298,62 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.7.4"></script>
-<script src="js/a11y.js?v=2.7.4"></script>
-<script src="js/clock-core.js?v=2.7.4"></script>
-<script src="js/clock.js?v=2.7.4"></script>
-<script src="js/astro.js?v=2.7.4"></script>
-<script src="js/look.js?v=2.7.4"></script>
-<script src="js/sounds.js?v=2.7.4"></script>
-<script src="js/tasks.js?v=2.7.4"></script>
-<script src="js/views.js?v=2.7.4"></script>
-<script src="js/remind-card.js?v=2.7.4"></script>
-<script src="js/reminders-core.js?v=2.7.4"></script>
-<script src="js/reminders.js?v=2.7.4"></script>
-<script src="js/notes.js?v=2.7.4"></script>
-<script src="js/cards.js?v=2.7.4"></script>
-<script src="js/adhkar-data.js?v=2.7.4"></script>
-<script src="js/adhkar.js?v=2.7.4"></script>
-<script src="js/habits.js?v=2.7.4"></script>
-<script src="js/prayers.js?v=2.7.4"></script>
-<script src="js/focus-plus.js?v=2.7.4"></script>
-<script src="js/native.js?v=2.7.4"></script>
-<script src="js/prayer-alerts.js?v=2.7.4"></script>
-<script src="js/device.js?v=2.7.4"></script>
-<script src="js/extras-data.js?v=2.7.4"></script>
-<script src="js/quran-meta.js?v=2.7.4"></script>
-<script src="js/hifz.js?v=2.7.4"></script>
-<script src="js/khatma.js?v=2.7.4"></script>
-<script src="js/challenge.js?v=2.7.4"></script>
-<script src="js/tajweed-core.js?v=2.7.4"></script>
-<script src="js/tajweed-rules.js?v=2.7.4"></script>
-<script src="js/quran.js?v=2.7.4"></script>
-<script src="js/mushaf-core.js?v=2.7.4"></script>
-<script src="js/mushaf-book.js?v=2.7.4"></script>
-<script src="js/sunnah-data.js?v=2.7.4"></script>
-<script src="js/sunnah.js?v=2.7.4"></script>
-<script src="js/wmm-data.js?v=2.7.4"></script>
-<script src="js/compass-core.js?v=2.7.4"></script>
-<script src="js/qibla.js?v=2.7.4"></script>
-<script src="js/library-meta.js?v=2.7.4"></script>
-<script src="js/salah-data.js?v=2.7.4"></script>
-<script src="js/tools.js?v=2.7.4"></script>
-<script src="js/library-books.js?v=2.7.4"></script>
-<script src="js/library-local.js?v=2.7.4"></script>
-<script src="js/shamela.js?v=2.7.4"></script>
-<script src="js/library.js?v=2.7.4"></script>
-<script src="js/book-reader.js?v=2.7.4"></script>
-<script src="js/listen.js?v=2.7.4"></script>
-<script src="js/report.js?v=2.7.4"></script>
-<script src="js/focus-mode.js?v=2.7.4"></script>
-<script src="js/config.js?v=2.7.4"></script>
-<script src="js/vendor/supabase.js?v=2.7.4" defer></script>
-<script src="js/sync-core.js?v=2.7.4" defer></script>
-<script src="js/sync.js?v=2.7.4" defer></script>
-<script src="js/app.js?v=2.7.4" defer></script>
-<script src="js/settings.js?v=2.7.4" defer></script>
-<script src="js/today-core.js?v=2.7.4" defer></script>
-<script src="js/today.js?v=2.7.4" defer></script>
-<script src="js/nav.js?v=2.7.4" defer></script>
+<script src="js/i18n.js?v=2.7.4.1"></script>
+<script src="js/a11y.js?v=2.7.4.1"></script>
+<script src="js/clock-core.js?v=2.7.4.1"></script>
+<script src="js/clock.js?v=2.7.4.1"></script>
+<script src="js/astro.js?v=2.7.4.1"></script>
+<script src="js/look.js?v=2.7.4.1"></script>
+<script src="js/sounds.js?v=2.7.4.1"></script>
+<script src="js/tasks.js?v=2.7.4.1"></script>
+<script src="js/views.js?v=2.7.4.1"></script>
+<script src="js/remind-card.js?v=2.7.4.1"></script>
+<script src="js/reminders-core.js?v=2.7.4.1"></script>
+<script src="js/reminders.js?v=2.7.4.1"></script>
+<script src="js/notes.js?v=2.7.4.1"></script>
+<script src="js/cards.js?v=2.7.4.1"></script>
+<script src="js/adhkar-data.js?v=2.7.4.1"></script>
+<script src="js/adhkar.js?v=2.7.4.1"></script>
+<script src="js/habits.js?v=2.7.4.1"></script>
+<script src="js/prayers.js?v=2.7.4.1"></script>
+<script src="js/focus-plus.js?v=2.7.4.1"></script>
+<script src="js/native.js?v=2.7.4.1"></script>
+<script src="js/prayer-alerts.js?v=2.7.4.1"></script>
+<script src="js/device.js?v=2.7.4.1"></script>
+<script src="js/extras-data.js?v=2.7.4.1"></script>
+<script src="js/quran-meta.js?v=2.7.4.1"></script>
+<script src="js/hifz.js?v=2.7.4.1"></script>
+<script src="js/khatma.js?v=2.7.4.1"></script>
+<script src="js/challenge.js?v=2.7.4.1"></script>
+<script src="js/tajweed-core.js?v=2.7.4.1"></script>
+<script src="js/tajweed-rules.js?v=2.7.4.1"></script>
+<script src="js/quran.js?v=2.7.4.1"></script>
+<script src="js/mushaf-core.js?v=2.7.4.1"></script>
+<script src="js/mushaf-book.js?v=2.7.4.1"></script>
+<script src="js/sunnah-data.js?v=2.7.4.1"></script>
+<script src="js/sunnah.js?v=2.7.4.1"></script>
+<script src="js/wmm-data.js?v=2.7.4.1"></script>
+<script src="js/compass-core.js?v=2.7.4.1"></script>
+<script src="js/qibla.js?v=2.7.4.1"></script>
+<script src="js/library-meta.js?v=2.7.4.1"></script>
+<script src="js/salah-data.js?v=2.7.4.1"></script>
+<script src="js/tools.js?v=2.7.4.1"></script>
+<script src="js/library-books.js?v=2.7.4.1"></script>
+<script src="js/library-local.js?v=2.7.4.1"></script>
+<script src="js/shamela.js?v=2.7.4.1"></script>
+<script src="js/library.js?v=2.7.4.1"></script>
+<script src="js/book-reader.js?v=2.7.4.1"></script>
+<script src="js/listen.js?v=2.7.4.1"></script>
+<script src="js/report.js?v=2.7.4.1"></script>
+<script src="js/focus-mode.js?v=2.7.4.1"></script>
+<script src="js/config.js?v=2.7.4.1"></script>
+<script src="js/vendor/supabase.js?v=2.7.4.1" defer></script>
+<script src="js/sync-core.js?v=2.7.4.1" defer></script>
+<script src="js/sync.js?v=2.7.4.1" defer></script>
+<script src="js/app.js?v=2.7.4.1" defer></script>
+<script src="js/settings.js?v=2.7.4.1" defer></script>
+<script src="js/today-core.js?v=2.7.4.1" defer></script>
+<script src="js/today.js?v=2.7.4.1" defer></script>
+<script src="js/nav.js?v=2.7.4.1" defer></script>
 </body>
 </html>

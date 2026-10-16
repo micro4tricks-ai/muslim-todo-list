@@ -369,11 +369,11 @@
   }
 
   // ---- focus dial (a 60-minute "time timer": the arc is the time left) ----
-  const DIAL_C = 120, DIAL_R = 92;
+  const DIAL_C = 120, DIAL_R = 74;
   const focusEl = $('focus'), dial = $('dial'), dialArc = $('dialArc'), knob = $('dialKnob'), grip = $('dialGrip');
-  const polar = (deg, r) => {
+  const polar = (deg, r, c = DIAL_C) => {
     const a = (deg - 90) * Math.PI / 180;
-    return [DIAL_C + r * Math.cos(a), DIAL_C + r * Math.sin(a)];
+    return [c + r * Math.cos(a), c + r * Math.sin(a)];
   };
   function arcPath(deg) {
     if (deg <= 0.05) return '';
@@ -385,20 +385,47 @@
     const [x1, y1] = polar(deg, DIAL_R);
     return `M${x0} ${y0}A${DIAL_R} ${DIAL_R} 0 ${deg > 180 ? 1 : 0} 1 ${x1} ${y1}`;
   }
+  const NS = 'http://www.w3.org/2000/svg';
+  // The round view: a dot for each minute and the minutes 0-55 around the ring, as on a desk timer.
   (function buildTicks() {
     const g = $('dialTicks');
-    const NS = 'http://www.w3.org/2000/svg';
     for (let i = 0; i < 60; i++) {
       const major = i % 5 === 0;
-      const [xa, ya] = polar(i * 6, major ? 103 : 105);
-      const [xb, yb] = polar(i * 6, 111);
-      const ln = document.createElementNS(NS, 'line');
-      ln.setAttribute('x1', xa); ln.setAttribute('y1', ya);
-      ln.setAttribute('x2', xb); ln.setAttribute('y2', yb);
-      ln.setAttribute('class', major ? 'tick tick-major' : 'tick');
-      g.append(ln);
+      const [x, y] = polar(i * 6, 90);
+      const dot = document.createElementNS(NS, 'circle');
+      dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+      dot.setAttribute('r', major ? 1.6 : 0.8);
+      dot.setAttribute('class', 'tick');
+      g.append(dot);
+      if (!major) continue;
+      const [tx, ty] = polar(i * 6, 102);
+      const n = document.createElementNS(NS, 'text');
+      n.setAttribute('x', tx); n.setAttribute('y', ty);
+      n.setAttribute('class', 'dial-num');
+      n.textContent = ar(String(i));
+      g.append(n);
     }
   })();
+  // The digital view: 24 lit segments around the screen, red, orange, green and blue by quarter.
+  const CUBE_N = 24, CUBE_COLORS = ['#F0441C', '#FF9F1A', '#8FD14F', '#35B8F0'];
+  const cubeSegs = (function buildCube() {
+    const svg = $('cubeRing'), r = 45, out = [];
+    for (let i = 0; i < CUBE_N; i++) {
+      const a0 = i * 15 + 2, a1 = (i + 1) * 15 - 2;
+      const [x0, y0] = polar(a0, r, 50), [x1, y1] = polar(a1, r, 50);
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', `M${x0} ${y0}A${r} ${r} 0 0 1 ${x1} ${y1}`);
+      const c = CUBE_COLORS[Math.floor(i / 6)];
+      p.setAttribute('stroke', c);
+      p.style.color = c;
+      svg.append(p);
+      out.push(p);
+    }
+    return out;
+  })();
+  const cubeDay = (d) => {
+    try { return new Intl.DateTimeFormat(I.lang === 'en' ? 'en' : 'ar', { weekday: 'short' }).format(d); } catch (_) { return ''; }
+  };
 
   let noteTimer = null;
   function note(msg) {
@@ -441,6 +468,11 @@
     knob.setAttribute('aria-disabled', String(F.running));
     $('focusTime').textContent = fmtTimer(remaining);
     $('focusBar').style.width = `${Math.min(100, (remaining / Math.max(modeMs(F.mode), remaining, 1)) * 100)}%`;
+    const left = remaining / Math.max(modeMs(F.mode), remaining, 1);
+    const lit = remaining > 0 ? Math.ceil(left * CUBE_N - 1e-9) : 0;
+    cubeSegs.forEach((p, i) => p.classList.toggle('on', i < lit));
+    const now = new Date();
+    $('cubeSub').textContent = `${cubeDay(now)} ⁦${ar(`${pad(now.getHours())}:${pad(now.getMinutes())}`)}⁩`;
     const paused = !F.running && F.remainingMs < modeMs(F.mode);
     $('dialHint').textContent = T(F.running ? 'اضغط للإيقاف المؤقت' : paused ? 'اضغط للاستئناف' : 'اضغط للبدء');
     $('focusToggle').setAttribute('aria-label', T(F.running ? 'إيقاف مؤقت' : paused ? 'استئناف' : 'ابدأ الجلسة'));
