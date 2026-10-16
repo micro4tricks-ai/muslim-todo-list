@@ -13,7 +13,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
-tauri-plugin-updater = "2"
+tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls", "system-proxy"] }
 # The Shamela library: download a shelf's pack and unpack it.
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2"] }
 zip = { version = "9", default-features = false }
