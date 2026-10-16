@@ -57,5 +57,7 @@
   };
 
   // For the website's own checks (and its styles): this is the desktop app.
-  document.documentElement.setAttribute('data-desktop', '1');
+  // (This runs before the page exists, so the mark goes on once there is one.)
+  var mark = function () { if (document.documentElement) document.documentElement.setAttribute('data-desktop', '1'); };
+  if (document.documentElement) mark(); else document.addEventListener('DOMContentLoaded', mark);
 })();

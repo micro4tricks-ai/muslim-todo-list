@@ -26,7 +26,9 @@ pub async fn aloula_live(channel: u32) -> Result<String, String> {
 }
 
 // The ad blocker (Windows): uBlock Origin Lite is always loaded with the window and switched on or
-// off here, while the app runs; nothing restarts.
+// off here, while the app runs; nothing restarts. WebView2 keeps the choice between runs, so the
+// extension is touched only when it differs: switching it reloads its rules, and a page loading at
+// that moment could be left waiting.
 #[cfg(windows)]
 pub fn set_blocker(window: &tauri::WebviewWindow, on: bool) {
     let _ = window.with_webview(move |wv| unsafe {
@@ -43,7 +45,12 @@ pub fn set_blocker(window: &tauri::WebviewWindow, on: bool) {
                 list.Count(&mut n)?;
                 for i in 0..n {
                     let ext = list.GetValueAtIndex(i)?;
-                    ext.Enable(on, &BrowserExtensionEnableCompletedHandler::create(Box::new(|_| Ok(()))))?;
+                    let mut now = windows::core::BOOL::default();
+                    ext.IsEnabled(&mut now)?;
+                    if now.as_bool() == on {
+                        continue;
+                    }
+                    ext.Enable(on,&BrowserExtensionEnableCompletedHandler::create(Box::new(|_| Ok(()))))?;
                 }
             }
             Ok(())

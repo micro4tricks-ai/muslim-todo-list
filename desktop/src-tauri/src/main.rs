@@ -11,6 +11,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+#[cfg(windows)]
+use tauri::webview::PageLoadEvent;
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_notification::NotificationExt;
 
@@ -19,6 +21,9 @@ const INIT: &str = include_str!("init.js");
 // Started with the computer: straight to the tray, no window.
 const HIDDEN: &str = "--hidden";
 static TOLD: AtomicBool = AtomicBool::new(false);
+// The page has finished loading at least once.
+#[cfg(windows)]
+static LOADED: AtomicBool = AtomicBool::new(false);
 
 // The optional ad blocker (Windows): uBlock Origin Lite, shipped with the app in resources/extensions,
 // always loaded with the window and switched on only while «منع الإعلانات» is checked (src/media.rs).
@@ -103,15 +108,30 @@ fn main() {
                     }),
                 _ => builder,
             };
+            // The blocker is set as chosen once the page has loaded (not while it loads; src/media.rs).
+            #[cfg(windows)]
+            let builder = {
+                let on = adblock_on(app.handle());
+                builder.on_page_load(move |w, p| {
+                    if p.event() == PageLoadEvent::Finished {
+                        LOADED.store(true, Ordering::Relaxed);
+                        media::set_blocker(&w, on);
+                    }
+                })
+            };
             let _window = builder.build()?;
-            // The blocker is added as the window starts: set it as chosen once it is there, and again a little later.
+            // A start that never finishes loading (the network not up yet, a stalled request) is tried
+            // again, so the window does not sit there unanswering.
             #[cfg(windows)]
             {
-                let (w, on) = (_window.clone(), adblock_on(app.handle()));
+                let w = _window.clone();
                 std::thread::spawn(move || {
-                    for wait in [2, 4, 8] {
-                        std::thread::sleep(std::time::Duration::from_secs(wait));
-                        media::set_blocker(&w, on);
+                    for _ in 0..3 {
+                        std::thread::sleep(std::time::Duration::from_secs(40));
+                        if LOADED.load(Ordering::Relaxed) {
+                            return;
+                        }
+                        let _ = w.navigate(SITE.parse().unwrap());
                     }
                 });
             }
@@ -152,7 +172,7 @@ fn main() {
                         let _ = ads_item.set_checked(on);
                         if let Some(w) = app.get_webview_window("main") {
                             media::set_blocker(&w, on);
-                            let _ = w.eval("setTimeout(function(){location.reload()},600)");
+                            let _ = w.eval("setTimeout(function(){location.reload()},1500)");
                         }
                     }
                     "update" => update::install(app.clone()),
