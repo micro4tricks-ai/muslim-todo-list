@@ -1318,6 +1318,8 @@
     'طريقة الحساب:': 'Calculation method:',
     'العودة إلى الساعة': 'Back to the clock',
     'أقل': 'Less',
+    'أكثر': 'More',
+    'مدة الجلسة': 'Session length',
     'أدوات أخرى': 'More tools',
     'رجوع إلى الرئيسية': 'Back to home',
     // Ease of use (2.6.0)

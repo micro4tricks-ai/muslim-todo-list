@@ -16,8 +16,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.7.5">
-<link rel="stylesheet" href="fonts/extra.css?v=2.7.5">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.7.6">
+<link rel="stylesheet" href="fonts/extra.css?v=2.7.6">
 <style>
   :root {
     --ground: #EFEFEC;
@@ -420,6 +420,15 @@
   .focus-task { margin: 0; font-size: 13px; color: var(--ink-soft); text-align: center; max-width: 34ch; overflow-wrap: anywhere; }
   .focus-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   .focus-note { margin: 0; min-height: 1.4em; font-size: 12px; color: var(--accent); text-align: center; }
+  /* Quick lengths for the session: the way to set the minutes in the digital view, and a shortcut in the round one. */
+  .focus-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .focus-presets button { border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 999px; min-width: 38px; padding: 3px 9px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .focus-presets button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #FFFFFF; font-weight: 600; }
+  .focus-presets .preset-step { min-width: 30px; padding-inline: 0; font-weight: 700; }
+  .focus.is-running .focus-presets { display: none; }
+  .focus[data-view="digital"] .dial-center { touch-action: manipulation; }
+  /* No blue tap flash over the timer on phones: the press already shrinks the button. */
+  .dial-wrap, .dial-wrap *, .focus-presets button { -webkit-tap-highlight-color: transparent; }
   @media (prefers-reduced-motion: reduce) {
     .dial-center, .dial-arc { transition: none; }
   }
@@ -759,6 +768,11 @@
   @keyframes fm-breathe { 0% { transform: scale(0.72); } 40% { transform: scale(1.06); } 100% { transform: scale(0.72); } }
   .fm-breath-text { position: relative; font-size: 13px; color: rgba(200, 245, 220, 0.9); min-height: 1.2em; }
   .fm-controls { display: flex; align-items: center; gap: 14px; }
+  .fm-presets { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .fm-presets[hidden] { display: none; }
+  .fm-preset { min-width: 44px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.07); color: #F4F4F2; font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .fm-preset:hover { background: rgba(255, 255, 255, 0.14); }
+  .fm-preset[aria-pressed="true"] { background: #F4F4F2; color: #15161A; border-color: #F4F4F2; }
   .fm-play { width: 78px; height: 78px; border-radius: 50%; border: none; color: #fff; display: grid; place-items: center; padding: 0; background: linear-gradient(145deg, #FF9A6B, #D8412F); box-shadow: 0 14px 30px -10px rgba(216, 65, 47, 0.8), inset 0 2px 0 rgba(255, 255, 255, 0.25); transition: transform 0.1s; }
   .fm[data-mode="short"] .fm-play, .fm[data-mode="long"] .fm-play { background: linear-gradient(145deg, #8FE3B4, #2F9E6A); box-shadow: 0 14px 30px -10px rgba(47, 158, 106, 0.8), inset 0 2px 0 rgba(255, 255, 255, 0.25); }
   .fm-play:active { transform: scale(0.94); }
@@ -840,7 +854,7 @@
     .focus .dial-wrap { width: 200px; }
     .focus-info { align-items: center; width: 100%; }
     .focus-info .focus-task, .focus-info .focus-note, .focus-info .focus-label { text-align: center; }
-    .focus-info .focus-controls { justify-content: center; }
+    .focus-info .focus-controls, .focus-info .focus-presets { justify-content: center; }
     .focus-info .distract-form { width: 100%; }
     .todo-pane { padding-inline: 16px; }
     .todo-head h1 { font-size: 26px; }
@@ -2100,6 +2114,7 @@
     <div class="focus-info">
       <p class="focus-label"><span id="focusMode">جلسة تركيز</span><span class="cycle" id="cycle" aria-hidden="true"></span></p>
       <p class="focus-task" id="focusTask"></p>
+      <div class="focus-presets" id="focusPresets" role="group" aria-label="مدة الجلسة"></div>
       <div class="focus-controls">
         <button type="button" class="btn btn-quiet" id="focusPlus">+٥ دقائق</button>
         <button type="button" class="btn btn-quiet" id="focusSkip">تخطَّ</button>
@@ -2298,62 +2313,62 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.7.5"></script>
-<script src="js/a11y.js?v=2.7.5"></script>
-<script src="js/clock-core.js?v=2.7.5"></script>
-<script src="js/clock.js?v=2.7.5"></script>
-<script src="js/astro.js?v=2.7.5"></script>
-<script src="js/look.js?v=2.7.5"></script>
-<script src="js/sounds.js?v=2.7.5"></script>
-<script src="js/tasks.js?v=2.7.5"></script>
-<script src="js/views.js?v=2.7.5"></script>
-<script src="js/remind-card.js?v=2.7.5"></script>
-<script src="js/reminders-core.js?v=2.7.5"></script>
-<script src="js/reminders.js?v=2.7.5"></script>
-<script src="js/notes.js?v=2.7.5"></script>
-<script src="js/cards.js?v=2.7.5"></script>
-<script src="js/adhkar-data.js?v=2.7.5"></script>
-<script src="js/adhkar.js?v=2.7.5"></script>
-<script src="js/habits.js?v=2.7.5"></script>
-<script src="js/prayers.js?v=2.7.5"></script>
-<script src="js/focus-plus.js?v=2.7.5"></script>
-<script src="js/native.js?v=2.7.5"></script>
-<script src="js/prayer-alerts.js?v=2.7.5"></script>
-<script src="js/device.js?v=2.7.5"></script>
-<script src="js/extras-data.js?v=2.7.5"></script>
-<script src="js/quran-meta.js?v=2.7.5"></script>
-<script src="js/hifz.js?v=2.7.5"></script>
-<script src="js/khatma.js?v=2.7.5"></script>
-<script src="js/challenge.js?v=2.7.5"></script>
-<script src="js/tajweed-core.js?v=2.7.5"></script>
-<script src="js/tajweed-rules.js?v=2.7.5"></script>
-<script src="js/quran.js?v=2.7.5"></script>
-<script src="js/mushaf-core.js?v=2.7.5"></script>
-<script src="js/mushaf-book.js?v=2.7.5"></script>
-<script src="js/sunnah-data.js?v=2.7.5"></script>
-<script src="js/sunnah.js?v=2.7.5"></script>
-<script src="js/wmm-data.js?v=2.7.5"></script>
-<script src="js/compass-core.js?v=2.7.5"></script>
-<script src="js/qibla.js?v=2.7.5"></script>
-<script src="js/library-meta.js?v=2.7.5"></script>
-<script src="js/salah-data.js?v=2.7.5"></script>
-<script src="js/tools.js?v=2.7.5"></script>
-<script src="js/library-books.js?v=2.7.5"></script>
-<script src="js/library-local.js?v=2.7.5"></script>
-<script src="js/shamela.js?v=2.7.5"></script>
-<script src="js/library.js?v=2.7.5"></script>
-<script src="js/book-reader.js?v=2.7.5"></script>
-<script src="js/listen.js?v=2.7.5"></script>
-<script src="js/report.js?v=2.7.5"></script>
-<script src="js/focus-mode.js?v=2.7.5"></script>
-<script src="js/config.js?v=2.7.5"></script>
-<script src="js/vendor/supabase.js?v=2.7.5" defer></script>
-<script src="js/sync-core.js?v=2.7.5" defer></script>
-<script src="js/sync.js?v=2.7.5" defer></script>
-<script src="js/app.js?v=2.7.5" defer></script>
-<script src="js/settings.js?v=2.7.5" defer></script>
-<script src="js/today-core.js?v=2.7.5" defer></script>
-<script src="js/today.js?v=2.7.5" defer></script>
-<script src="js/nav.js?v=2.7.5" defer></script>
+<script src="js/i18n.js?v=2.7.6"></script>
+<script src="js/a11y.js?v=2.7.6"></script>
+<script src="js/clock-core.js?v=2.7.6"></script>
+<script src="js/clock.js?v=2.7.6"></script>
+<script src="js/astro.js?v=2.7.6"></script>
+<script src="js/look.js?v=2.7.6"></script>
+<script src="js/sounds.js?v=2.7.6"></script>
+<script src="js/tasks.js?v=2.7.6"></script>
+<script src="js/views.js?v=2.7.6"></script>
+<script src="js/remind-card.js?v=2.7.6"></script>
+<script src="js/reminders-core.js?v=2.7.6"></script>
+<script src="js/reminders.js?v=2.7.6"></script>
+<script src="js/notes.js?v=2.7.6"></script>
+<script src="js/cards.js?v=2.7.6"></script>
+<script src="js/adhkar-data.js?v=2.7.6"></script>
+<script src="js/adhkar.js?v=2.7.6"></script>
+<script src="js/habits.js?v=2.7.6"></script>
+<script src="js/prayers.js?v=2.7.6"></script>
+<script src="js/focus-plus.js?v=2.7.6"></script>
+<script src="js/native.js?v=2.7.6"></script>
+<script src="js/prayer-alerts.js?v=2.7.6"></script>
+<script src="js/device.js?v=2.7.6"></script>
+<script src="js/extras-data.js?v=2.7.6"></script>
+<script src="js/quran-meta.js?v=2.7.6"></script>
+<script src="js/hifz.js?v=2.7.6"></script>
+<script src="js/khatma.js?v=2.7.6"></script>
+<script src="js/challenge.js?v=2.7.6"></script>
+<script src="js/tajweed-core.js?v=2.7.6"></script>
+<script src="js/tajweed-rules.js?v=2.7.6"></script>
+<script src="js/quran.js?v=2.7.6"></script>
+<script src="js/mushaf-core.js?v=2.7.6"></script>
+<script src="js/mushaf-book.js?v=2.7.6"></script>
+<script src="js/sunnah-data.js?v=2.7.6"></script>
+<script src="js/sunnah.js?v=2.7.6"></script>
+<script src="js/wmm-data.js?v=2.7.6"></script>
+<script src="js/compass-core.js?v=2.7.6"></script>
+<script src="js/qibla.js?v=2.7.6"></script>
+<script src="js/library-meta.js?v=2.7.6"></script>
+<script src="js/salah-data.js?v=2.7.6"></script>
+<script src="js/tools.js?v=2.7.6"></script>
+<script src="js/library-books.js?v=2.7.6"></script>
+<script src="js/library-local.js?v=2.7.6"></script>
+<script src="js/shamela.js?v=2.7.6"></script>
+<script src="js/library.js?v=2.7.6"></script>
+<script src="js/book-reader.js?v=2.7.6"></script>
+<script src="js/listen.js?v=2.7.6"></script>
+<script src="js/report.js?v=2.7.6"></script>
+<script src="js/focus-mode.js?v=2.7.6"></script>
+<script src="js/config.js?v=2.7.6"></script>
+<script src="js/vendor/supabase.js?v=2.7.6" defer></script>
+<script src="js/sync-core.js?v=2.7.6" defer></script>
+<script src="js/sync.js?v=2.7.6" defer></script>
+<script src="js/app.js?v=2.7.6" defer></script>
+<script src="js/settings.js?v=2.7.6" defer></script>
+<script src="js/today-core.js?v=2.7.6" defer></script>
+<script src="js/today.js?v=2.7.6" defer></script>
+<script src="js/nav.js?v=2.7.6" defer></script>
 </body>
 </html>

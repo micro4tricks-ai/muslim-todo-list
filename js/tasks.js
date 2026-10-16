@@ -125,6 +125,8 @@
   // ---- focus timer ----
   const F = S.focus;
   const modeMs = (mode) => F.durations[mode] * 60000;
+  // The length of the session on the clock: the set minutes plus any "+5" added since it began.
+  if (!(F.totalMs > 0)) F.totalMs = Math.max(modeMs(F.mode), F.remainingMs || 0);
   const MODE_LABEL = { focus: T('جلسة تركيز'), short: T('استراحة قصيرة'), long: T('استراحة طويلة') };
   if (F.day !== dayKey()) { F.day = dayKey(); F.count = 0; }
 
@@ -153,7 +155,7 @@
   function focusStart() {
     const now = Date.now();
     // Anchor the start so the dial ring shows elapsed time across pauses.
-    F.startEpoch = now - (modeMs(F.mode) - F.remainingMs);
+    F.startEpoch = now - Math.max(0, F.totalMs - F.remainingMs);
     F.endEpoch = now + F.remainingMs;
     F.running = true;
     if (F.mode === 'focus' && S.track.taskId !== null && !isTracking()) startTracking(S.track.taskId);
@@ -166,7 +168,7 @@
   }
   function setMode(mode, autoStart) {
     F.mode = mode;
-    F.remainingMs = modeMs(mode);
+    F.remainingMs = F.totalMs = modeMs(mode);
     F.running = false;
     if (autoStart) focusStart();
   }
@@ -467,13 +469,16 @@
     knob.setAttribute('aria-valuetext', `${ar(mins)} ${T('دقيقة')}`);
     knob.setAttribute('aria-disabled', String(F.running));
     $('focusTime').textContent = fmtTimer(remaining);
-    $('focusBar').style.width = `${Math.min(100, (remaining / Math.max(modeMs(F.mode), remaining, 1)) * 100)}%`;
-    const left = remaining / Math.max(modeMs(F.mode), remaining, 1);
+    const left = remaining / Math.max(F.totalMs, remaining, 1);
+    $('focusBar').style.width = `${Math.min(100, left * 100)}%`;
     const lit = remaining > 0 ? Math.ceil(left * CUBE_N - 1e-9) : 0;
     cubeSegs.forEach((p, i) => p.classList.toggle('on', i < lit));
     const now = new Date();
     $('cubeSub').textContent = `${cubeDay(now)} ⁦${ar(`${pad(now.getHours())}:${pad(now.getMinutes())}`)}⁩`;
-    const paused = !F.running && F.remainingMs < modeMs(F.mode);
+    const paused = !F.running && F.remainingMs < F.totalMs;
+    focusEl.classList.toggle('is-paused', paused);
+    paintPresets();
+    for (const b of presetBtns) b.setAttribute('aria-pressed', String(!paused && !F.running && b.dataset.min * 60000 === F.totalMs));
     $('dialHint').textContent = T(F.running ? 'اضغط للإيقاف المؤقت' : paused ? 'اضغط للاستئناف' : 'اضغط للبدء');
     $('focusToggle').setAttribute('aria-label', T(F.running ? 'إيقاف مؤقت' : paused ? 'استئناف' : 'ابدأ الجلسة'));
     $('focusMode').textContent = MODE_LABEL[F.mode];
@@ -635,9 +640,17 @@
   function setDuration(m) {
     m = Math.min(MAX_FOCUS_MIN, Math.max(1, Math.round(m)));
     F.durations[F.mode] = m;
-    F.remainingMs = m * 60000;
+    F.remainingMs = F.totalMs = m * 60000;
     save(); renderFocus();
   }
+  // A paused session keeps the time already done: only what is left grows or shrinks.
+  function nudgePaused(min) {
+    const add = Math.max(60000 - F.remainingMs, Math.min(MAX_FOCUS_MIN * 60000 - F.remainingMs, min * 60000));
+    F.remainingMs += add;
+    F.totalMs += add;
+    save(); renderFocus();
+  }
+  const isPaused = () => !F.running && F.remainingMs < F.totalMs;
   const blockedWhileRunning = () => {
     if (!F.running) return false;
     note(T('أوقف المؤقت أولاً لتغيير المدة.'));
@@ -649,17 +662,52 @@
   function resetFocus() {
     if (F.running && F.mode === 'focus') stopTracking();
     F.running = false;
-    F.remainingMs = modeMs(F.mode);
+    F.remainingMs = F.totalMs = modeMs(F.mode);
     save(); render();
   }
   function plusFive() {
     if (F.running) {
-      F.endEpoch += 5 * 60000;
-      if (F.endEpoch - Date.now() > MAX_FOCUS_MIN * 60000) F.endEpoch = Date.now() + MAX_FOCUS_MIN * 60000;
-      save(); renderFocus();
+      const end = Math.min(F.endEpoch + 5 * 60000, Date.now() + MAX_FOCUS_MIN * 60000);
+      F.totalMs += end - F.endEpoch;
+      F.endEpoch = end;
+      // render() also sends 'noon-focus', which moves the phone's end-of-session notice (js/native.js).
+      save(); render();
+    } else if (isPaused()) {
+      nudgePaused(5);
     } else {
-      setDuration(Math.min(MAX_FOCUS_MIN, Math.round(F.remainingMs / 60000) + 5));
+      setDuration(Math.round(F.remainingMs / 60000) + 5);
     }
+  }
+  // Quick lengths for each kind of session, with − and + around them.
+  const PRESETS = { focus: [15, 25, 45, 60, 90], short: [3, 5, 10], long: [15, 20, 30] };
+  const presetBox = $('focusPresets');
+  let presetBtns = [], presetMode = null;
+  function stepDuration(sign) {
+    const step = F.mode === 'focus' ? 5 : 1;
+    if (isPaused()) return nudgePaused(sign * step);
+    const m = F.durations[F.mode];
+    // From 23 the + goes to 25 and the − to 20: steps land on round numbers.
+    setDuration(sign > 0 ? Math.floor(m / step) * step + step : Math.ceil(m / step) * step - step);
+  }
+  function paintPresets() {
+    if (presetMode === F.mode) return;
+    presetMode = F.mode;
+    const mk = (cls, text, label, fn) => {
+      const b = el('button', cls, text);
+      b.type = 'button';
+      if (label) b.setAttribute('aria-label', label);
+      b.addEventListener('click', fn);
+      return b;
+    };
+    presetBtns = PRESETS[F.mode].map((m) => {
+      const b = mk('', ar(m), `${ar(m)} ${T('دقيقة')}`, () => { if (!blockedWhileRunning()) setDuration(m); });
+      b.dataset.min = m;
+      return b;
+    });
+    presetBox.replaceChildren(
+      mk('preset-step', '−', T('أقل'), () => { if (!blockedWhileRunning()) stepDuration(-1); }),
+      ...presetBtns,
+      mk('preset-step', '+', T('أكثر'), () => { if (!blockedWhileRunning()) stepDuration(1); }));
   }
   $('focusSkip').addEventListener('click', skipFocus);
   $('focusReset').addEventListener('click', resetFocus);
@@ -680,12 +728,15 @@
       s.done = !s.done;
       save(); render();
     },
+    setMinutes(m) { if (!F.running) setDuration(m); },
+    step(sign) { if (!F.running) stepDuration(sign); },
+    presets: () => PRESETS[F.mode].slice(),
     state() {
-      const total = F.running ? F.endEpoch - F.startEpoch : modeMs(F.mode);
+      const total = Math.max(F.totalMs, 1);
       const remaining = F.running ? Math.max(0, F.endEpoch - Date.now()) : F.remainingMs;
       const cur = taskById(S.track.taskId);
       return {
-        mode: F.mode, running: F.running, remaining, total, count: F.count, every: LONG_EVERY,
+        mode: F.mode, running: F.running, paused: isPaused(), remaining, total, minutes: F.durations[F.mode], count: F.count, every: LONG_EVERY,
         label: MODE_LABEL[F.mode],
         task: cur ? { id: cur.id, title: cur.title, subtasks: cur.subtasks.map((x) => ({ id: x.id, title: x.title, done: x.done })) } : null
       };
@@ -722,7 +773,8 @@
   function startDrag(ev, target) {
     if (blockedWhileRunning()) return;
     dragging = true;
-    lastMin = F.durations[F.mode];
+    // The press itself goes where it lands; only a drag that then crosses 12 o'clock sticks at 60 or 1.
+    lastMin = null;
     target.setPointerCapture(ev.pointerId);
     dial.classList.add('dragging');
     const m = minutesAt(ev);
@@ -756,7 +808,8 @@
   $('dialWrap').addEventListener('wheel', (ev) => {
     ev.preventDefault();
     if (blockedWhileRunning()) return;
-    setDuration(F.durations[F.mode] + (ev.deltaY < 0 ? 1 : -1));
+    const d = ev.deltaY < 0 ? 1 : -1;
+    if (isPaused()) nudgePaused(d); else setDuration(F.durations[F.mode] + d);
   }, { passive: false });
 
   knob.addEventListener('keydown', (ev) => {
@@ -778,7 +831,13 @@
     if (ev.key === 'Escape' && !form.hidden) { closeForm(); return; }
     if (typing || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     if (ev.code === 'KeyN') { ev.preventDefault(); openForm(null); }
-    else if (ev.code === 'Space' && tag !== 'BUTTON') { ev.preventDefault(); toggleFocus(); }
+    // Space starts/pauses the timer only from the tasks tab or the timer itself: elsewhere
+    // (the Mushaf, a book) it keeps scrolling the page.
+    else if (ev.code === 'Space' && tag !== 'BUTTON' && !document.querySelector('[aria-modal="true"]:not([hidden])')) {
+      const tab = document.querySelector('.views [aria-selected="true"]');
+      if (!focusEl.contains(ev.target) && tab && tab.dataset.view !== 'tasks') return;
+      ev.preventDefault(); toggleFocus();
+    }
   });
 
   // ---- tick ----
@@ -806,7 +865,19 @@
   // Resuming after the page was closed: don't credit the closed period as work,
   // and drop a focus session that ended long ago.
   if (isTracking()) S.track.since = Date.now();
-  if (F.running && Date.now() > F.endEpoch + 60000) setMode('focus', false);
+  // A focus session that ran to its end while the page was closed still counts (in the report too);
+  // the break after it waits for a press instead of having run out unseen.
+  if (F.running && Date.now() > F.endEpoch + 60000) {
+    if (F.mode === 'focus') {
+      if (dayKey(F.endEpoch) === dayKey()) F.count += 1;
+      const cur = taskById(S.track.taskId);
+      const detail = { start: F.startEpoch, minutes: Math.round((F.endEpoch - F.startEpoch) / 60000), taskId: cur ? cur.id : null, taskTitle: cur ? cur.title : '' };
+      const send = () => window.dispatchEvent(new CustomEvent('noon-focus-done', { detail }));
+      if (document.readyState === 'complete') setTimeout(send); else addEventListener('load', send, { once: true });
+      stopTracking();
+      setMode(F.count > 0 && F.count % LONG_EVERY === 0 ? 'long' : 'short', false);
+    } else setMode('focus', false);
+  }
 
   // Used by sync.js to read the task list and to swap in a merged one.
   window.noonTasks = {

@@ -113,6 +113,10 @@
   const skipBtn = button('fm-ctl', '', () => ctl().skip(), T('تخطَّ'));
   skipBtn.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l7 5-7 5zM12.5 3v10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   controls.append(resetBtn, playBtn, plusBtn, skipBtn);
+  // The session's length, chosen here too before it starts (hidden while it runs).
+  const presets = el('div', 'fm-presets');
+  presets.setAttribute('role', 'group');
+  presets.setAttribute('aria-label', T('مدة الجلسة'));
 
   const task = el('section', 'fm-task');
   const tip = el('section', 'fm-tip');
@@ -133,7 +137,7 @@
   });
 
   const main = el('div', 'fm-main');
-  main.append(modes, stage, controls);
+  main.append(modes, stage, controls, presets);
   const side = el('div', 'fm-side');
   side.append(task, tip, distract);
   root.append(top, main, side);
@@ -142,9 +146,22 @@
   let lastSig = '', raf = 0, lastMode = null, wasRunning = false, lastDash = '';
   function renderStatic(st) {
     const f = window.noonFocus && window.noonFocus();
-    const sig = JSON.stringify([st.mode, st.running, st.count, st.task, I.lang, f && f.running ? f.endEpoch : 0]);
+    const sig = JSON.stringify([st.mode, st.running, st.paused, st.minutes, st.count, st.task, I.lang, f && f.running ? f.endEpoch : 0]);
     if (sig === lastSig) return;
     lastSig = sig;
+    presets.hidden = st.running;
+    if (!st.running) {
+      const c = ctl();
+      const chip = (text, label, fn, on) => {
+        const b = button('fm-preset', text, fn, label);
+        if (on !== undefined) b.setAttribute('aria-pressed', String(on));
+        return b;
+      };
+      presets.replaceChildren(
+        chip('−', T('أقل'), () => c.step(-1)),
+        ...c.presets().map((m) => chip(I.num(m), `${I.num(m)} ${T('دقيقة')}`, () => c.setMinutes(m), !st.paused && m === st.minutes)),
+        chip('+', T('أكثر'), () => c.step(1)));
+    }
     root.dataset.mode = st.mode;
     root.classList.toggle('is-running', st.running);
     modeBtns.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === st.mode)));
