@@ -135,6 +135,7 @@ public class AdhanService extends Service {
             player.prepare();
             player.start();
             tell(true);
+            startGestures();
             Log.i(TAG, "playing, " + player.getDuration() + " ms");
         } catch (Exception e) {
             Log.w(TAG, "could not play", e);
@@ -179,6 +180,7 @@ public class AdhanService extends Service {
             f.addAction(Intent.ACTION_SCREEN_ON);
             if (Build.VERSION.SDK_INT >= 33) registerReceiver(buttons, f, Context.RECEIVER_EXPORTED);
             else registerReceiver(buttons, f);
+            Log.i(TAG, "silence by flip " + (acc != null) + ", volume " + (session != null) + ", power true");
         } catch (Exception e) {
             Log.w(TAG, "gestures unavailable", e);
         }
