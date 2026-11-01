@@ -64,7 +64,7 @@ public class AdhanService extends Service {
     };
     private boolean listening;
     private MediaSession session;
-    private int alarmBefore = -1;   // the alarm volume to put back, when it was moved one step
+    private int alarmBefore = -1;   // the alarm volume before the adhan, put back after it
 
     /** Told when the adhan starts and stops, so the page can pause its radio (set by AdhanPlugin). */
     interface Listener { void onPlaying(boolean playing); }
@@ -177,7 +177,7 @@ public class AdhanService extends Service {
                 session.setActive(true);
             } catch (Exception e) { Log.w(TAG, "no volume session", e); }
             // At the loudest or quietest step a key changes nothing, so nothing is sent: move one
-            // step in for the adhan and put it back after.
+            // step in for the adhan. The volume is put back after, also when a key changed it.
             alarmBefore = -1;
             AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             if (am != null) {
@@ -185,8 +185,9 @@ public class AdhanService extends Service {
                 int max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM);
                 int min = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? am.getStreamMinVolume(AudioManager.STREAM_ALARM) : 0;
                 int to = v >= max ? max - 1 : v <= min ? min + 1 : v;
+                alarmBefore = v;
                 if (to != v && to >= min && to <= max) {
-                    try { am.setStreamVolume(AudioManager.STREAM_ALARM, to, 0); alarmBefore = v; } catch (Exception ignored) { }
+                    try { am.setStreamVolume(AudioManager.STREAM_ALARM, to, 0); } catch (Exception ignored) { }
                 }
                 Log.i(TAG, "alarm volume " + v + " (" + min + ".." + max + ") -> " + to);
             }
