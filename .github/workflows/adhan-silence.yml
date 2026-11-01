@@ -1,0 +1,62 @@
+# Checks on an emulator that the adhan stops on a volume key, the power key, or turning the
+# phone face down. Run it by hand with the id of an "Android app" run (its debug APK is used).
+name: Adhan silence check
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Android app run id'
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: muslim-todo-list-debug-apk
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            mkdir -p shots
+            adb install -r muslim-todo-list-debug.apk
+            adb shell pm grant io.github.micro4tricks.muslimtodo android.permission.POST_NOTIFICATIONS || true
+            adb shell am start -n io.github.micro4tricks.muslimtodo/.MainActivity
+            sleep 20
+            pid=$(adb shell pidof io.github.micro4tricks.muslimtodo | tr -dc '0-9'); adb forward tcp:9333 localabstract:webview_devtools_remote_$pid && node app/scripts/adhan-silence.mjs 9333 shots || true
+            adb logcat -d > shots/logcat-all.txt || true
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: adhan-silence
+          path: shots
+
+      - name: Result
+        run: |
+          test -f shots/adhan-silence.json || { echo "::error::The check did not finish"; exit 1; }
+          node -e "const r=require('./shots/adhan-silence.json'); for (const [k,v] of Object.entries(r.results)) console.log(k, JSON.stringify({playing:v.playing, silenced:v.silenced})); r.problems.forEach((x)=>console.log('::error::'+x)); process.exit(r.problems.length?1:0);"
