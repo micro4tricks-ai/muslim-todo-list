@@ -14,6 +14,9 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.VolumeProvider;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -60,6 +63,7 @@ public class AdhanService extends Service {
         }
     };
     private boolean listening;
+    private MediaSession session;
 
     /** Told when the adhan starts and stops, so the page can pause its radio (set by AdhanPlugin). */
     interface Listener { void onPlaying(boolean playing); }
@@ -158,6 +162,17 @@ public class AdhanService extends Service {
             sensors = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             Sensor acc = sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             if (acc != null) sensors.registerListener(flipListener, acc, SensorManager.SENSOR_DELAY_NORMAL);
+            try {
+                // A playing media session with its own volume gets every volume key press, even at
+                // the loudest or quietest level, where the system sends no volume-changed broadcast.
+                session = new MediaSession(this, "adhan");
+                session.setPlaybackState(new PlaybackState.Builder()
+                    .setState(PlaybackState.STATE_PLAYING, 0, 1f).build());
+                session.setPlaybackToRemote(new VolumeProvider(VolumeProvider.VOLUME_CONTROL_RELATIVE, 100, 50) {
+                    @Override public void onAdjustVolume(int direction) { quiet("volume key"); }
+                });
+                session.setActive(true);
+            } catch (Exception e) { Log.w(TAG, "no volume session", e); }
             IntentFilter f = new IntentFilter();
             f.addAction("android.media.VOLUME_CHANGED_ACTION");
             f.addAction(Intent.ACTION_SCREEN_OFF);
@@ -174,6 +189,8 @@ public class AdhanService extends Service {
         listening = false;
         try { if (sensors != null) sensors.unregisterListener(flipListener); } catch (Exception ignored) { }
         try { unregisterReceiver(buttons); } catch (Exception ignored) { }
+        try { if (session != null) { session.setActive(false); session.release(); } } catch (Exception ignored) { }
+        session = null;
     }
 
     private void release() {
