@@ -14,7 +14,6 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.VolumeProvider;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
 import android.hardware.Sensor;
@@ -57,13 +56,15 @@ public class AdhanService extends Service {
     };
     private final BroadcastReceiver buttons = new BroadcastReceiver() {
         @Override public void onReceive(Context c, Intent i) {
-            // Ignore what our own start causes (screen waking for the notification).
+            Log.i(TAG, "heard " + i.getAction() + " stream " + i.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", -1));
+            // Ignore what our own start causes (screen waking for the notification, the volume step).
             if (SystemClock.elapsedRealtime() - startedAt < 1500) return;
             quiet(i.getAction());
         }
     };
     private boolean listening;
     private MediaSession session;
+    private int alarmBefore = -1;   // the alarm volume to put back, when it was moved one step
 
     /** Told when the adhan starts and stops, so the page can pause its radio (set by AdhanPlugin). */
     interface Listener { void onPlaying(boolean playing); }
@@ -164,16 +165,31 @@ public class AdhanService extends Service {
             Sensor acc = sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             if (acc != null) sensors.registerListener(flipListener, acc, SensorManager.SENSOR_DELAY_NORMAL);
             try {
-                // A playing media session with its own volume gets every volume key press, even at
-                // the loudest or quietest level, where the system sends no volume-changed broadcast.
+                // A playing session on the alarm stream makes the volume keys change the alarm
+                // volume (the adhan's), whatever app is open or with the screen off; the change is
+                // what we hear about. Android 12+ ignores the keys for a remote-volume session.
                 session = new MediaSession(this, "adhan");
                 session.setPlaybackState(new PlaybackState.Builder()
                     .setState(PlaybackState.STATE_PLAYING, 0, 1f).build());
-                session.setPlaybackToRemote(new VolumeProvider(VolumeProvider.VOLUME_CONTROL_RELATIVE, 100, 50) {
-                    @Override public void onAdjustVolume(int direction) { quiet("volume key"); }
-                });
+                session.setPlaybackToLocal(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
                 session.setActive(true);
             } catch (Exception e) { Log.w(TAG, "no volume session", e); }
+            // At the loudest or quietest step a key changes nothing, so nothing is sent: move one
+            // step in for the adhan and put it back after.
+            alarmBefore = -1;
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                int v = am.getStreamVolume(AudioManager.STREAM_ALARM);
+                int max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+                int min = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? am.getStreamMinVolume(AudioManager.STREAM_ALARM) : 0;
+                int to = v >= max ? max - 1 : v <= min ? min + 1 : v;
+                if (to != v && to >= min && to <= max) {
+                    try { am.setStreamVolume(AudioManager.STREAM_ALARM, to, 0); alarmBefore = v; } catch (Exception ignored) { }
+                }
+                Log.i(TAG, "alarm volume " + v + " (" + min + ".." + max + ") -> " + to);
+            }
             IntentFilter f = new IntentFilter();
             f.addAction("android.media.VOLUME_CHANGED_ACTION");
             f.addAction(Intent.ACTION_SCREEN_OFF);
@@ -193,6 +209,11 @@ public class AdhanService extends Service {
         try { unregisterReceiver(buttons); } catch (Exception ignored) { }
         try { if (session != null) { session.setActive(false); session.release(); } } catch (Exception ignored) { }
         session = null;
+        if (alarmBefore >= 0) {
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            try { if (am != null) am.setStreamVolume(AudioManager.STREAM_ALARM, alarmBefore, 0); } catch (Exception ignored) { }
+            alarmBefore = -1;
+        }
     }
 
     private void release() {
