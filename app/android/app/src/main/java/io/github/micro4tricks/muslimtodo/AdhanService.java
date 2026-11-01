@@ -5,16 +5,23 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.os.PowerManager;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
@@ -23,6 +30,8 @@ import androidx.core.app.NotificationCompat;
  * Plays the adhan through the alarm stream, so it is heard even when notification sounds are
  * quiet, with a notification that stops it. When the phone is on silent or vibrate it only shows
  * the notification, unless the user chose to hear the adhan anyway.
+ * While it plays, turning the phone face down or pressing a volume or power button silences it,
+ * for someone who is praying or in the bathroom and cannot reach the screen.
  */
 public class AdhanService extends Service {
 
@@ -32,6 +41,25 @@ public class AdhanService extends Service {
     private MediaPlayer player;
     private PowerManager.WakeLock wake;
     private AudioFocusRequest focus;
+    private SensorManager sensors;
+    private boolean armed;          // true once the phone has been seen not face down
+    private long startedAt;
+    private final SensorEventListener flipListener = new SensorEventListener() {
+        @Override public void onSensorChanged(SensorEvent e) {
+            boolean faceDown = e.values[2] < -7f;
+            if (!faceDown) armed = true;
+            else if (armed) quiet("face down");
+        }
+        @Override public void onAccuracyChanged(Sensor s, int accuracy) { }
+    };
+    private final BroadcastReceiver buttons = new BroadcastReceiver() {
+        @Override public void onReceive(Context c, Intent i) {
+            // Ignore what our own start causes (screen waking for the notification).
+            if (SystemClock.elapsedRealtime() - startedAt < 1500) return;
+            quiet(i.getAction());
+        }
+    };
+    private boolean listening;
 
     /** Told when the adhan starts and stops, so the page can pause its radio (set by AdhanPlugin). */
     interface Listener { void onPlaying(boolean playing); }
@@ -116,7 +144,40 @@ public class AdhanService extends Service {
         stopSelf();
     }
 
+    private void quiet(String why) {
+        Log.i(TAG, "silenced by " + why);
+        finish();
+    }
+
+    private void startGestures() {
+        if (listening) return;
+        listening = true;
+        startedAt = SystemClock.elapsedRealtime();
+        armed = false;
+        try {
+            sensors = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            Sensor acc = sensors == null ? null : sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            if (acc != null) sensors.registerListener(flipListener, acc, SensorManager.SENSOR_DELAY_NORMAL);
+            IntentFilter f = new IntentFilter();
+            f.addAction("android.media.VOLUME_CHANGED_ACTION");
+            f.addAction(Intent.ACTION_SCREEN_OFF);
+            f.addAction(Intent.ACTION_SCREEN_ON);
+            if (Build.VERSION.SDK_INT >= 33) registerReceiver(buttons, f, Context.RECEIVER_EXPORTED);
+            else registerReceiver(buttons, f);
+        } catch (Exception e) {
+            Log.w(TAG, "gestures unavailable", e);
+        }
+    }
+
+    private void stopGestures() {
+        if (!listening) return;
+        listening = false;
+        try { if (sensors != null) sensors.unregisterListener(flipListener); } catch (Exception ignored) { }
+        try { unregisterReceiver(buttons); } catch (Exception ignored) { }
+    }
+
     private void release() {
+        stopGestures();
         if (player != null) {
             try { player.stop(); } catch (Exception ignored) { }
             player.release();
