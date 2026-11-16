@@ -19,6 +19,9 @@ final class AdhanAlarms {
     private static final String KEY = "items";
     private static final String COUNT = "count";
     private static final int BASE = 5000; // request codes 5000.. (PrayerWidget uses 7)
+    // Every request code ever used is below BASE + MAX (the app books 7 days of 5 prayers), so a
+    // cancel never trusts a stored count that a crash may have left too low.
+    private static final int MAX = 100;
 
     private AdhanAlarms() {}
 
@@ -31,16 +34,23 @@ final class AdhanAlarms {
         SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
-        int old = p.getInt(COUNT, 0);
+        int old = Math.max(MAX, p.getInt(COUNT, 0));
         for (int i = 0; i < old; i++) {
             PendingIntent pi = intent(ctx, i, null, PendingIntent.FLAG_NO_CREATE);
             if (pi != null) { am.cancel(pi); pi.cancel(); }
         }
         int n = 0;
+        JSONArray items;
         try {
-            JSONArray items = new JSONArray(p.getString(KEY, "[]"));
-            long now = System.currentTimeMillis();
-            for (int i = 0; i < items.length(); i++) {
+            items = new JSONArray(p.getString(KEY, "[]"));
+        } catch (Exception e) {
+            // A broken list books nothing; the app sends a new one the next time it opens.
+            items = new JSONArray();
+        }
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < items.length() && n < MAX; i++) {
+            // One bad item is skipped; the others are still booked.
+            try {
                 JSONObject it = items.getJSONObject(i);
                 long at = it.getLong("at");
                 if (at <= now) continue;
@@ -52,9 +62,9 @@ final class AdhanAlarms {
                     am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
                 }
                 n++;
+            } catch (Exception e) {
+                // Skip this one.
             }
-        } catch (Exception e) {
-            // A broken list books nothing; the app sends a new one the next time it opens.
         }
         p.edit().putInt(COUNT, n).apply();
     }
