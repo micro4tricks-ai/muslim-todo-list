@@ -19,7 +19,7 @@ jobs:
         include:
           - os: windows-2022
             args: ''
-          - os: macos-14
+          - os: macos-15
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.os }}
     defaults:
