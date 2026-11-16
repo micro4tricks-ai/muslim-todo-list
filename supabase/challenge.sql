@@ -1,6 +1,6 @@
 -- Group challenges (2.6.0): family or friends set a shared goal — a number of tasbihat, of salawat on
 -- the Prophet ﷺ, of istighfar, or of Quran pages — and each adds what they did; everyone sees the
--- total and each member's share. Run once after khatma.sql and hardening.sql (by
+-- total and each member's share. Run once after khatma.sql (by
 -- tools/supabase_migrate.py or the SQL editor). Safe to run again.
 --
 -- Who sees what: only the members of a challenge read it and its members. You become a member by
@@ -72,7 +72,7 @@ begin
 end $$;
 
 -- Join with a share code; nothing for a wrong one. Wrong codes count toward the same hourly limit
--- as the khatma (supabase/hardening.sql): 20 an hour, then 'too many tries'.
+-- as the khatma (supabase/khatma.sql): 20 an hour, then 'too many tries'.
 create or replace function public.challenge_join(p_code text, p_name text) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare c uuid;
