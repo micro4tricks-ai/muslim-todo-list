@@ -13,7 +13,9 @@
   // The sound when a prayer is due: a short chime or a full adhan (sounds/adhan, see CREDITS.md there).
   const SOUNDS = [
     ['madinah', 'أذان من المسجد النبوي'], ['fakhri', 'أذان بصوت صباح فخري'], ['beautiful', 'أذان هادئ'],
-    ['azeez', 'أذان بصوت عاقب عزيز'], ['chime', 'نغمة قصيرة فقط']
+    ['azeez', 'أذان بصوت عاقب عزيز'], ['malmo', 'أذان الفجر من مسجد مالمو'], ['fouad', 'أذان الفجر بصوت فؤاد'],
+    ['mardin', 'أذان تركي من ماردين'], ['kazakh', 'أذان من مسجد في قازاخستان'], ['malaysia', 'أذان من مسجد في كوالالمبور'],
+    ['javed', 'أذان بصوت عاصم جاويد'], ['chime', 'نغمة قصيرة فقط']
   ];
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); if (native()) native().schedulePrayers(true); };
   // Remember what we've already announced, per device (kept across reopening the app, and shared
