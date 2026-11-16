@@ -57,8 +57,9 @@
   }
   function load() {
     const s = defaults();
+    let raw = null;
     try {
-      const raw = localStorage.getItem(STORE_KEY);
+      raw = localStorage.getItem(STORE_KEY);
       if (raw) {
         const saved = JSON.parse(raw);
         Object.assign(s, saved, { focus: Object.assign(s.focus, saved.focus || {}) });
@@ -84,7 +85,18 @@
           })
         ];
       }
-    } catch (_) { /* storage unavailable: start fresh */ }
+    } catch (err) {
+      // Unreadable tasks: keep the raw text aside (one copy) before the next save replaces it.
+      if (raw) {
+        console.warn('tasks: stored data unreadable, kept a copy before starting fresh', err);
+        try {
+          Object.keys(localStorage).filter((k) => k.startsWith(STORE_KEY + '-corrupt-')).forEach((k) => localStorage.removeItem(k));
+          localStorage.setItem(`${STORE_KEY}-corrupt-${Date.now()}`, raw);
+        } catch (_) {}
+        return defaults();
+      }
+      /* storage unavailable: start fresh */
+    }
     return s;
   }
   const S = load();
