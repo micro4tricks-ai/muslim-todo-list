@@ -52,7 +52,7 @@ for (const ch of live.tv) {
 }
 for (const r of live.radios || []) {
   await check(`Radio: ${r.en}`, 'Listen › Radio', 'the next link in live.json', async () => {
-    const u = await firstOk(r.urls, audio);
+    const u = await firstOk(r.urls, (x) => (/\.m3u8(\?|$)/i.test(x) ? playlist(x) : audio(x)));
     return { ok: !!u, note: u ? `plays from ${new URL(u).host}` : 'no link answers' };
   });
 }
