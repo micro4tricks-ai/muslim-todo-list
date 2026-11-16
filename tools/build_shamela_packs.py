@@ -6,13 +6,15 @@ and indexes), into OUT:
   books/s<id>/index.json.gz, books/s<id>/<k>.json.gz : the book, as the reader reads it
   cat-<c>.json        : the books of shelf c: [{id, slug, ar, author, death, edition, files, pages, size, fc}]
   packs/shamela-<c>.zip : books/s<id>/... and cat-<c>.json, for the app to download and unpack
-  catalog.json        : the shelves: [{id, name, books, size}] (size: bytes of the pack)
+  catalog.json        : the shelves: [{id, name, books, size, sha256}] (size: bytes of the pack; sha256: its hex digest,
+                        checked by the app before it unpacks the pack)
 A book already built is kept (delete its folder to build it again), so a stopped run goes on where it was.
 
 Needs: Shamela 4 at SHAMELA (default D:\\shamela4) and the JPype package.
 Run:  py -3 tools/build_shamela_packs.py [shelf id ...]     (no ids: every shelf)
 """
 import glob
+import hashlib
 import json
 import os
 import sys
@@ -69,7 +71,11 @@ def pack(cat, recs):
             for f in sorted(glob.glob(os.path.join(OUT, 'books', r['slug'], '*.json.gz'))):
                 z.write(f, f"books/{r['slug']}/{os.path.basename(f)}")
     os.replace(path + '.part', path)
-    return os.path.getsize(path)
+    h = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for b in iter(lambda: f.read(1 << 20), b''):
+            h.update(b)
+    return os.path.getsize(path), h.hexdigest()
 
 
 def main():
@@ -84,8 +90,8 @@ def main():
         recs = build_shelf(cat)
         if not recs:
             continue
-        size = pack(cat, recs)
-        catalog[cat] = {'id': cat, 'name': name, 'books': len(recs), 'size': size}
+        size, sha = pack(cat, recs)
+        catalog[cat] = {'id': cat, 'name': name, 'books': len(recs), 'size': size, 'sha256': sha}
         print(f'{cat} {name}: {len(recs)} books, {size / 1e6:.0f} MB', flush=True)
         order = [c for c, _ in shelves()]
         json.dump([catalog[c] for c in order if c in catalog], open(cat_path, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
