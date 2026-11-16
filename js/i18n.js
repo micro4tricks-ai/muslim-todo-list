@@ -1355,6 +1355,7 @@
     'التحدي الجماعي': 'Group challenge',
     'تحدٍّ جماعي': 'Group challenge',
     'لديك ٣٠ تحدياً. احذف واحداً منها قبل أن تبدأ غيره.': 'You have 30 challenges. Delete one before starting another.',
+    'لديك ٣٠ ختمة. احذف واحدة منها قبل أن تبدأ غيرها.': 'You have 30 khatmas. Delete one before starting another.',
     'ضعوا هدفاً مشتركاً من التسبيح أو الاستغفار أو الصلاة على النبي ﷺ أو صفحات القرآن، ويضيف كل واحد ما أنجزه، فيرى الجميع المجموع ونصيب كل عضو.': 'Set a shared goal of tasbih, istighfar, salawat on the Prophet ﷺ or Quran pages. Each adds what they did, and everyone sees the total and each member’s share.',
     'التحدي الجماعي يحتاج خدمة المزامنة، وهي غير متاحة الآن.': 'Group challenges need the sync service, which is not available now.',
     'سجّل الدخول أولاً حتى تنشئ تحدياً أو تنضم إلى واحد.': 'Sign in first to start or join a challenge.',
