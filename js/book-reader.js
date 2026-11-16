@@ -830,12 +830,21 @@
       c.append(about);
     });
   }
+  // A book kept whole (saved for offline, or read to the end) has its parts copied into
+  // 'saved-v1', which the service worker's library cap never trims.
   async function offlineState() {
     if (typeof caches === 'undefined') return -1;
     try {
-      const c = await caches.open('library-v1');
+      const c = await caches.open('library-v1'), kept = await caches.open('saved-v1');
       let n = 0;
-      for (let f = 0; f < B.files; f++) if (await c.match(partUrls(f)[0])) n++;
+      for (let f = 0; f < B.files; f++) if (await kept.match(partUrls(f)[0]) || await c.match(partUrls(f)[0])) n++;
+      if (n >= B.files) {
+        for (let f = 0; f < B.files; f++) for (const u of partUrls(f)) {
+          if (await kept.match(u)) continue;
+          const hit = await c.match(u);
+          if (hit) await kept.put(u, hit);
+        }
+      }
       return n;
     } catch (_) { return -1; }
   }
@@ -845,8 +854,8 @@
     if (n >= B.files) {
       state.textContent = T('الكتاب محفوظ كاملاً على هذا الجهاز، ويُقرأ دون إنترنت.');
       act.append(button('btn btn-quiet danger', T('حذف النسخة المحفوظة'), async () => {
-        const c = await caches.open('library-v1');
-        for (let f = 0; f < B.files; f++) for (const u of partUrls(f)) await c.delete(u);
+        const c = await caches.open('library-v1'), kept = await caches.open('saved-v1');
+        for (let f = 0; f < B.files; f++) for (const u of partUrls(f)) { await c.delete(u); await kept.delete(u); }
         if (B.forget) B.forget();
         drawOffline(await offlineState(), state, act);
         toast(T('حُذفت النسخة المحفوظة. تبقى الأجزاء التي تقرؤها محفوظة حتى تُحذف.'));
