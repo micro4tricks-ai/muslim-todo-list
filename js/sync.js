@@ -228,9 +228,10 @@
       original.call(this, k, v);
       if (!tracked) return;
       const syncing = user && confirmed;
-      // Settings are stamped signed in or out, so a change made signed out still beats an older one.
+      // Signed out, only a change of a value already stored is stamped (a real edit made offline still
+      // wins); a first write (an app default on a fresh device) stays unstamped so the account's copy wins.
       if (k === TASKS_KEY) { if (syncing) onTasksSaved(); }
-      else if (prev !== v) { meta.ts[k] = Date.now(); saveMeta(); if (syncing) schedule(1500); }
+      else if (prev !== v && (syncing || prev !== null)) { meta.ts[k] = Date.now(); saveMeta(); if (syncing) schedule(1500); }
     };
   } catch (_) { /* storage unavailable: nothing to watch */ }
 
