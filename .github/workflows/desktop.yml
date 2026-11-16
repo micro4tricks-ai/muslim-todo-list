@@ -41,7 +41,7 @@ jobs:
 
       - name: Icons (desktop/icon.svg)
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npx tauri icon icon.svg
 
       # The optional ad blocker shipped with the Windows app: uBlock Origin Lite (GPL-3.0), unchanged.
@@ -56,15 +56,33 @@ jobs:
           unzip -q "$RUNNER_TEMP"/uBOLite_*.edge.zip -d src-tauri/extensions/ubol
           test -f src-tauri/extensions/ubol/manifest.json
 
-      # Signed for the app's own updates (key in muslim-todo-keystore); a desktop-vX.Y.Z tag sets the version.
+      # The exact crates of Cargo.lock (fails when it is out of date), so the build below downloads nothing else.
+      - name: Crates (Cargo.lock)
+        run: cargo fetch --locked --manifest-path src-tauri/Cargo.toml
+
+      # Built without the signing key: no build script or package ever sees it. A desktop-vX.Y.Z tag sets
+      # the version. The updater files are signed in the next step (tauri build would need the key here).
       - name: Build
+        run: |
+          ver=1.0.0
+          case "$GITHUB_REF" in refs/tags/desktop-v*) ver="${GITHUB_REF_NAME#desktop-v}" ;; esac
+          npx tauri build ${{ matrix.args }} -c "{\"version\":\"$ver\",\"bundle\":{\"createUpdaterArtifacts\":false}}"
+
+      # Signed for the app's own updates (key in muslim-todo-keystore): the Windows installer, and on macOS
+      # the .app packed as tauri build packs it for the updater (the .app at the archive's top).
+      - name: Sign the updates
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          ver=1.0.0
-          case "$GITHUB_REF" in refs/tags/desktop-v*) ver="${GITHUB_REF_NAME#desktop-v}" ;; esac
-          npx tauri build ${{ matrix.args }} -c "{\"version\":\"$ver\"}"
+          if [ "$RUNNER_OS" = Windows ]; then
+            for f in src-tauri/target/release/bundle/nsis/*.exe; do npx tauri signer sign "$f"; done
+          else
+            b=src-tauri/target/universal-apple-darwin/release/bundle/macos
+            app=$(cd "$b" && ls -d *.app)
+            COPYFILE_DISABLE=1 tar -czf "$b/$app.tar.gz" -C "$b" "$app"
+            npx tauri signer sign "$b/$app.tar.gz"
+          fi
 
       # The app opens, shows the website, and is still running after a while.
       - name: Open it once (Windows)

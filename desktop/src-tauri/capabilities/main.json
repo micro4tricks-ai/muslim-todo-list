@@ -4,7 +4,7 @@
   "description": "The website in the main window may show system notifications, open links in the browser, and use the Shamela library on this computer; nothing else.",
   "windows": ["main"],
   "remote": {
-    "urls": ["https://micro4tricks-ai.github.io/*"]
+    "urls": ["https://micro4tricks-ai.github.io/muslim-todo-list/*"]
   },
   "permissions": [
     "core:default",
