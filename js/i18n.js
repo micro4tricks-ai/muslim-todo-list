@@ -646,6 +646,12 @@
     'أذان بصوت صباح فخري': 'Adhan by Sabah Fakhri',
     'أذان هادئ': 'Calm adhan',
     'أذان بصوت عاقب عزيز': 'Adhan by Aaqib Azeez',
+    'أذان الفجر من مسجد مالمو': 'Fajr adhan from the Malmö mosque',
+    'أذان الفجر بصوت فؤاد': 'Fajr adhan by Fouad',
+    'أذان تركي من ماردين': 'Turkish adhan from Mardin',
+    'أذان من مسجد في قازاخستان': 'Adhan from a mosque in Kazakhstan',
+    'أذان من مسجد في كوالالمبور': 'Adhan from a mosque in Kuala Lumpur',
+    'أذان بصوت عاصم جاويد': 'Adhan by Asim Javed',
     'نغمة قصيرة فقط': 'Short chime only',
     // Report
     'التقرير': 'Report',
