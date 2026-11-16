@@ -1,4 +1,4 @@
-// ---------- Tools in the library: zakat, date converter, the names of Allah, istikhara,
+// ---------- The Tools section: zakat, date converter, the names of Allah, istikhara,
 // Umrah and Hajj step by step, nearby mosques, and a backup of everything on this device ----------
 // Texts come from js/extras-data.js (tools/build_extras.py), cut from their sources.
 (() => {
@@ -323,5 +323,33 @@
     if (name === 'convert') return convert(root, backBtn);
     if (name === 'backup') return backup(root, backBtn);
   }
-  window.noonTools = { list: () => LIST, render };
+  // ---- the Tools section (view-tools): the grid, and each tool as a screen with a way back ----
+  const view = document.getElementById('view-tools');
+  let at = 'home';
+  function show() {
+    view.replaceChildren();
+    if (at !== 'home') {
+      const back = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('الأدوات')}`, () => open('home'));
+      back.dataset.back = ''; // the phone's back key steps back through it (js/views.js)
+      return render(at, view, back);
+    }
+    const h = el('div', 'view-head');
+    h.append(el('h2', '', T('الأدوات')));
+    const grid = el('div', 'tool-grid');
+    LIST.forEach(([k, icon, ar, en]) => {
+      const b = button('tool-btn', '', () => open(k));
+      b.append(el('span', 'tool-icon', icon), el('span', '', I.isEn ? en : ar));
+      grid.append(b);
+    });
+    view.append(h, grid);
+  }
+  function open(name) {
+    at = LIST.some(([k]) => k === name) ? name : 'home';
+    if (window.noonUI.currentView() !== 'tools') window.noonUI.go('tools');
+    show();
+    view.scrollIntoView({ block: 'start' });
+  }
+  window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'tools' && !view.childNodes.length) show(); });
+  if (view && !view.hidden) show();
+  window.noonTools = { list: () => LIST, render, open };
 })();

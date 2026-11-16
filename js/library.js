@@ -143,7 +143,6 @@
     if (screen.name === 'shamela' && window.noonShamela) {
       return window.noonShamela.render(root, { T, I, el, button, toast, skeleton, back, norm, sizeText, deathText, shelf: screen.shelf, open: (slug) => go({ name: 'shelf', slug }) });
     }
-    if (screen.name === 'tool' && window.noonTools) return window.noonTools.render(screen.tool, root, back('المكتبة', { name: 'home' }));
     renderHome();
   }
   const go = (s) => {
@@ -174,17 +173,6 @@
       const ref = `${T('الأربعون النووية')} ${I.num(h.n)}`;
       card.append(el('span', 'hint', ref), button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('حديث اليوم'), title: ref, body: matn(tidy(h.ar)) })));
       root.append(card);
-    }
-    // Tools.
-    if (window.noonTools) {
-      root.append(el('h3', 'lib-h', T('أدوات')));
-      const tools = el('div', 'tool-grid');
-      window.noonTools.list().forEach(([k, icon, ar, en]) => {
-        const b = button('tool-btn', '', () => go({ name: 'tool', tool: k }));
-        b.append(el('span', 'tool-icon', icon), el('span', '', I.isEn ? en : ar));
-        tools.append(b);
-      });
-      root.append(tools);
     }
     root.append(el('h3', 'lib-h', T('الكتب الستة وموطأ مالك')));
     let grid = el('div', 'lib-grid');
@@ -786,7 +774,7 @@
     if (resume && place) read({ slug, resume: true }); else go(b.kind === 'hadith' ? { name: 'book', book: b.id } : { name: 'shelf', slug });
   }
   window.noonLibrary = {
-    open: (name, tool) => { window.noonUI.go('library'); go({ name: name || 'home', tool }); },
+    open: (name) => { window.noonUI.go('library'); go({ name: name || 'home' }); },
     lastBook, openBook, book: (slug) => shelfBook(slug), books: () => SHELF.books.map((b) => ({ slug: b.slug, ar: b.ar, en: b.en, cat: b.cat })),
     // For js/book-reader.js: the files, the saved places and marks (synced with the rest of the library).
     _data: { gz, url: bookUrl, shelfBook, book: anyBook, pageLabel, norm, MARKS, state: () => S, save,
