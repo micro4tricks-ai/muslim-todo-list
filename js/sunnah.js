@@ -311,7 +311,7 @@
     }
     const acts = el('div', 'salah-links');
     acts.append(button('btn btn-quiet', T('إمساكية رمضان'), () => imsakiya(today)));
-    if (window.noonLibrary) acts.append(button('btn btn-quiet', T('حاسبة زكاة الفطر'), () => window.noonLibrary.open('tool', 'zakat')));
+    if (window.noonTools) acts.append(button('btn btn-quiet', T('حاسبة زكاة الفطر'), () => window.noonTools.open('zakat')));
     box.append(acts);
     return box;
   }

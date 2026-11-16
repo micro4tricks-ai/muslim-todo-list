@@ -708,7 +708,7 @@
     'المساجد القريبة': 'Nearby mosques',
     'محوّل التاريخ': 'Date converter',
     'نسخة احتياطية': 'Backup',
-    'أدوات': 'Tools',
+    'الأدوات': 'Tools',
     'كتب أخرى': 'More books',
     'حديث اليوم': 'Hadith of the day',
     'آية اليوم': 'Verse of the day',
