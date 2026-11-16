@@ -1117,6 +1117,7 @@
     'تفسير ودروس': 'Tafsir & lessons',
     'ترجمات المعاني': 'Translations of the meanings',
     'بث مباشر': 'Live',
+    'إذاعات القرآن الكريم من دول أخرى': 'Holy Quran radios from other countries',
     'مجوّد': 'Mujawwad',
     'رواية ورش': 'Warsh',
     'رواية قالون': 'Qalun',
