@@ -87,6 +87,7 @@ It runs in any browser, installs as an app on phones, tablets and computers, wor
 | 📲 **Widgets, shortcuts, Android Auto** | Home-screen widgets for the verse of the day and the tasbih (beside the prayer one), long-press shortcuts, and the radios and your downloads in the car through Android Auto. |
 | 🔄 **Updates inside the app** | The app checks for a new version, downloads it and hands it to Android to install — only if it is signed with the same key. |
 | 🪶 **A much smaller app** | 67 MB → 15 MB: the focus sounds now come from the site on first use and are kept on the phone. |
+| 🛠️ **2.8: Tools, radios, adhans** | A Tools tab (zakat, date converter and the rest) apart from the Library; Holy Quran radios from 12 more countries; six more adhan voices; the adhan stops only when you act (flip, volume, power, a double tap in the app), never on a screen timeout; Fajr and Isha in the far north; a second full review. |
 | 🔒 **Security** | A full review of the app and the site; a sign-in link sent by someone else no longer syncs your data to their account (2.1.1). Dependabot alerts and security updates are on. |
 
 ## What came in 1.7
@@ -254,6 +255,7 @@ The code is released under the [MIT License](LICENSE). Texts, recordings, broadc
 - **الاستماع دون إنترنت:** نزّل السور من أي قارئ واسمعها بلا إنترنت.
 - **ويدجت وأيقونات مختصرة وAndroid Auto:** آية اليوم، والمسبحة، والإذاعات والتنزيلات في السيارة.
 - **التحديث من داخل التطبيق،** وحجم أصغر بكثير (من ٦٧ إلى ١٥ ميجا).
+- **الإصدار ٢٫٨:** تبويب «الأدوات» مستقل عن المكتبة، وإذاعات القرآن الكريم من ١٢ دولة أخرى، وستة أصوات أذان جديدة، وإيقاف الأذان بفعلك فقط (قلب الهاتف، زر الصوت، زر التشغيل، الضغط مرتين) لا بانطفاء الشاشة، ومواقيت الفجر والعشاء في البلاد الشمالية، ومراجعة ثانية شاملة.
 - **الأمان:** فحص كامل للتطبيق والموقع، وإغلاق ثغرة رابط الدخول المرسَل من شخص آخر (٢٫١٫١).
 
 ### ما جاء في الإصدار ١٫٧
