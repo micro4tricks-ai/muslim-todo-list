@@ -777,6 +777,7 @@
     'حفظ نسخة احتياطية': 'Save a backup',
     'حُفظت النسخة في التنزيلات.': 'Backup saved to your downloads.',
     'تعذّر حفظ النسخة.': 'Couldn’t save the backup.',
+    'تعذّر الاسترجاع: لا مكان كافٍ على الجهاز. بقيت بياناتك كما كانت.': 'Couldn’t restore: not enough room on this device. Your data is as it was.',
     'استرجاع من ملف': 'Restore from a file',
     'سيُستبدل ما على هذا الجهاز بما في الملف. اختر الملف مرة أخرى للتأكيد.': 'What is on this device will be replaced by the file. Choose the file again to confirm.',
     'تم الاسترجاع. سيُعاد فتح الصفحة.': 'Restored. The page will reload.',
