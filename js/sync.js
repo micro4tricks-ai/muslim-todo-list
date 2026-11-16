@@ -29,6 +29,8 @@
     'noon-sweep-today'];
   const SETTINGS_KEYS = RELOAD_KEYS.concat(LIVE_KEYS);
   const META_KEY = 'noon-sweep-sync-meta';
+  const OWNER_KEY = 'noon-sweep-sync-owner';   // the account this device's data was last synced with
+  const BACKUP_KEY = 'noon-sweep-sync-backup'; // another account's data, kept when starting from this one's
   const RELOAD_FLAG = 'noon-sweep-sync-reloaded';
 
   // ---- local storage helpers; writes made by sync itself are not re-synced ----
@@ -276,12 +278,37 @@
     }
     renderUI();
   });
-  function start() {
-    confirmed = true;
+  function start(merge) {
     try { localStorage.removeItem(PENDING); localStorage.removeItem(UNSURE); } catch (_) {}
     hideConfirm();
+    // This device's data was synced with another account: never merge it in without asking.
+    const owner = get(OWNER_KEY);
+    if (!merge && owner && owner !== user.id && (localTasks().length || Object.keys(localSettings()).length)) {
+      confirmed = false;
+      askWhose(); return;
+    }
+    confirmed = true;
+    try { store && store.setItem(OWNER_KEY, user.id); } catch (_) {}
     subscribe();
     syncNow(true);
+  }
+  // Start from the account's data: keep this device's copy aside, clear it, and reload to sync.
+  function startFresh() {
+    const backup = { owner: get(OWNER_KEY), at: Date.now(), values: {} };
+    for (const k of [TASKS_KEY].concat(SETTINGS_KEYS)) { const v = get(k); if (v !== null) backup.values[k] = v; }
+    try { store.setItem(BACKUP_KEY, JSON.stringify(backup)); } catch (_) {
+      renderUI(T('لا تتسع ذاكرة الجهاز لنسخة احتياطية، فلم يُحذف شيء. اختر الدمج أو سجّل الخروج.'));
+      return;
+    }
+    applying++;
+    try {
+      if (window.noonTasks) window.noonTasks.set([]);
+      for (const k of SETTINGS_KEYS) store.removeItem(k);
+    } finally { applying--; }
+    meta = { ts: {}, base: {}, tombs: {} };
+    saveMeta();
+    try { store.setItem(OWNER_KEY, user.id); } catch (_) {}
+    location.reload();
   }
   // "You opened a sign-in link for … Sync this device with that account?"
   let confirmBox = null;
@@ -297,6 +324,22 @@
     yes.addEventListener('click', () => { start(); renderUI(); });
     no.addEventListener('click', async () => { hideConfirm(); await client.auth.signOut(); renderUI(T('خرجنا من ذلك الحساب. بياناتك بقيت على هذا الجهاز ولم تُرسَل.')); });
     const row = document.createElement('div'); row.className = 'form-actions'; row.append(yes, no);
+    confirmBox.append(p, row);
+    $('syncSignedIn').prepend(confirmBox);
+    setTimeout(() => { if (window.noonSettings) window.noonSettings.open('account'); else panel.hidden = false; }, 300);
+  }
+  // "The data on this device was synced with another account: merge it into this one?"
+  function askWhose() {
+    hideConfirm();
+    confirmBox = document.createElement('div');
+    confirmBox.className = 'sync-confirm';
+    const p = document.createElement('p');
+    p.textContent = `${T('البيانات على هذا الجهاز (المهام والإعدادات) كانت تُزامَن مع حساب آخر، وأنت الآن في حساب')} ${user.email || ''}. ${T('هل تدمجها في هذا الحساب، أم تبدأ من بياناته؟')}`;
+    const merge = document.createElement('button'); merge.type = 'button'; merge.className = 'btn btn-primary'; merge.textContent = T('ادمجها في هذا الحساب');
+    const fresh = document.createElement('button'); fresh.type = 'button'; fresh.className = 'btn btn-quiet'; fresh.textContent = T('ابدأ من بيانات هذا الحساب (مع نسخة احتياطية على الجهاز)');
+    merge.addEventListener('click', () => { start(true); renderUI(); });
+    fresh.addEventListener('click', () => startFresh());
+    const row = document.createElement('div'); row.className = 'form-actions'; row.append(merge, fresh);
     confirmBox.append(p, row);
     $('syncSignedIn').prepend(confirmBox);
     setTimeout(() => { if (window.noonSettings) window.noonSettings.open('account'); else panel.hidden = false; }, 300);
