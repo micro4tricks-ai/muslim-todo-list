@@ -294,15 +294,16 @@
       let adj = 0;
       try { adj = Number((JSON.parse(localStorage.getItem('noon-sweep-sunnah')) || {}).adj) || 0; } catch (_) {}
       const hEpoch = epoch + adj * 864e5;
-      if (I.isEn) {
-        // In English the month is named here: some phones and computers have no English names for
-        // the Hijri months and print the Gregorian ones in their place («5 May» for 5 Jumada al-Ula).
+      if (I.foreign) {
+        // Outside Arabic the month is named here: some phones and computers have no names for the
+        // Hijri months in the language and print the Gregorian ones in their place («5 May» for
+        // 5 Jumada al-Ula).
         const p = {};
         for (const x of new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'numeric', year: 'numeric' })).formatToParts(hEpoch)) p[x.type] = x.value;
-        const month = HIJRI_MONTHS_EN[Number(p.month) - 1] || '';
+        const month = (I.isEn ? HIJRI_MONTHS_EN : I.hijriMonths)[Number(p.month) - 1] || '';
         const year = String(p.year || '').replace(/\D/g, '');
         hijri = `${Number(p.day)} ${month}`;
-        hijriFull = `${new Intl.DateTimeFormat('en-GB', opt({ weekday: 'long' })).format(epoch)}, ${hijri} ${year} AH`;
+        hijriFull = `${new Intl.DateTimeFormat(I.locale, opt({ weekday: 'long' })).format(epoch)}${I.rtl ? '، ' : ', '}${hijri} ${year}${I.ah}`;
       } else {
         hijri = new Intl.DateTimeFormat(I.hijriLocale, opt({ day: 'numeric', month: 'long' })).format(hEpoch);
         hijriFull = new Intl.DateTimeFormat(I.hijriLocale, opt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })).format(hEpoch);
@@ -390,9 +391,9 @@
       p.textContent = text;
       dates.append(p);
     };
-    line(`${s.place.name}${I.isEn ? ', ' : '، '}${s.place.country} · ${T('الساعة الآن')} ${s.timeHere}`, 'pp-here');
+    line(`${s.place.name}${I.rtl ? '، ' : ', '}${s.place.country} · ${T('الساعة الآن')} ${s.timeHere}`, 'pp-here');
     line(s.hijriFull, 'pp-date');
-    if (!I.isEn) line(s.dateArFull, 'pp-date');
+    if (I.isAr) line(s.dateArFull, 'pp-date');
     line(s.dateEnFull, 'pp-date pp-en', 'ltr');
 
     const rows = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'].map((k) => {
@@ -409,7 +410,7 @@
     const dl = s.dayLen;
     const dlText = Number.isFinite(dl) ? I.dur(Math.floor(dl), Math.round((dl % 1) * 60)) : '—';
     $('ppSun').textContent = `${T('الشروق')} ${fmtHM(s.today.sunrise)} · ${T('الغروب')} ${fmtHM(s.today.sunset)} · ${T('طول النهار')} ${dlText}`;
-    $('ppMoon').textContent = `${T('القمر:')} ${s.moon.name} · ${T('الإضاءة')} ${ar(Math.round(s.moon.illum * 100))}${I.isEn ? '%' : '٪'} · ${T('عمره')} ${I.days(Math.floor(s.moon.age))}`;
+    $('ppMoon').textContent = `${T('القمر:')} ${s.moon.name} · ${T('الإضاءة')} ${I.pct(Math.round(s.moon.illum * 100))} · ${T('عمره')} ${I.days(Math.floor(s.moon.age))}`;
     $('ppMethod').textContent = `${T('طريقة الحساب:')} ${methodName(s.method.ar)}`;
   }
   function openPanel() {

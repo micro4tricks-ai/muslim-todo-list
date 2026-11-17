@@ -71,7 +71,7 @@
   // ================= the "remind me" sheet =================
   const veil = el('div', 'rm-veil'); veil.hidden = true;
   const sheet = el('div', 'rm-sheet'); sheet.hidden = true;
-  sheet.dir = I.isEn ? 'ltr' : 'rtl';
+  sheet.dir = I.dir;
   sheet.setAttribute('role', 'dialog');
   sheet.setAttribute('aria-modal', 'true');
   sheet.setAttribute('aria-label', T('ذكّرني'));
@@ -178,10 +178,10 @@
   // ================= "My reminders" =================
   const root = el('div', 'st rm-page');
   root.hidden = true;
-  root.dir = I.isEn ? 'ltr' : 'rtl';
+  root.dir = I.dir;
   root.setAttribute('role', 'dialog');
   const bar = el('header', 'st-bar');
-  bar.append(button('st-back', I.isEn ? '←' : '→', () => history.back(), T('رجوع')), el('h2', 'st-title', T('تذكيراتي')));
+  bar.append(button('st-back', I.back, () => history.back(), T('رجوع')), el('h2', 'st-title', T('تذكيراتي')));
   const body = el('div', 'st-body');
   root.append(bar, body);
   document.body.append(root);

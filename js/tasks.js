@@ -239,7 +239,7 @@
     status.type = 'button';
     status.dataset.act = 'toggle';
     status.setAttribute('aria-pressed', String(t.completed));
-    status.setAttribute('aria-label', t.completed ? `${T('إلغاء إكمال')} «${t.title}»` : (I.isEn ? `${T('تعليم كمكتملة:')} «${t.title}»` : `تعليم «${t.title}» كمكتملة`));
+    status.setAttribute('aria-label', t.completed ? `${T('إلغاء إكمال')} «${t.title}»` : (I.isAr ? `تعليم «${t.title}» كمكتملة` : `${T('تعليم كمكتملة:')} «${t.title}»`));
     status.innerHTML = CHECK_SVG;
 
     const body = el('div', 'task-body');
@@ -546,7 +546,7 @@
   }
 
   $('addBtn').addEventListener('click', () => openForm(null));
-  $('langBtn').addEventListener('click', () => I.setLang(I.isEn ? 'ar' : 'en'));
+  $('langBtn').addEventListener('click', () => (window.noonSettings && window.noonSettings.open ? window.noonSettings.open('lang') : I.setLang(I.isAr ? 'en' : 'ar')));
   $('cancelBtn').addEventListener('click', closeForm);
 
   form.addEventListener('submit', (ev) => {

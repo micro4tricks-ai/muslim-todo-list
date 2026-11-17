@@ -16,7 +16,7 @@
   // otherwise a page with the steps for each phone.
   const btn = $('installBtn');
   let deferred = null;
-  const guide = () => { location.href = 'install.html' + (I.isEn ? '?lang=en' : ''); };
+  const guide = () => { location.href = 'install.html' + (I.isAr ? '' : `?lang=${I.lang}`); };
   addEventListener('beforeinstallprompt', (ev) => { ev.preventDefault(); deferred = ev; });
   addEventListener('appinstalled', () => { btn.hidden = true; deferred = null; });
   if (!standalone) {
@@ -32,7 +32,7 @@
   // ---- version, and a check against the latest release ----
   // Only this button speaks for the app's updates: any other "security update" message
   // on the phone does not come from Muslim Activity.
-  const VERSION = '2.8.0';
+  const VERSION = '2.9.0';
   const T = window.noonUI.T;
   const verEl = $('appVersion'), upBtn = $('checkUpdate'), upMsg = $('updateMsg');
   verEl.textContent = `${T('الإصدار')} ${I.num(VERSION)}`;
@@ -102,7 +102,7 @@
 
   // The language button in the quick bar under the clock.
   const quickLang = $('quickLang');
-  if (quickLang) quickLang.addEventListener('click', () => I.setLang(I.isEn ? 'ar' : 'en'));
+  if (quickLang) quickLang.addEventListener('click', () => (window.noonSettings && window.noonSettings.open ? window.noonSettings.open('lang') : I.setLang(I.isAr ? 'en' : 'ar')));
 
   // Home-screen shortcuts: ?view=adhkar opens a section, ?focus=1 opens focus mode.
   const p = new URLSearchParams(location.search);

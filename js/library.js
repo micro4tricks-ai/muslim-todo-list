@@ -12,7 +12,7 @@
   const KEY = 'noon-sweep-library';
   const API = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/';
   const root = $('view-library');
-  let S = Object.assign({ marks: [], en: I.isEn, onlyAccepted: false, books: {}, favs: [] }, load(KEY, {}));
+  let S = Object.assign({ marks: [], en: I.foreign, onlyAccepted: false, books: {}, favs: [] }, load(KEY, {}));
   const SHELF = window.NOON_BOOKS || { cats: [], books: [] };
   // The whole Musnad of Ahmad (al-Risalah numbering) takes the place of the caliphs' part.
   const LOCAL = window.NOON_LIBRARY_LOCAL || {};
@@ -44,12 +44,12 @@
     'isnaad sahih': 'إسناده صحيح', 'isnaad hasan': 'إسناده حسن', 'isnaad daif': 'إسناده ضعيف', munkar: 'منكر',
     shadh: 'شاذ', mauquf: 'موقوف', maqtu: 'مقطوع', 'sahih mauquf': 'صحيح موقوف', 'sahih maqtu': 'صحيح مقطوع'
   };
-  const gradeText = (g) => (I.isEn ? g : GRADES[String(g).toLowerCase().trim()] || g);
+  const gradeText = (g) => (I.latin ? g : GRADES[String(g).toLowerCase().trim()] || g);
   const gradeKind = (g) => { const x = String(g).toLowerCase(); return /daif|da'if|maudu|mawdu|munkar|shadh/.test(x) ? 'weak' : /sahih|hasan/.test(x) ? 'good' : 'other'; };
   const albani = (h) => (h.grades || []).find((g) => /Albani/.test(g.name));
   const bookOf = (id) => LIB.books.find((b) => b.id === id);
-  const bookName = (b) => (I.isEn ? b.en : b.ar);
-  const secName = (s) => (I.isEn ? s[2] : s[1] || s[2]);
+  const bookName = (b) => (I.pick(b));
+  const secName = (s) => (I.latin ? s[2] : s[1] || s[2]);
   const numText = (h) => I.num(String(h.arabicnumber || h.hadithnumber).split('.')[0]);
 
   // ---- data ----
@@ -152,7 +152,7 @@
   };
   // A book's text opens in the full-screen reader (js/book-reader.js); the page below is its fallback.
   const read = (s) => { if (window.noonBookReader) window.noonBookReader.open(s.slug, s); else go(Object.assign({ name: 'read' }, s)); };
-  const back = (label, to) => { const b = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T(label)}`, () => go(to)); b.dataset.back = ''; return b; };
+  const back = (label, to) => { const b = button('btn btn-quiet', `${I.back} ${T(label)}`, () => go(to)); b.dataset.back = ''; return b; };
 
   function renderHome() {
     const head = el('div', 'view-head');
@@ -169,7 +169,7 @@
       const card = el('div', 'daily-card');
       const t = el('p', 'daily-text', matn(tidy(h.ar)).slice(0, 420)); t.lang = 'ar'; t.dir = 'rtl';
       card.append(el('span', 'q-kicker', T('حديث اليوم')), t);
-      if (S.en || I.isEn) { const e = el('p', 'daily-en', h.en.slice(0, 380)); e.dir = 'ltr'; card.append(e); }
+      if (S.en || I.foreign) { const e = el('p', 'daily-en', h.en.slice(0, 380)); e.dir = 'ltr'; card.append(e); }
       const ref = `${T('الأربعون النووية')} ${I.num(h.n)}`;
       card.append(el('span', 'hint', ref), button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('حديث اليوم'), title: ref, body: matn(tidy(h.ar)) })));
       root.append(card);
@@ -180,8 +180,8 @@
       if (b.src === 'ab' && !LIB.books[k - 1].src) { root.append(grid, el('h3', 'lib-h', T('كتب أخرى'))); grid = el('div', 'lib-grid'); }
       const c = button('lib-book', '', () => go({ name: 'book', book: b.id }));
       c.dataset.book = b.id;
-      c.append(el('b', '', bookName(b)), el('span', '', I.isEn ? b.authorEn : b.authorAr),
-        el('small', '', `${b.count.toLocaleString(I.isEn ? 'en-GB' : 'ar-EG')} ${T('حديث')} · ${I.num(b.sections.length)} ${T(b.id === 'ahmad' ? 'مسنداً' : 'كتاباً')}`));
+      c.append(el('b', '', bookName(b)), el('span', '', I.ref(b, 'authorAr', 'authorEn')),
+        el('small', '', `${b.count.toLocaleString(I.locale)} ${T('حديث')} · ${I.num(b.sections.length)} ${T(b.id === 'ahmad' ? 'مسنداً' : 'كتاباً')}`));
       const place = S.books && S.books[`h:${b.id}`];
       if (place && place.label) c.append(el('small', 'lib-at', `${T('وقفت عند')} ${place.label}`));
       grid.append(c);
@@ -213,8 +213,8 @@
     if (window.noonBookReader) {
       const place = S.books && S.books[`h:${b.id}`];
       const about = el('div', 'lib-about');
-      about.append(el('p', '', `${T('المؤلف')}: ${I.isEn ? b.authorEn : b.authorAr}`),
-        el('p', 'hint', `${b.count.toLocaleString(I.isEn ? 'en-GB' : 'ar-EG')} ${T('حديث')} · ${I.num(b.sections.length)} ${T(b.id === 'ahmad' ? 'مسنداً' : 'كتاباً')}${place && place.label ? ` · ${T('وقفت عند')} ${place.label}` : ''}`));
+      about.append(el('p', '', `${T('المؤلف')}: ${I.ref(b, 'authorAr', 'authorEn')}`),
+        el('p', 'hint', `${b.count.toLocaleString(I.locale)} ${T('حديث')} · ${I.num(b.sections.length)} ${T(b.id === 'ahmad' ? 'مسنداً' : 'كتاباً')}${place && place.label ? ` · ${T('وقفت عند')} ${place.label}` : ''}`));
       const acts = el('div', 'hadith-acts');
       acts.append(button('btn btn-primary', T(place ? 'تابع القراءة' : 'ابدأ القراءة'), () => window.noonBookReader.open(`h:${b.id}`, place ? { resume: true } : { f: 0 })));
       about.append(acts);
@@ -369,8 +369,8 @@
   function gradeChips(h) {
     return (h.grades || []).map((g) => {
       const c = el('span', `grade is-${gradeKind(g.grade)}`, `${gradeText(g.grade)}`);
-      c.title = I.isEn ? g.name : (SCHOLARS[g.name] || g.name);
-      c.prepend(el('small', '', `${I.isEn ? g.name.replace(/^Al-/, '') : SCHOLARS[g.name] || g.name}: `));
+      c.title = I.latin ? g.name : (SCHOLARS[g.name] || g.name);
+      c.prepend(el('small', '', `${I.latin ? g.name.replace(/^Al-/, '') : SCHOLARS[g.name] || g.name}: `));
       return c;
     });
   }
@@ -473,13 +473,13 @@
     const m = /«\s*([^»]{20,})»/.exec(String(t));
     return (m ? m[1] : t).trim();
   }
-  function gradeLine(h) { const g = albani(h); return g ? `${I.isEn ? 'al-Albani' : 'الألباني'}: ${gradeText(g.grade)}` : ''; }
+  function gradeLine(h) { const g = albani(h); return g ? `${I.latin ? 'al-Albani' : 'الألباني'}: ${gradeText(g.grade)}` : ''; }
 
 
   // ================= the full books (from Shamela) =================
   const shelfBook = (slug) => SHELF.books.find((x) => x.slug === slug) || (window.noonShamela && window.noonShamela.book(slug));
-  const catName = (c) => { const x = SHELF.cats.find((y) => y[0] === c); return x ? (I.isEn ? x[2] : x[1]) : c; };
-  const deathText = (d) => (d && d < 9000 ? `${I.isEn ? 'd.' : 'ت'} ${I.num(d)}${I.isEn ? ' AH' : 'هـ'}` : '');
+  const catName = (c) => { const x = SHELF.cats.find((y) => y[0] === c); return x ? (I.latin ? x[2] : x[1]) : c; };
+  const deathText = (d) => (d && d < 9000 ? `${{ ar: 'ت', ur: 'وفات', id: 'w.', tr: 'ö.', es: 'm.' }[I.lang] || 'd.'} ${I.num(d)}${I.ah}` : '');
   const sizeText = (n) => (n >= 1e6 ? `${I.num((n / 1e6).toFixed(1))} ${T('ميجابايت')}` : `${I.num(Math.max(1, Math.round(n / 1e3)))} ${T('كيلوبايت')}`);
   let shamelaRead = false; // the Shamela list was read once, so books kept from it can show
   function renderShelves() {
@@ -530,8 +530,8 @@
     // In «تابع القراءة» a book opens where it was left; elsewhere on its page (contents, search).
     const c = button('lib-book lib-full', '', () => (withPlace && S.books && S.books[b.slug] ? read({ slug: b.slug, resume: true }) : go({ name: 'shelf', slug: b.slug })));
     c.dataset.cat = b.cat;
-    const by = [I.isEn ? b.authorEn : b.author, deathText(b.death)].filter(Boolean).join(' · ');
-    c.append(el('b', '', I.isEn ? b.en : b.ar), el('span', '', by));
+    const by = [I.ref(b, 'author', 'authorEn'), deathText(b.death)].filter(Boolean).join(' · ');
+    c.append(el('b', '', I.pick(b)), el('span', '', by));
     const place = S.books && S.books[b.slug];
     c.append(el('small', '', withPlace && place && place.label ? place.label : b.pages ? `${I.num(b.pages)} ${T('صفحة')} · ${sizeText(b.size)}` : bookShelfName(b)));
     return c;
@@ -552,10 +552,10 @@
       return go({ name: 'home' });
     }
     const head = el('div', 'view-head');
-    head.append(b.shamela ? back('المكتبة الشاملة', { name: 'shamela' }) : back('المكتبة', { name: 'home' }), el('h2', '', I.isEn ? b.en : b.ar));
+    head.append(b.shamela ? back('المكتبة الشاملة', { name: 'shamela' }) : back('المكتبة', { name: 'home' }), el('h2', '', I.pick(b)));
     root.append(head);
     const card = el('div', 'lib-about');
-    card.append(el('p', '', `${T('المؤلف')}: ${I.isEn ? b.authorEn : b.author}${b.death && b.death < 9000 ? ` (${deathText(b.death)})` : ''}`));
+    card.append(el('p', '', `${T('المؤلف')}: ${I.ref(b, 'author', 'authorEn')}${b.death && b.death < 9000 ? ` (${deathText(b.death)})` : ''}`));
     if (b.edition) card.append(el('p', '', `${T('الطبعة')}: ${b.edition.replace(/^ت\s+/, T('تحقيق') + ' ').replace(/^ط\s+/, T('طبعة') + ' ')}`));
     // Its shelf, one tap away.
     const shelfName = bookShelfName(b);
@@ -649,13 +649,13 @@
     if (!b) return go({ name: 'home' });
     const f = Math.max(0, Math.min(b.files - 1, screen.f || 0));
     const head = el('div', 'view-head');
-    head.append(back(I.isEn ? b.en : b.ar, { name: 'shelf', slug: b.slug }), el('h2', '', I.isEn ? b.en : b.ar));
+    head.append(back(I.pick(b), { name: 'shelf', slug: b.slug }), el('h2', '', I.pick(b)));
     root.append(head);
     const nav = (where) => {
       const n = el('div', `lib-read-nav ${where}`);
-      if (f > 0) n.append(button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('الجزء السابق')}`, () => go({ name: 'read', slug: b.slug, f: f - 1, end: true })));
+      if (f > 0) n.append(button('btn btn-quiet', `${I.back} ${T('الجزء السابق')}`, () => go({ name: 'read', slug: b.slug, f: f - 1, end: true })));
       n.append(el('span', 'hint', `${T('الجزء')} ${I.num(f + 1)} / ${I.num(b.files)}`));
-      if (f < b.files - 1) n.append(button('btn btn-primary', `${T('الجزء التالي')} ${I.isEn ? '→' : '←'}`, () => go({ name: 'read', slug: b.slug, f: f + 1 })));
+      if (f < b.files - 1) n.append(button('btn btn-primary', `${T('الجزء التالي')} ${I.fwd}`, () => go({ name: 'read', slug: b.slug, f: f + 1 })));
       return n;
     };
     root.append(nav('is-top'));
@@ -745,12 +745,12 @@
     const ol = el('ol', 'salah-steps');
     SALAH.steps.forEach((st) => {
       const li = el('li', 'salah-step');
-      li.append(el('h3', '', I.isEn ? st.en : st.ar));
+      li.append(el('h3', '', I.pick(st)));
       st.hadith.forEach((h) => {
         const q = el('blockquote', 'cal-hadith');
         const a = el('p', 'cal-hadith-ar', h.ar); a.lang = 'ar'; a.dir = 'rtl';
         const e = el('p', 'cal-hadith-en', h.en); e.lang = 'en'; e.dir = 'ltr';
-        q.append(...(I.isEn ? [e, a] : [a, e]), el('cite', '', I.isEn ? h.refEn : h.refAr));
+        q.append(...(I.foreign ? [e, a] : [a, e]), el('cite', '', I.ref(h)));
         li.append(q);
       });
       ol.append(li);

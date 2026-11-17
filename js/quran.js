@@ -33,8 +33,23 @@
     ['baghawi', 'تفسير البغوي', 'Tafsir al-Baghawi', 'cdn', 'ar-tafsir-al-baghawi'],
     ['wasit', 'التفسير الوسيط (طنطاوي)', 'Al-Wasit (Tantawi)', 'cdn', 'ar-tafsir-al-wasit'],
     ['jalalayn', 'تفسير الجلالين', 'Tafsir al-Jalalayn', 'alq', 'ar.jalalayn'],
-    ['en-ibnkathir', 'ابن كثير المختصر (بالإنجليزية)', 'Ibn Kathir, abridged (English)', 'cdn', 'en-tafisr-ibn-kathir']
+    ['en-ibnkathir', 'ابن كثير المختصر (بالإنجليزية)', 'Ibn Kathir, abridged (English)', 'cdn', 'en-tafisr-ibn-kathir'],
+    // In the other languages of the app: As-Sa‘di, Ibn Kathir, and Al-Mukhtasar of Markaz Tafsir.
+    ['ur-saadi', 'تفسیر السعدی (اردو)', 'Tafsir as-Sa‘di (Urdu)', 'cdn', 'ur-tafsir-as-saadi-urdu'],
+    ['ur-ibnkathir', 'تفسیر ابن کثیر (اردو)', 'Tafsir Ibn Kathir (Urdu)', 'cdn', 'ur-tafseer-ibn-e-kaseer'],
+    ['id-saadi', 'تفسير السعدي (بالإندونيسية)', 'Tafsir as-Sa‘di (Bahasa Indonesia)', 'cdn', 'id-tafsir-as-saadi'],
+    ['id-mukhtasar', 'المختصر في التفسير (بالإندونيسية)', 'Al-Mukhtasar (Bahasa Indonesia)', 'cdn', 'indonesian-mokhtasar'],
+    ['tr-saadi', 'تفسير السعدي (بالتركية)', 'Tefsir es-Sa‘dî (Türkçe)', 'cdn', 'turkish-tafsir-as-saadi-turkish'],
+    ['tr-mukhtasar', 'المختصر في التفسير (بالتركية)', 'Al-Muhtasar (Türkçe)', 'cdn', 'turkish-mokhtasar'],
+    ['es-mukhtasar', 'المختصر في التفسير (بالإسبانية)', 'Al-Mujtasar (Español)', 'cdn', 'spanish-mokhtasar']
   ];
+  // The language a tafsir is written in, from its id (ur-saadi: Urdu); the Arabic ones have none.
+  const tafLang = (id) => (/^(en|ur|id|tr|es)-/.test(id) ? id.slice(0, 2) : 'ar');
+  const TAF_DEFAULT = { ar: 'muyassar', en: 'en-ibnkathir', ur: 'ur-saadi', id: 'id-saadi', tr: 'tr-saadi', es: 'es-mukhtasar' };
+  // Quran.com has word-by-word meanings in these.
+  const WBW = ['en', 'ur', 'id', 'tr', 'bn'];
+  // The translation that opens first in each language.
+  const TRANS_DEFAULT = { ur: 'ur.jalandhry', id: 'id.indonesian', tr: 'tr.diyanet', es: 'es.cortes' };
   // Translations: English is kept with the app; the others are read per surah from alquran.cloud.
   const TRANS = [
     ['en', 'English — Sahih International'], ['ur.jalandhry', 'اردو — جالندھری'], ['id.indonesian', 'Bahasa Indonesia'],
@@ -61,8 +76,8 @@
   // ---- saved state ----
   const blank = () => ({
     last: null, marks: [], goal: 5, today: { day: dayKey(), pages: [] },
-    khatma: { pages: [], count: 0 }, font: 30, trans: I.isEn, reciter: 'ar.alafasy', theme: 'paper',
-    tajweed: false, tajRules: false, repeat: 1, gap: 0, rate: 1, hide: false, tafsir: I.isEn ? 'en-ibnkathir' : 'muyassar', inlineTafsir: false
+    khatma: { pages: [], count: 0 }, font: 30, trans: I.foreign, reciter: 'ar.alafasy', theme: 'paper',
+    tajweed: false, tajRules: false, repeat: 1, gap: 0, rate: 1, hide: false, tafsir: TAF_DEFAULT[I.lang], transLang: TRANS_DEFAULT[I.lang] || 'en', inlineTafsir: false
   });
   let S = Object.assign(blank(), load(KEY, {}));
   // Today's goal: fixed, or worked out from a completion date (pages left ÷ days left).
@@ -89,7 +104,7 @@
   const pageOf = (i) => bsearch(M.pages, i) + 1;         // 1-based page
   const juzOf = (i) => bsearch(M.juz, i) + 1;
   const ayahOf = (i) => i - starts[surahOf(i)] + 1;
-  const surahName = (s) => (I.isEn ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, ''));
+  const surahName = (s) => (I.latin ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, ''));
   const refText = (i) => `${surahName(surahOf(i))} ${I.num(ayahOf(i))}`;
   const sajda = new Set(M.sajdas);
 
@@ -185,10 +200,20 @@
       const vd = el('div', 'daily-card');
       const t = el('p', 'daily-text is-quran', V.ar); t.lang = 'ar'; t.dir = 'rtl';
       vd.append(el('span', 'q-kicker', T('آية اليوم')), t);
-      if (I.isEn || S.trans) { const e = el('p', 'daily-en', V.en); e.dir = 'ltr'; vd.append(e); }
+      if (I.foreign || S.trans) {
+        const e = el('p', 'daily-en', V.en); e.dir = 'ltr'; e.lang = 'en';
+        vd.append(e);
+        // In the app's other languages, the verse in the language's own translation (English until it arrives).
+        const tl = TRANS_DEFAULT[I.lang];
+        if (tl) {
+          fetch(`https://api.alquran.cloud/v1/ayah/${V.i + 1}/${tl}`).then((r) => r.json()).then((j) => {
+            if (j && j.data && j.data.text) { e.textContent = j.data.text; e.dir = 'auto'; e.lang = I.lang; }
+          }).catch(() => {});
+        }
+      }
       const acts = el('div', 'hadith-acts');
-      acts.append(el('span', 'hint', I.isEn ? V.refEn : V.refAr), button('link-btn', T('افتح في المصحف'), () => open(V.i)),
-        button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('آية اليوم'), title: I.isEn ? V.refEn : V.refAr, body: V.ar, quran: true })));
+      acts.append(el('span', 'hint', I.ref(V)), button('link-btn', T('افتح في المصحف'), () => open(V.i)),
+        button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('آية اليوم'), title: I.ref(V), body: V.ar, quran: true })));
       vd.append(acts);
       root.append(vd);
     }
@@ -200,7 +225,7 @@
         el('span', 'q-meta', `${T('الجزء')} ${I.num(juzOf(i))} · ${T('صفحة')} ${I.num(pageOf(i))}`),
         button('btn btn-primary', T('متابعة'), () => open(i)));
     } else {
-      cont.append(el('span', 'q-kicker', T('ابدأ القراءة')), el('b', 'q-big', I.isEn ? 'Al-Fatiha' : 'الفاتحة'),
+      cont.append(el('span', 'q-kicker', T('ابدأ القراءة')), el('b', 'q-big', I.latin ? 'Al-Fatiha' : 'الفاتحة'),
         el('span', 'q-meta', T('من أول المصحف')), button('btn btn-primary', T('ابدأ'), () => open(0)));
     }
     const wird = el('div', 'q-card q-wird');
@@ -296,10 +321,10 @@
       M.surahs.forEach((s, k) => {
         const b = button('q-surah', '', () => open(starts[k]));
         const name = el('span', 'q-surah-name');
-        name.append(el('b', '', I.isEn ? s[1] : surahName(k)), el('small', '', I.isEn ? s[2] : s[1]));
+        name.append(el('b', '', I.latin ? s[1] : surahName(k)), el('small', '', I.latin ? s[2] : I.isAr ? s[1] : s[2]));
         b.append(el('span', 'q-num', I.num(k + 1)), name,
           el('span', 'q-surah-meta', `${T(s[3] === 'M' ? 'مكية' : 'مدنية')} · ${I.num(s[4])} ${T('آية')}`),
-          el('span', `q-surah-side${I.isEn ? ' is-ar' : ''}`, I.isEn ? surahNameAr(k) : `${T('صفحة')} ${I.num(pageOf(starts[k]))}`));
+          el('span', `q-surah-side${I.latin ? ' is-ar' : ''}`, I.latin ? surahNameAr(k) : `${T('صفحة')} ${I.num(pageOf(starts[k]))}`));
         list.append(b);
       });
     } else if (tab === 'kids') {
@@ -312,7 +337,7 @@
         const row = el('div', `kids-row${stars >= 3 ? ' is-done' : ''}`);
         const name = el('div', 'kids-name');
         const a = el('b', '', surahNameAr(k)); a.lang = 'ar';
-        name.append(a, el('small', '', `${I.isEn ? M.surahs[k][1] + ' · ' : ''}${I.num(M.surahs[k][4])} ${T('آية')}`));
+        name.append(a, el('small', '', `${I.latin ? M.surahs[k][1] + ' · ' : ''}${I.num(M.surahs[k][4])} ${T('آية')}`));
         const st = el('span', 'kids-stars', '★'.repeat(stars) + '☆'.repeat(3 - stars));
         st.setAttribute('aria-label', `${I.num(stars)} / ${I.num(3)}`);
         row.append(name, st,
@@ -362,7 +387,7 @@
     list.append(el('p', 'view-sub', n ? `${I.num(n)}${n >= 60 ? '+' : ''} ${T('نتيجة')}` : T('لا نتائج. جرّب كلمة أخرى.')));
     if (!n) return;
     const texts = await data('uthmani');
-    const en = I.isEn ? await data('en') : null;
+    const en = I.foreign ? await data('en') : null;
     found.results.forEach((i) => list.append(resultRow(i, texts, en)));
   }
   function resultRow(i, texts, en) {
@@ -404,7 +429,7 @@
     // The reciter, right next to the play button.
     const topRec = el('select', 'qr-reciter');
     topRec.setAttribute('aria-label', T('القارئ'));
-    RECITERS.forEach((r) => topRec.append(new Option(I.isEn ? r[3] : r[2], r[0])));
+    RECITERS.forEach((r) => topRec.append(new Option(I.latin ? r[3] : r[2], r[0])));
     topRec.value = S.reciter;
     topRec.addEventListener('change', () => setReciter(topRec.value));
     top.append(close, title, topRec, playBtn, menuBtn);
@@ -455,7 +480,7 @@
     transRow.append(tLab, tSel);
     const rec = el('select');
     rec.setAttribute('aria-label', T('القارئ'));
-    RECITERS.forEach((r) => rec.append(new Option(I.isEn ? r[3] : r[2], r[0])));
+    RECITERS.forEach((r) => rec.append(new Option(I.latin ? r[3] : r[2], r[0])));
     rec.value = S.reciter;
     rec.addEventListener('change', () => setReciter(rec.value));
     function setReciter(v) {
@@ -464,7 +489,7 @@
     }
     const tfSel = el('select');
     tfSel.setAttribute('aria-label', T('التفسير المعروض'));
-    TAFSIRS.forEach((x) => tfSel.append(new Option(I.isEn ? x[2] : x[1], x[0])));
+    TAFSIRS.forEach((x) => tfSel.append(new Option(I.latin ? x[2] : x[1], x[0])));
     tfSel.value = S.tafsir;
     tfSel.addEventListener('change', () => { S.tafsir = tfSel.value; save(); if (S.inlineTafsir) renderSurah(cur, firstVisible(), true); });
     const tfRow = el('label', 'qr-row'); tfRow.append(el('span', '', T('التفسير المعروض')), tfSel);
@@ -486,7 +511,7 @@
     const tj = el('input'); tj.type = 'checkbox'; tj.checked = S.tajweed;
     const legend = el('div', 'qr-legend');
     legend.hidden = !S.tajweed;
-    TAJWEED.forEach(([k, a, e]) => { const x = el('span', `tj-${k}`); x.append(el('i'), I.isEn ? e : a); legend.append(x); });
+    TAJWEED.forEach(([k, a, e]) => { const x = el('span', `tj-${k}`); x.append(el('i'), I.latin ? e : a); legend.append(x); });
     tj.addEventListener('change', () => { S.tajweed = tj.checked; legend.hidden = !S.tajweed; qTajweed.setAttribute('aria-pressed', String(S.tajweed)); save(); renderSurah(cur, firstVisible(), true); });
     const tjRow = el('label', 'qr-row qr-check'); tjRow.append(tj, el('span', '', T('مصحف التجويد (ألوان الأحكام)')));
     const tjr = el('input'); tjr.type = 'checkbox'; tjr.checked = !!S.tajRules;
@@ -597,7 +622,7 @@
     const frame = el('div', 'qr-frame');
     frame.append(el('span', 'qr-frame-name', M.surahs[s][0]));
     frame.lang = 'ar';
-    head.append(frame, el('p', 'qr-head-meta', `${I.isEn ? `${M.surahs[s][1]} · ${M.surahs[s][2]} · ` : ''}${T(M.surahs[s][3] === 'M' ? 'مكية' : 'مدنية')} · ${I.num(count)} ${T('آية')}`));
+    head.append(frame, el('p', 'qr-head-meta', `${I.latin ? `${M.surahs[s][1]} · ${M.surahs[s][2]} · ` : ''}${T(M.surahs[s][3] === 'M' ? 'مكية' : 'مدنية')} · ${I.num(count)} ${T('آية')}`));
     frag.append(head);
     if (s !== 0 && s !== 8) {
       const b = el('p', 'qr-basmala', M.basmala);
@@ -637,7 +662,7 @@
         const tf = S.inlineTafsir && (surahTafsirs[`${S.tafsir}:${s}`] || [])[i - first];
         if (tf) {
           const t = el('div', 'ay-tf');
-          t.lang = S.tafsir.startsWith('en') ? 'en' : 'ar'; t.dir = S.tafsir.startsWith('en') ? 'ltr' : 'rtl';
+          t.lang = tafLang(S.tafsir); t.dir = ['ar', 'ur'].includes(t.lang) ? 'rtl' : 'ltr';
           tf.split(/\n+/).filter((x) => x.trim()).forEach((para) => t.append(el('p', '', para.trim())));
           blk.append(t);
         }
@@ -659,7 +684,7 @@
     frag.append(nav);
     R.page.replaceChildren(frag);
     R.page.classList.toggle('is-hide', !!S.hide);
-    R.tName.textContent = I.isEn ? `${M.surahs[s][1]}` : surahName(s);
+    R.tName.textContent = I.latin ? `${M.surahs[s][1]}` : surahName(s);
     observe();
     if (at !== null && at !== undefined && at > first) {
       const target = R.page.querySelector(`[data-i="${at}"]`);
@@ -695,7 +720,7 @@
       if (!r) return;
       const row = el('div', 'ay-tj-row');
       const name = button(`ay-tj-name tj-${g.code}`, '');
-      name.append(el('i'), I.isEn ? r.en : r.ar);
+      name.append(el('i'), I.pick(r));
       name.dataset.def = g.code;
       name.setAttribute('aria-expanded', 'false');
       row.append(name);
@@ -705,7 +730,7 @@
         w.dataset.ks = it.ks.join(' ');
         row.append(w);
       });
-      const def = el('p', 'ay-tj-def', I.isEn ? r.defEn : r.defAr);
+      const def = el('p', 'ay-tj-def', I.pick(r, 'defAr', 'defEn'));
       def.hidden = true;
       row.append(def);
       box.append(row);
@@ -851,7 +876,8 @@
     R.sheet.classList.add('is-tall');
     R.tafsir.hidden = false;
     R.tafsir.replaceChildren(skeleton(T('جارٍ تحميل معاني الكلمات…'), 3));
-    const lang = I.isEn ? 'en' : (['ur', 'id', 'tr', 'bn'].includes(transLang().split('.')[0]) ? transLang().split('.')[0] : 'en');
+    const tl = transLang().split('.')[0];
+    const lang = WBW.includes(I.lang) ? I.lang : WBW.includes(tl) ? tl : 'en';
     try {
       const r = await fetch(`https://api.quran.com/api/v4/verses/by_key/${surahOf(i) + 1}:${ayahOf(i)}?words=true&word_fields=text_uthmani&language=${lang}`);
       const j = await r.json();
@@ -905,7 +931,7 @@
     const t = TAFSIRS.find((x) => x[0] === S.tafsir) || TAFSIRS[0];
     const pickT = el('select');
     pickT.setAttribute('aria-label', T('اختر التفسير'));
-    TAFSIRS.forEach((x) => pickT.append(new Option(I.isEn ? x[2] : x[1], x[0])));
+    TAFSIRS.forEach((x) => pickT.append(new Option(I.latin ? x[2] : x[1], x[0])));
     pickT.value = t[0];
     pickT.addEventListener('change', () => { S.tafsir = pickT.value; save(); tafsirOf(i); });
     R.tafsir.replaceChildren(pickT, skeleton(T('جارٍ تحميل التفسير…'), 3));
@@ -916,8 +942,8 @@
       while (!text.trim() && k > s0 && i - k < 12) { k--; text = await tafsirText(t, k); }
       if (sel !== i) return;
       const p = el('div', 'qr-tafsir-text');
-      p.lang = t[0].startsWith('en') ? 'en' : 'ar';
-      p.dir = t[0].startsWith('en') ? 'ltr' : 'rtl';
+      p.lang = tafLang(t[0]);
+      p.dir = ['ar', 'ur'].includes(p.lang) ? 'rtl' : 'ltr';
       text.split(/\n+/).filter((x) => x.trim()).forEach((para) => p.append(el('p', '', para.trim())));
       const parts = [pickT];
       // The verse's tajweed rules sit above its tafsir, when they are switched on.
@@ -957,7 +983,7 @@
     }
     if ('mediaSession' in navigator) {
       try {
-        navigator.mediaSession.metadata = new MediaMetadata({ title: refText(i), artist: I.isEn ? reciter()[3] : reciter()[2], album: T('القرآن الكريم') });
+        navigator.mediaSession.metadata = new MediaMetadata({ title: refText(i), artist: I.latin ? reciter()[3] : reciter()[2], album: T('القرآن الكريم') });
         navigator.mediaSession.setActionHandler('pause', pause);
         navigator.mediaSession.setActionHandler('play', () => play(playing));
         navigator.mediaSession.setActionHandler('nexttrack', () => { if (playing + 1 < TOTAL) play(playing + 1); });

@@ -12,7 +12,7 @@
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); window.dispatchEvent(new CustomEvent('noon-hifz')); };
   onRemote(KEY, () => { S = Object.assign({ items: [] }, load(KEY, {})); if (open) render(); });
 
-  const name = (s) => (I.isEn ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, ''));
+  const name = (s) => (I.latin ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, ''));
   const count = (s) => M.surahs[s][4];
   const label = (it) => (it.from === 1 && it.to === count(it.s) ? name(it.s) : `${name(it.s)} ${I.num(it.from)}–${I.num(it.to)}`);
   const today = () => dayKey();
@@ -39,10 +39,10 @@
   // ---- the screen: a full page, closed by the back key like Settings ----
   const root = el('div', 'st hz');
   root.hidden = true;
-  root.dir = I.isEn ? 'ltr' : 'rtl';
+  root.dir = I.dir;
   root.setAttribute('role', 'dialog');
   const bar = el('header', 'st-bar');
-  const back = button('st-back', I.isEn ? '←' : '→', () => history.back(), T('رجوع'));
+  const back = button('st-back', I.back, () => history.back(), T('رجوع'));
   bar.append(back, el('h2', 'st-title', T('متابعة الحفظ')));
   const body = el('div', 'st-body');
   root.append(bar, body);

@@ -110,9 +110,9 @@
     pattern(ctx, W, H, P.pat);
     ctx.strokeStyle = P.frame; ctx.lineWidth = 6; ctx.strokeRect(46, 46, W - 92, H - 92);
     ctx.lineWidth = 2; ctx.strokeRect(62, 62, W - 124, H - 124);
-    const rtl = !I.isEn || /[؀-ۿ]/.test(c.body || '');
+    const rtl = I.rtl || /[؀-ۿ]/.test(c.body || '');
     ctx.textAlign = 'center';
-    ctx.direction = I.isEn ? 'ltr' : 'rtl';
+    ctx.direction = I.dir;
     ctx.fillStyle = P.frame; ctx.font = '64px "Amiri", serif';
     ctx.fillText('۞', W / 2, 170);
     ctx.fillStyle = P.muted; ctx.font = '600 34px "IBM Plex Sans Arabic", sans-serif';
@@ -136,7 +136,7 @@
     const lh = size * 1.75;
     const top = y + Math.max(0, (H - y - 260 - lines.length * lh) / 2);
     lines.forEach((l, k) => ctx.fillText(l, W / 2, top + (k + 0.8) * lh));
-    ctx.direction = I.isEn ? 'ltr' : 'rtl';
+    ctx.direction = I.dir;
     if (c.ref) { ctx.fillStyle = P.muted; ctx.font = '500 30px "IBM Plex Sans Arabic", sans-serif'; wrap(ctx, c.ref, W - 240).slice(0, 2).forEach((l, k) => ctx.fillText(l, W / 2, H - 170 + k * 42)); }
     ctx.fillStyle = P.frame; ctx.font = '600 26px "IBM Plex Sans Arabic", sans-serif';
     ctx.fillText('Muslim Activity', W / 2, H - 88);

@@ -6,7 +6,7 @@
   // internet time server (if reachable) and re-syncs every 10 minutes.
   const TAU = Math.PI * 2;
   // Canvas text direction for the page language.
-  const TEXT_DIR = window.noonI18n && window.noonI18n.isEn ? 'ltr' : 'rtl';
+  const TEXT_DIR = (window.noonI18n ? window.noonI18n.dir : 'rtl');
   const DEG = Math.PI / 180;
   const RESYNC_MS = 10 * 60 * 1000;
   let offsetMs = 0; // internet time minus device time
@@ -926,7 +926,7 @@
     });
     // Hour axis.
     g.fillStyle = M.soft;
-    const axis = I18 && I18.isEn ? ['12AM', '6', '12PM', '6'] : ['١٢ص', '٦', '١٢م', '٦'];
+    const axis = !I18 || I18.isAr ? ['١٢ص', '٦', '١٢م', '٦'] : I18.isEn ? ['12AM', '6', '12PM', '6'] : ['0', '6', '12', '18'];
     g.font = cfont(0.04, 600);
     axis.forEach((t, i) => g.fillText(t, xOf(i * 6) + (TEXT_DIR === 'rtl' ? -1 : 1) * R * 0.03, base + R * 0.075));
     // Three round slots.

@@ -389,7 +389,7 @@
     // with no sounds folder and no outside access) point to the full site.
     if (failed.length && failed.some((id) => !isMusic(id)) && location.href.indexOf(SITE_URL) !== 0) {
       const a = document.createElement('a');
-      a.href = SITE_URL + (I.isEn ? '?lang=en' : '');
+      a.href = SITE_URL + (I.isAr ? '' : `?lang=${I.lang}`);
       a.target = '_blank';
       a.rel = 'noopener';
       a.textContent = T('افتح الموقع الكامل');

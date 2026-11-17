@@ -34,7 +34,7 @@
     h.id = 'qbTitle';
     head.append(h, button('btn btn-quiet', T('تم'), close));
     const dial = el('div', 'qb-dial');
-    const marks = I.isEn ? ['N', 'E', 'S', 'W'] : ['ش', 'ق', 'ج', 'غ'];
+    const marks = I.compass;
     let ticks = '';
     for (let d = 0; d < 360; d += 15) ticks += `<line x1="100" y1="${d % 90 ? 12 : 8}" x2="100" y2="${d % 90 ? 18 : 22}" transform="rotate(${d} 100 100)" />`;
     dial.innerHTML = `
@@ -68,7 +68,7 @@
     if (!p) return;
     const q = qibla(p.lat, p.lon);
     const deg = Math.round(q.bearing);
-    const km = Math.round(q.km).toLocaleString(I.isEn ? 'en-GB' : 'ar-EG');
+    const km = Math.round(q.km).toLocaleString(I.locale);
     info.textContent = `${p.name}: ${I.num(deg)}° ${T('من الشمال باتجاه عقارب الساعة')} · ${km} ${T('كم إلى مكة المكرمة')}`;
     needle.setAttribute('transform', `rotate(${q.bearing} 100 100)`);
     if (heading === null) {

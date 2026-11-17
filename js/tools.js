@@ -22,7 +22,7 @@
     const q = el('blockquote', 'cal-hadith');
     const a = el('p', 'cal-hadith-ar', t.ar); a.lang = 'ar'; a.dir = 'rtl';
     const e = el('p', 'cal-hadith-en', t.en); e.lang = 'en'; e.dir = 'ltr';
-    q.append(...(I.isEn ? [e, a] : [a, e]), el('cite', '', I.isEn ? t.refEn : t.refAr));
+    q.append(...(I.foreign ? [e, a] : [a, e]), el('cite', '', I.ref(t)));
     return q;
   }
   function head(root, backBtn, title, sub) {
@@ -32,7 +32,7 @@
     if (sub) root.append(el('p', 'hint', T(sub)));
   }
   const num = (v) => { const n = Number(String(v || '').replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٬,]/g, '')); return Number.isFinite(n) ? n : 0; };
-  const money = (v) => v.toLocaleString(I.isEn ? 'en-GB' : 'ar-EG', { maximumFractionDigits: 2 });
+  const money = (v) => v.toLocaleString(I.locale, { maximumFractionDigits: 2 });
 
   // ---- zakat ----
   const ZKEY = 'noon-sweep-zakat';
@@ -104,7 +104,7 @@
     const ol = el('ol', 'salah-steps');
     list.forEach((st) => {
       const li = el('li', 'salah-step');
-      li.append(el('h3', '', I.isEn ? st.en : st.ar));
+      li.append(el('h3', '', I.pick(st)));
       st.hadith.forEach((h) => li.append(hadith(h)));
       ol.append(li);
     });
@@ -161,7 +161,7 @@
     const q = `[out:json][timeout:25];(nwr["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${lat},${lon}););out center 80;`;
     // A map search always works, whatever happens to the OpenStreetMap servers.
     const maps = el('a', 'btn btn-quiet', T('ابحث عن المساجد في خرائط جوجل'));
-    maps.href = `https://www.google.com/maps/search/${encodeURIComponent(I.isEn ? 'mosque' : 'مسجد')}/@${lat},${lon},15z`;
+    maps.href = `https://www.google.com/maps/search/${encodeURIComponent({ ar: 'مسجد', ur: 'مسجد', id: 'masjid', tr: 'cami', es: 'mezquita' }[I.lang] || 'mosque')}/@${lat},${lon},15z`;
     maps.target = '_blank'; maps.rel = 'noopener';
     try {
       const j = await overpass(q);
@@ -169,7 +169,7 @@
       const dist = (a, b) => { const x = (b.lon - a.lon) * R * Math.cos(((a.lat + b.lat) / 2) * R), y = (b.lat - a.lat) * R; return Math.sqrt(x * x + y * y) * 6371000; };
       const items = j.elements.map((e) => {
         const p = e.center || { lat: e.lat, lon: e.lon };
-        return { name: (e.tags && (I.isEn ? e.tags['name:en'] || e.tags.name : e.tags['name:ar'] || e.tags.name)) || T('مسجد'), lat: p.lat, lon: p.lon, d: dist({ lat, lon }, p) };
+        return { name: (e.tags && (e.tags[`name:${I.lang}`] || (I.latin && e.tags['name:en']) || e.tags.name)) || T('مسجد'), lat: p.lat, lon: p.lon, d: dist({ lat, lon }, p) };
       }).filter((x) => Number.isFinite(x.lat)).sort((a, b) => a.d - b.d);
       list.replaceChildren(maps, el('p', 'view-sub', items.length ? `${I.num(items.length)} ${T('مسجداً')}` : T('لم نجد مساجد مسجّلة في هذه المسافة. جرّب مسافة أكبر.')));
       items.forEach((m) => {
@@ -208,7 +208,7 @@
   function convert(root, backBtn) {
     head(root, backBtn, 'محوّل التاريخ', 'حسب تقويم أم القرى، مع تعديل اليوم المختار في التقويم.');
     const S = window.noonSunnah;
-    const MONTHS = I.isEn ? ['Muharram', 'Safar', 'Rabi‘ I', 'Rabi‘ II', 'Jumada I', 'Jumada II', 'Rajab', 'Sha‘ban', 'Ramadan', 'Shawwal', 'Dhu al-Qa‘dah', 'Dhu al-Hijjah']
+    const MONTHS = I.foreign && !I.isEn ? I.hijriMonths : I.isEn ? ['Muharram', 'Safar', 'Rabi‘ I', 'Rabi‘ II', 'Jumada I', 'Jumada II', 'Rajab', 'Sha‘ban', 'Ramadan', 'Shawwal', 'Dhu al-Qa‘dah', 'Dhu al-Hijjah']
       : ['محرّم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوّال', 'ذو القعدة', 'ذو الحجة'];
     const g = el('div', 'zk-group');
     const gi = el('input'); gi.type = 'date'; gi.valueAsDate = new Date();
@@ -329,7 +329,7 @@
   function show() {
     view.replaceChildren();
     if (at !== 'home') {
-      const back = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('الأدوات')}`, () => open('home'));
+      const back = button('btn btn-quiet', `${I.back} ${T('الأدوات')}`, () => open('home'));
       back.dataset.back = ''; // the phone's back key steps back through it (js/views.js)
       return render(at, view, back);
     }
@@ -338,7 +338,7 @@
     const grid = el('div', 'tool-grid');
     LIST.forEach(([k, icon, ar, en]) => {
       const b = button('tool-btn', '', () => open(k));
-      b.append(el('span', 'tool-icon', icon), el('span', '', I.isEn ? en : ar));
+      b.append(el('span', 'tool-icon', icon), el('span', '', I.pair(ar, en)));
       grid.append(b);
     });
     view.append(h, grid);
