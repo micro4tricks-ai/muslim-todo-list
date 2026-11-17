@@ -13,6 +13,7 @@
     ['istikhara', '🤲', 'صلاة الاستخارة', 'Istikhara prayer'],
     ['mosques', '🕌', 'المساجد القريبة', 'Nearby mosques'],
     ['convert', '📅', 'محوّل التاريخ', 'Date converter'],
+    ['pdf', '📄', 'المصحف PDF', 'Mushaf PDF'],
     ['backup', '💾', 'نسخة احتياطية', 'Backup']
   ];
 
@@ -134,6 +135,20 @@
   }
 
   // ---- nearby mosques (OpenStreetMap) ----
+  // ---- the Mushaf as PDF files: pdf.quran.ws, rendered from the King Fahd Complex masters ----
+  // The files are the Arabic Mushaf in five readings; only the site's own pages are in the reader's language.
+  function mushafPdf(root, backBtn) {
+    head(root, backBtn, 'المصحف PDF', 'ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.');
+    const site = `https://pdf.quran.ws/${I.isEn ? '' : `${I.lang}/`}`;
+    const link = (cls, text, href) => { const a = el('a', cls, text); a.href = href; a.target = '_blank'; a.rel = 'noopener'; return a; };
+    const bar = el('div', 'lib-bar');
+    bar.append(
+      link('btn btn-primary', T('تحميل المصحف كاملاً (حفص)'), 'https://pdf.quran.ws/pdfs/hafs/quran-hafs-mushaf.pdf'),
+      link('btn btn-quiet', T('سورة أو صفحة أو رواية أخرى'), site)
+    );
+    root.append(bar, el('p', 'hint', T('الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.')),
+      el('p', 'credit', 'pdf.quran.ws · King Fahd Glorious Qur’an Printing Complex'));
+  }
   function mosques(root, backBtn) {
     head(root, backBtn, 'المساجد القريبة', 'من خرائط OpenStreetMap المفتوحة؛ قد لا تكون كل المساجد مسجّلة فيها.');
     const bar = el('div', 'lib-bar');
@@ -321,6 +336,7 @@
     if (name === 'istikhara') return istikhara(root, backBtn);
     if (name === 'mosques') return mosques(root, backBtn);
     if (name === 'convert') return convert(root, backBtn);
+    if (name === 'pdf') return mushafPdf(root, backBtn);
     if (name === 'backup') return backup(root, backBtn);
   }
   // ---- the Tools section (view-tools): the grid, and each tool as a screen with a way back ----

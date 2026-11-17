@@ -1691,5 +1691,10 @@ window.noonI18n.use({
   'همزة تُنطق إذا بدأت بها القراءة، وتسقط إذا وصلتها بما قبلها.': 'Okumaya ondan başlandığında okunan, önceki kelimeye bağlandığında düşen hemze.',
   'حرف لا يُنطق': 'Okunmayan harf',
   'حرف يُكتب في رسم المصحف ولا يُقرأ، كالألف في «قَالُوا».': 'Mushafta yazılan ama okunmayan harf; "kâlû" kelimesinin sonundaki elif gibi.',
-  'juz:الجزء': 'Cüz'
+  'juz:الجزء': 'Cüz',
+  'المصحف PDF': 'Mushaf PDF',
+  'ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.': 'Yazdırmaya hazır, internetsiz okunabilen PDF’ler; Kral Fahd Kompleksi mushafından, beş kıraatle.',
+  'تحميل المصحف كاملاً (حفص)': 'Tam mushafı indir (Hafs)',
+  'سورة أو صفحة أو رواية أخرى': 'Bir sure, bir sayfa veya başka bir kıraat',
+  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'Tam dosya yaklaşık 210 MB’tır, bu yüzden Wi-Fi ile indirmek en iyisidir; her sürenin dosyası çok daha küçüktür.'
 });

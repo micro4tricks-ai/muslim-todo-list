@@ -1552,5 +1552,10 @@ window.noonI18n.use({
   'همزة تُنطق إذا بدأت بها القراءة، وتسقط إذا وصلتها بما قبلها.': 'A hamza said when you start reading from it, and dropped when you join it to the word before.',
   'حرف لا يُنطق': 'Silent letter',
   'حرف يُكتب في رسم المصحف ولا يُقرأ، كالألف في «قَالُوا».': 'A letter written in the Mushaf but not read, like the alif at the end of "qaalu".',
-  'juz:الجزء': 'Juz'
+  'juz:الجزء': 'Juz',
+  'المصحف PDF': 'Mushaf PDF',
+  'ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.': 'Print-ready PDFs to read offline, from the King Fahd Complex Mushaf, in five readings.',
+  'تحميل المصحف كاملاً (حفص)': 'Download the full Mushaf (Hafs)',
+  'سورة أو صفحة أو رواية أخرى': 'A surah, a page or another reading',
+  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'The full file is about 210 MB, so it is best downloaded over Wi-Fi; each surah’s file is much smaller.'
 });

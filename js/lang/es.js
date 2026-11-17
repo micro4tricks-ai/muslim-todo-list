@@ -1691,5 +1691,10 @@ window.noonI18n.use({
   'همزة تُنطق إذا بدأت بها القراءة، وتسقط إذا وصلتها بما قبلها.': 'Una hamza que se pronuncia cuando empiezas a leer desde ella y se omite cuando la unes a la palabra anterior.',
   'حرف لا يُنطق': 'Letra muda',
   'حرف يُكتب في رسم المصحف ولا يُقرأ، كالألف في «قَالُوا».': 'Una letra escrita en el Mushaf pero que no se lee, como la alif al final de "qaalu".',
-  'juz:الجزء': 'Yuz'
+  'juz:الجزء': 'Yuz',
+  'المصحف PDF': 'Mushaf PDF',
+  'ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.': 'PDF listos para imprimir y leer sin conexión, del mushaf del Complejo Rey Fahd, en cinco qirāʾat.',
+  'تحميل المصحف كاملاً (حفص)': 'Descargar el mushaf completo (Hafs)',
+  'سورة أو صفحة أو رواية أخرى': 'Una sura, una página u otra qirāʾa',
+  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'El archivo completo pesa unos 210 MB, así que conviene descargarlo con Wi-Fi; el de cada sura es mucho más pequeño.'
 });

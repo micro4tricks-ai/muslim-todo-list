@@ -1691,5 +1691,10 @@ window.noonI18n.use({
   'همزة تُنطق إذا بدأت بها القراءة، وتسقط إذا وصلتها بما قبلها.': 'Hamzah yang dibaca ketika Anda memulai bacaan darinya, dan gugur ketika disambung dengan kata sebelumnya.',
   'حرف لا يُنطق': 'Huruf yang tidak dibaca',
   'حرف يُكتب في رسم المصحف ولا يُقرأ، كالألف في «قَالُوا».': 'Huruf yang ditulis dalam mushaf tetapi tidak dibaca, seperti alif di akhir "qaalu".',
-  'juz:الجزء': 'Juz'
+  'juz:الجزء': 'Juz',
+  'المصحف PDF': 'Mushaf PDF',
+  'ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.': 'PDF siap cetak untuk dibaca tanpa internet, dari mushaf Kompleks Raja Fahd, dalam lima qira’at.',
+  'تحميل المصحف كاملاً (حفص)': 'Unduh mushaf lengkap (Hafs)',
+  'سورة أو صفحة أو رواية أخرى': 'Satu surah, satu halaman, atau qira’at lain',
+  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'Berkas lengkapnya sekitar 210 MB, jadi sebaiknya diunduh lewat Wi-Fi; berkas tiap surah jauh lebih kecil.'
 });
