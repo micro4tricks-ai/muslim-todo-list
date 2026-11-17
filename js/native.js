@@ -332,6 +332,21 @@
   // Hear the adhan now through the app's player (from the prayer settings), or silence it.
   const adhanTest = (sound) => (Adhan ? quiet(Adhan.test({ sound: `adhan_${sound}`, title: T('الأذان'), body: T('تجربة صوت الأذان'), stop: T('إيقاف الأذان') })) : null);
   const adhanStop = () => (Adhan ? quiet(Adhan.stop()) : null);
+  // While the adhan plays and the app is open, a double tap anywhere silences it, like the
+  // volume and power keys (AdhanService.java). Taps are timed by hand: a WebView may not send dblclick.
+  let adhanOn = false, lastTap = null;
+  const adhanState = (d) => { adhanOn = !!(d && d.playing); lastTap = null; };
+  if (Adhan && Adhan.addListener) quiet(Adhan.addListener('adhan', adhanState));
+  // The page may open (from the adhan's notice) while it already plays.
+  const askAdhan = () => { try { if (Adhan && Adhan.playing) quiet(Adhan.playing().then(adhanState)); } catch (_) {} };
+  askAdhan();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) askAdhan(); });
+  document.addEventListener('pointerup', (e) => {
+    if (!adhanOn) return;
+    const t = { at: e.timeStamp, x: e.clientX, y: e.clientY };
+    if (lastTap && t.at - lastTap.at < 400 && Math.hypot(t.x - lastTap.x, t.y - lastTap.y) < 40) { lastTap = null; adhanStop(); }
+    else lastTap = t;
+  }, true);
   // A test notification in five seconds, asking for permission first if needed.
   async function testNotify() {
     if (!(await permit(true))) return false;

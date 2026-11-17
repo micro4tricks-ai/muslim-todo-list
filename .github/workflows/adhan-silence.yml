@@ -1,5 +1,6 @@
 # Checks on an emulator that the adhan stops on a volume key, the power key, or turning the
-# phone face down. Run it by hand with the id of an "Android app" run (its debug APK is used).
+# phone face down, and keeps playing on another stream's volume change or a screen timeout.
+# Run it by hand with the id of an "Android app" run (its debug APK is used).
 name: Adhan silence check
 
 on:

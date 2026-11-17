@@ -16,6 +16,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
@@ -97,10 +98,12 @@ public class ShamelaPlugin extends Plugin {
         int cat = call.getInt("cat", 0);
         if (cat <= 0) { call.reject("Bad shelf"); return; }
         WORK.execute(() -> {
-            File part = new File(dir(), "shamela-" + cat + ".zip.part");
+            File part = new File(dir(), "shamela-" + cat + "-" + System.nanoTime() + ".zip.part");
             try {
                 if (dir().getUsableSpace() < KEEP_FREE) { call.reject("Not enough space", "NO_SPACE"); return; }
                 HttpURLConnection c = open(RELEASE + "shamela-" + cat + ".zip");
+                String want = expectedSha(cat);
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
                 long total = c.getContentLengthLong(), got = 0, told = 0;
                 if (total > 0 && dir().getUsableSpace() < KEEP_FREE + 2 * total) { c.disconnect(); call.reject("Not enough space", "NO_SPACE"); return; }
                 try (InputStream in = c.getInputStream(); OutputStream os = new FileOutputStream(part)) {
@@ -108,6 +111,7 @@ public class ShamelaPlugin extends Plugin {
                     int n;
                     while ((n = in.read(buf)) > 0) {
                         os.write(buf, 0, n);
+                        md.update(buf, 0, n);
                         got += n;
                         if (got > MAX_PACK) throw new Exception("Too large");
                         if (got - told >= (1 << 20) || got == total) {
@@ -117,6 +121,8 @@ public class ShamelaPlugin extends Plugin {
                         }
                     }
                 } finally { c.disconnect(); }
+                // shortcut: a catalog from before the hashes is trusted as before; refuse it once every catalog has sha256.
+                if (want != null && !want.equals(hex(md.digest()))) throw new Exception("The download is damaged");
                 unzip(part, dir());
                 part.delete();
                 new FileOutputStream(new File(dir(), "installed-" + cat)).close();
@@ -148,9 +154,32 @@ public class ShamelaPlugin extends Plugin {
         });
     }
 
-    /** Unpacks the pack, refusing any name that would leave the folder. */
+    /** The pack's sha256 from the catalog kept by catalog() (tools/build_shamela_packs.py writes it), or null. */
+    private String expectedSha(int cat) {
+        try {
+            File kept = new File(dir(), "catalog.json");
+            byte[] all = new byte[(int) kept.length()];
+            try (InputStream in = new FileInputStream(kept)) { int off = 0, n; while (off < all.length && (n = in.read(all, off, all.length - off)) > 0) off += n; }
+            JSONArray shelves = new JSONArray(new String(all, StandardCharsets.UTF_8));
+            for (int i = 0; i < shelves.length(); i++) {
+                JSONObject s = shelves.getJSONObject(i);
+                if (s.optInt("id") == cat) { String h = s.optString("sha256", ""); return h.isEmpty() ? null : h.toLowerCase(); }
+            }
+        } catch (Exception ignored) { /* no catalog kept */ }
+        return null;
+    }
+
+    private static String hex(byte[] b) {
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte x : b) sb.append(String.format("%02x", x));
+        return sb.toString();
+    }
+
+    /** Unpacks the pack, refusing any name that would leave the folder and more than MAX_UNPACKED bytes. */
+    private static final long MAX_UNPACKED = 2L << 30;
     private static void unzip(File zip, File to) throws Exception {
         String root = to.getCanonicalPath() + File.separator;
+        long written = 0;
         try (ZipInputStream z = new ZipInputStream(new FileInputStream(zip))) {
             ZipEntry e;
             byte[] buf = new byte[64 * 1024];
@@ -160,7 +189,10 @@ public class ShamelaPlugin extends Plugin {
                 if (e.isDirectory()) { f.mkdirs(); continue; }
                 File p = f.getParentFile();
                 if (p != null) p.mkdirs();
-                try (OutputStream os = new FileOutputStream(f)) { int n; while ((n = z.read(buf)) > 0) os.write(buf, 0, n); }
+                try (OutputStream os = new FileOutputStream(f)) {
+                    int n;
+                    while ((n = z.read(buf)) > 0) { written += n; if (written > MAX_UNPACKED) throw new Exception("Too large"); os.write(buf, 0, n); }
+                }
             }
         }
     }

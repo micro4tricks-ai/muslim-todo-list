@@ -1,5 +1,5 @@
 {
-  "about": "Live links read by js/listen.js on every visit. Fix a dead link here and every copy of the site and the app picks it up without an update. tv[].youtube.video is the official channel's live video, refreshed daily by tools/refresh_live.mjs; tv[].urls are the lower-quality HLS fallback. Checked daily by .github/workflows/sources.yml.",
+  "about": "Live links read by js/listen.js on every visit. Fix a dead link here and every copy of the site and the app picks it up without an update. tv[].youtube.video is the official channel's live video, refreshed daily by tools/refresh_live.mjs; tv[].urls are the lower-quality HLS fallback. radios[] are the national Quran radios beside Makkah's (which comes from mp3quran.net); a .m3u8 link plays through hls.js on the website. Checked daily by .github/workflows/sources.yml.",
   "tv": [
     {
       "id": "quran",
@@ -40,6 +40,103 @@
       "urls": [
         "https://stream.radiojar.com/8s5u5tpdtwzuv",
         "https://n04.radiojar.com/8s5u5tpdtwzuv"
+      ]
+    },
+    {
+      "id": 900002,
+      "ar": "إذاعة القرآن الكريم من أبوظبي",
+      "en": "Holy Quran Radio from Abu Dhabi",
+      "urls": [
+        "https://admn-radio-cdn-lb.starzplayarabia.com/out/v1/admn_radio_enc/quran/quran_hls_nd/index_quranfm_audio_enc_ara.m3u8"
+      ]
+    },
+    {
+      "id": 900003,
+      "ar": "إذاعة القرآن الكريم من الشارقة",
+      "en": "Holy Quran Radio from Sharjah",
+      "urls": [
+        "https://l3.itworkscdn.net/smcquranlive/quranradiolive/icecast.audio"
+      ]
+    },
+    {
+      "id": 900004,
+      "ar": "إذاعة القرآن الكريم من قطر",
+      "en": "Holy Quran Radio from Qatar",
+      "urls": [
+        "https://live.kwikmotion.com/qmcquranradiolive/quranradio/playlist.m3u8"
+      ]
+    },
+    {
+      "id": 900005,
+      "ar": "إذاعة القرآن الكريم من البحرين",
+      "en": "Holy Quran Radio from Bahrain",
+      "urls": [
+        "https://5c7b683162943.streamlock.net/live/ngrp:radio-106-1_all/playlist.m3u8"
+      ]
+    },
+    {
+      "id": 900006,
+      "ar": "إذاعة القرآن الكريم من سلطنة عُمان",
+      "en": "Holy Quran Radio from Oman",
+      "urls": [
+        "https://partwota.cdn.mgmlcdn.com/quranrdoorg/quranrdo.stream_aac/chunklist.m3u8"
+      ]
+    },
+    {
+      "id": 900007,
+      "ar": "إذاعة القرآن الكريم من الأردن",
+      "en": "Holy Quran Radio from Jordan",
+      "urls": [
+        "https://jrtv-live.ercdn.net/jrradio/quranradio.m3u8"
+      ]
+    },
+    {
+      "id": 900008,
+      "ar": "إذاعة القرآن الكريم من لبنان",
+      "en": "Holy Quran Radio from Lebanon",
+      "urls": [
+        "https://audio.osina.cloud:7987/stream"
+      ]
+    },
+    {
+      "id": 900009,
+      "ar": "إذاعة القرآن الكريم من ليبيا (المنير)",
+      "en": "Holy Quran Radio from Libya (Almunir)",
+      "urls": [
+        "https://live.munir.ly/proxy/almunirtip/stream"
+      ]
+    },
+    {
+      "id": 900010,
+      "ar": "إذاعة القرآن الكريم من تونس (الزيتونة)",
+      "en": "Holy Quran Radio from Tunisia (Zitouna)",
+      "urls": [
+        "https://radio.radiotunisienne.tn/radiozaitouna"
+      ]
+    },
+    {
+      "id": 900011,
+      "ar": "إذاعة القرآن الكريم من الجزائر",
+      "en": "Holy Quran Radio from Algeria",
+      "urls": [
+        "https://webradio1.tda.dz:8001/Coran_64K.mp3"
+      ]
+    },
+    {
+      "id": 900012,
+      "ar": "إذاعة القرآن الكريم من تركيا (ديانت)",
+      "en": "Holy Quran Radio from Turkey (Diyanet)",
+      "urls": [
+        "https://eustr76.mediatriple.net/videoonlylive/mtikoimxnztxlive/broadcast_5e3c14192aa92.smil/playlist.m3u8",
+        "https://eustr73.mediatriple.net/videoonlylive/mtikoimxnztxlive/broadcast_5e3c14192aa92.smil/playlist.m3u8"
+      ]
+    },
+    {
+      "id": 900013,
+      "ar": "إذاعة القرآن الكريم من باكستان (صوت القرآن)",
+      "en": "Holy Quran Radio from Pakistan (Saut-ul-Quran)",
+      "urls": [
+        "https://whmsonic.radio.gov.pk:7002/stream?type=http&nocache=12"
       ]
     }
   ]

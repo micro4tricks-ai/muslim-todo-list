@@ -1,4 +1,4 @@
-// ---------- Tools in the library: zakat, date converter, the names of Allah, istikhara,
+// ---------- The Tools section: zakat, date converter, the names of Allah, istikhara,
 // Umrah and Hajj step by step, nearby mosques, and a backup of everything on this device ----------
 // Texts come from js/extras-data.js (tools/build_extras.py), cut from their sources.
 (() => {
@@ -273,20 +273,40 @@
       } catch (_) { toast(T('تعذّر حفظ النسخة.')); }
     });
     const file = el('input'); file.type = 'file'; file.accept = 'application/json,.json'; file.hidden = true;
-    let armed = false;
+    let armed = ''; // the file asked about: choosing the same one again confirms
     const restore = button('btn btn-quiet', T('استرجاع من ملف'), () => file.click());
     file.addEventListener('change', async () => {
       const f = file.files[0];
       if (!f) return;
+      let incoming;
       try {
         const data = JSON.parse(await f.text());
-        if (data.app !== 'muslim-todo-list' || !data.items) throw new Error('bad');
-        if (!armed) { armed = true; toast(T('سيُستبدل ما على هذا الجهاز بما في الملف. اختر الملف مرة أخرى للتأكيد.')); file.value = ''; return; }
-        Object.entries(data.items).forEach(([k, v]) => { if (k.startsWith('noon-') && !private_(k) && typeof v === 'string') localStorage.setItem(k, v); });
-        toast(T('تم الاسترجاع. سيُعاد فتح الصفحة.'));
-        setTimeout(() => location.reload(), 1200);
-      } catch (_) { toast(T('هذا الملف ليس نسخة احتياطية صحيحة.')); }
+        if (data.app !== 'muslim-todo-list' || !data.items || typeof data.items !== 'object') throw new Error('bad');
+        incoming = Object.entries(data.items).filter(([k, v]) => k.startsWith('noon-') && !private_(k) && typeof v === 'string');
+      } catch (_) { toast(T('هذا الملف ليس نسخة احتياطية صحيحة.')); file.value = ''; return; }
+      const id = `${f.name}|${f.size}|${f.lastModified}`;
       file.value = '';
+      if (armed !== id) { armed = id; toast(T('سيُستبدل ما على هذا الجهاز بما في الملف. اختر الملف مرة أخرى للتأكيد.')); return; }
+      armed = '';
+      // All or nothing: a real replace (what the file lacks goes too, the sign-in stays), rolled back
+      // if the device runs out of room part way.
+      const before = Object.fromEntries(keys().map((k) => [k, localStorage.getItem(k)]));
+      try {
+        keys().forEach((k) => localStorage.removeItem(k));
+        incoming.forEach(([k, v]) => localStorage.setItem(k, v));
+      } catch (_) {
+        try {
+          keys().forEach((k) => localStorage.removeItem(k));
+          Object.entries(before).forEach(([k, v]) => localStorage.setItem(k, v));
+        } catch (_) {}
+        toast(T('تعذّر الاسترجاع: لا مكان كافٍ على الجهاز. بقيت بياناتك كما كانت.'));
+        return;
+      }
+      // Until the page reloads no view may write its in-memory state over the restored copy
+      // (the task list saves on pagehide, for one).
+      Storage.prototype.setItem = Storage.prototype.removeItem = Storage.prototype.clear = () => {};
+      toast(T('تم الاسترجاع. سيُعاد فتح الصفحة.'));
+      setTimeout(() => location.reload(), 1200);
     });
     const row = el('div', 'salah-links'); row.append(save, restore, file);
     root.append(row, el('p', 'hint', `${T('عدد العناصر المحفوظة على هذا الجهاز')}: ${I.num(keys().length)}`));
@@ -303,5 +323,33 @@
     if (name === 'convert') return convert(root, backBtn);
     if (name === 'backup') return backup(root, backBtn);
   }
-  window.noonTools = { list: () => LIST, render };
+  // ---- the Tools section (view-tools): the grid, and each tool as a screen with a way back ----
+  const view = document.getElementById('view-tools');
+  let at = 'home';
+  function show() {
+    view.replaceChildren();
+    if (at !== 'home') {
+      const back = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('الأدوات')}`, () => open('home'));
+      back.dataset.back = ''; // the phone's back key steps back through it (js/views.js)
+      return render(at, view, back);
+    }
+    const h = el('div', 'view-head');
+    h.append(el('h2', '', T('الأدوات')));
+    const grid = el('div', 'tool-grid');
+    LIST.forEach(([k, icon, ar, en]) => {
+      const b = button('tool-btn', '', () => open(k));
+      b.append(el('span', 'tool-icon', icon), el('span', '', I.isEn ? en : ar));
+      grid.append(b);
+    });
+    view.append(h, grid);
+  }
+  function open(name) {
+    at = LIST.some(([k]) => k === name) ? name : 'home';
+    if (window.noonUI.currentView() !== 'tools') window.noonUI.go('tools');
+    show();
+    view.scrollIntoView({ block: 'start' });
+  }
+  window.addEventListener('noon-view', (ev) => { if (ev.detail.view === 'tools' && !view.childNodes.length) show(); });
+  if (view && !view.hidden) show();
+  window.noonTools = { list: () => LIST, render, open };
 })();

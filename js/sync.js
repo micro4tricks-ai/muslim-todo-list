@@ -29,6 +29,8 @@
     'noon-sweep-today'];
   const SETTINGS_KEYS = RELOAD_KEYS.concat(LIVE_KEYS);
   const META_KEY = 'noon-sweep-sync-meta';
+  const OWNER_KEY = 'noon-sweep-sync-owner';   // the account this device's data was last synced with
+  const BACKUP_KEY = 'noon-sweep-sync-backup'; // another account's data, kept when starting from this one's
   const RELOAD_FLAG = 'noon-sweep-sync-reloaded';
 
   // ---- local storage helpers; writes made by sync itself are not re-synced ----
@@ -149,23 +151,29 @@
     if (busy) { again = true; return; }
     busy = true; state = 'syncing'; renderUI();
     try {
-      const now = Date.now();
-      const stamped = core.stampLocal(localTasks(), meta.base, meta.tombs, now);
-      const local = { tasks: stamped.tasks, tombs: stamped.tombs, settings: localSettings() };
-      const { data: row, error } = await client.from('user_state').select('data').eq('user_id', user.id).maybeSingle();
-      if (error) throw error;
-      // The server's copy, without keys that would reshape the objects it is merged into.
-      const remote = row && row.data ? JSON.parse(JSON.stringify(row.data), (k, v) => (k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v)) : {};
-      const merged = core.merge(local, remote, now);
-      if (applyLocal(merged, allowReload)) return; // reloading
-      if (core.canon(merged) !== core.canon(remote)) {
-        const { error: e2 } = await client.from('user_state')
-          .upsert({ user_id: user.id, data: merged, updated_at: new Date(now).toISOString() });
-        if (e2) {
-          // Over the 4 MB a synced copy may hold (supabase/hardening.sql): say so, and stop retrying.
-          if (e2.code === '23514') { tooBig = true; state = 'error'; renderUI(T('بياناتك أكبر من الحد المسموح للمزامنة (٤ ميجابايت). احذف بعض الملاحظات أو الكروت القديمة ثم حاول.')); return; }
-          throw e2;
-        }
+      // Read, merge, then write only if the row is still the one read (its updated_at is the
+      // version): another device writing in between makes us read and merge again.
+      for (let tries = 0; ; tries++) {
+        const { data: row, error } = await client.from('user_state').select('data, updated_at').eq('user_id', user.id).maybeSingle();
+        if (error) throw error;
+        // Stamped after the fetch, so an edit made while it was on the way is part of the merge.
+        const now = Date.now();
+        const stamped = core.stampLocal(localTasks(), meta.base, meta.tombs, now);
+        const local = { tasks: stamped.tasks, tombs: stamped.tombs, settings: localSettings() };
+        // The server's copy, without keys that would reshape the objects it is merged into.
+        const remote = row && row.data ? JSON.parse(JSON.stringify(row.data), (k, v) => (k === '__proto__' || k === 'constructor' || k === 'prototype' ? undefined : v)) : {};
+        const merged = core.merge(local, remote, now);
+        if (applyLocal(merged, allowReload)) return; // reloading
+        if (core.canon(merged) === core.canon(remote)) break;
+        const body = { data: merged, updated_at: new Date(now).toISOString() };
+        const { data: wrote, error: e2 } = await (row
+          ? client.from('user_state').update(body).eq('user_id', user.id).eq('updated_at', row.updated_at)
+          : client.from('user_state').insert(Object.assign({ user_id: user.id }, body))).select('user_id');
+        // Over the 4 MB a synced copy may hold (supabase/hardening.sql): say so, and stop retrying.
+        if (e2 && e2.code === '23514') { tooBig = true; state = 'error'; renderUI(T('بياناتك أكبر من الحد المسموح للمزامنة (٤ ميجابايت). احذف بعض الملاحظات أو الكروت القديمة ثم حاول.')); return; }
+        if (e2 && e2.code !== '23505') throw e2; // 23505: another device made the row first
+        if (!e2 && wrote && wrote.length) break;
+        if (tries >= 3) throw new Error('sync conflict');
       }
       lastSync = Date.now();
       tooBig = false;
@@ -218,9 +226,12 @@
       const tracked = this === store && !applying && (k === TASKS_KEY || SETTINGS_KEYS.includes(k));
       const prev = tracked ? this.getItem(k) : null;
       original.call(this, k, v);
-      if (!tracked || !user || !confirmed) return;
-      if (k === TASKS_KEY) onTasksSaved();
-      else if (prev !== v) { meta.ts[k] = Date.now(); saveMeta(); schedule(1500); }
+      if (!tracked) return;
+      const syncing = user && confirmed;
+      // Signed out, only a change of a value already stored is stamped (a real edit made offline still
+      // wins); a first write (an app default on a fresh device) stays unstamped so the account's copy wins.
+      if (k === TASKS_KEY) { if (syncing) onTasksSaved(); }
+      else if (prev !== v && (syncing || prev !== null)) { meta.ts[k] = Date.now(); saveMeta(); if (syncing) schedule(1500); }
     };
   } catch (_) { /* storage unavailable: nothing to watch */ }
 
@@ -268,12 +279,37 @@
     }
     renderUI();
   });
-  function start() {
-    confirmed = true;
+  function start(merge) {
     try { localStorage.removeItem(PENDING); localStorage.removeItem(UNSURE); } catch (_) {}
     hideConfirm();
+    // This device's data was synced with another account: never merge it in without asking.
+    const owner = get(OWNER_KEY);
+    if (!merge && owner && owner !== user.id && (localTasks().length || Object.keys(localSettings()).length)) {
+      confirmed = false;
+      askWhose(); return;
+    }
+    confirmed = true;
+    try { store && store.setItem(OWNER_KEY, user.id); } catch (_) {}
     subscribe();
     syncNow(true);
+  }
+  // Start from the account's data: keep this device's copy aside, clear it, and reload to sync.
+  function startFresh() {
+    const backup = { owner: get(OWNER_KEY), at: Date.now(), values: {} };
+    for (const k of [TASKS_KEY].concat(SETTINGS_KEYS)) { const v = get(k); if (v !== null) backup.values[k] = v; }
+    try { store.setItem(BACKUP_KEY, JSON.stringify(backup)); } catch (_) {
+      renderUI(T('لا تتسع ذاكرة الجهاز لنسخة احتياطية، فلم يُحذف شيء. اختر الدمج أو سجّل الخروج.'));
+      return;
+    }
+    applying++;
+    try {
+      if (window.noonTasks) window.noonTasks.set([]);
+      for (const k of SETTINGS_KEYS) store.removeItem(k);
+    } finally { applying--; }
+    meta = { ts: {}, base: {}, tombs: {} };
+    saveMeta();
+    try { store.setItem(OWNER_KEY, user.id); } catch (_) {}
+    location.reload();
   }
   // "You opened a sign-in link for … Sync this device with that account?"
   let confirmBox = null;
@@ -289,6 +325,22 @@
     yes.addEventListener('click', () => { start(); renderUI(); });
     no.addEventListener('click', async () => { hideConfirm(); await client.auth.signOut(); renderUI(T('خرجنا من ذلك الحساب. بياناتك بقيت على هذا الجهاز ولم تُرسَل.')); });
     const row = document.createElement('div'); row.className = 'form-actions'; row.append(yes, no);
+    confirmBox.append(p, row);
+    $('syncSignedIn').prepend(confirmBox);
+    setTimeout(() => { if (window.noonSettings) window.noonSettings.open('account'); else panel.hidden = false; }, 300);
+  }
+  // "The data on this device was synced with another account: merge it into this one?"
+  function askWhose() {
+    hideConfirm();
+    confirmBox = document.createElement('div');
+    confirmBox.className = 'sync-confirm';
+    const p = document.createElement('p');
+    p.textContent = `${T('البيانات على هذا الجهاز (المهام والإعدادات) كانت تُزامَن مع حساب آخر، وأنت الآن في حساب')} ${user.email || ''}. ${T('هل تدمجها في هذا الحساب، أم تبدأ من بياناته؟')}`;
+    const merge = document.createElement('button'); merge.type = 'button'; merge.className = 'btn btn-primary'; merge.textContent = T('ادمجها في هذا الحساب');
+    const fresh = document.createElement('button'); fresh.type = 'button'; fresh.className = 'btn btn-quiet'; fresh.textContent = T('ابدأ من بيانات هذا الحساب (مع نسخة احتياطية على الجهاز)');
+    merge.addEventListener('click', () => { start(true); renderUI(); });
+    fresh.addEventListener('click', () => startFresh());
+    const row = document.createElement('div'); row.className = 'form-actions'; row.append(merge, fresh);
     confirmBox.append(p, row);
     $('syncSignedIn').prepend(confirmBox);
     setTimeout(() => { if (window.noonSettings) window.noonSettings.open('account'); else panel.hidden = false; }, 300);

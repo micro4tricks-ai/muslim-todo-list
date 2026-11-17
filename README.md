@@ -36,7 +36,7 @@
   </tr>
   <tr>
     <td align="center"><img src="docs/screens/listen.png" width="190" alt="Quran radio from Cairo and Saudi Arabia, and 177 stations"><br><sub>Listen · استماع</sub></td>
-    <td align="center"><img src="docs/screens/library.png" width="190" alt="The library: tools and the hadith books"><br><sub>Library · المكتبة</sub></td>
+    <td align="center"><img src="docs/screens/library.png" width="190" alt="The library: the hadith books"><br><sub>Library · المكتبة</sub></td>
     <td align="center"><img src="docs/screens/adhkar.png" width="190" alt="Adhkar and duas"><br><sub>Adhkar · الأذكار</sub></td>
   </tr>
   <tr>
@@ -87,6 +87,7 @@ It runs in any browser, installs as an app on phones, tablets and computers, wor
 | 📲 **Widgets, shortcuts, Android Auto** | Home-screen widgets for the verse of the day and the tasbih (beside the prayer one), long-press shortcuts, and the radios and your downloads in the car through Android Auto. |
 | 🔄 **Updates inside the app** | The app checks for a new version, downloads it and hands it to Android to install — only if it is signed with the same key. |
 | 🪶 **A much smaller app** | 67 MB → 15 MB: the focus sounds now come from the site on first use and are kept on the phone. |
+| 🛠️ **2.8: Tools, radios, adhans** | A Tools tab (zakat, date converter and the rest) apart from the Library; Holy Quran radios from 12 more countries; six more adhan voices; the adhan stops only when you act (flip, volume, power, a double tap in the app), never on a screen timeout; Fajr and Isha in the far north; a second full review. |
 | 🔒 **Security** | A full review of the app and the site; a sign-in link sent by someone else no longer syncs your data to their account (2.1.1). Dependabot alerts and security updates are on. |
 
 ## What came in 1.7
@@ -113,7 +114,7 @@ It runs in any browser, installs as an app on phones, tablets and computers, wor
 | 🕌 | **The Prophet's prayer ﷺ** | The prayer from the takbir to the taslim in the order of al-Albani's *Sifat Salat an-Nabi*, each step with its authentic hadith (the book itself is linked on al-Maktaba al-Shamela, not copied). |
 | 🕋 | **My prayers** | Log each prayer (in congregation, on time, late, missed), the sunnah rak‘ahs, witr, duha and qiyam; a week at a glance and a count of prayers to make up. |
 | 🌙 | **Ramadan** | Imsak and iftar countdowns, the iftar and Laylat al-Qadr supplications, a fasting tracker, a shareable imsakiya and a suhoor reminder. |
-| 🧰 | **Tools** | Zakat calculator, Umrah and Hajj guides with their hadiths, the 99 Names, istikhara, nearby mosques (OpenStreetMap), Hijri ⇄ Gregorian converter, and a backup file. |
+| 🧰 | **Tools** | A section of its own (under More on phones): zakat calculator, Umrah and Hajj guides with their hadiths, the 99 Names, istikhara, nearby mosques (OpenStreetMap), Hijri ⇄ Gregorian converter, and a backup file. |
 | 🧭 | **Qibla** | Direction and distance to the Kaaba, with a live compass on phones. |
 | 📿 | **Adhkar and duas** | Morning and evening, after prayer, for students, ease, worry, ruqyah, sleep and istighfar — with a counter, audio and a tasbih. |
 | 🔔 | **Adhan and alerts** | Four adhan recordings plus a separate Fajr adhan, played by the phone's alarm clock even when the app is closed (and, if you wish, on silent mode); an iqamah reminder; reminders as designed cards you can share. |
@@ -254,6 +255,7 @@ The code is released under the [MIT License](LICENSE). Texts, recordings, broadc
 - **الاستماع دون إنترنت:** نزّل السور من أي قارئ واسمعها بلا إنترنت.
 - **ويدجت وأيقونات مختصرة وAndroid Auto:** آية اليوم، والمسبحة، والإذاعات والتنزيلات في السيارة.
 - **التحديث من داخل التطبيق،** وحجم أصغر بكثير (من ٦٧ إلى ١٥ ميجا).
+- **الإصدار ٢٫٨:** تبويب «الأدوات» مستقل عن المكتبة، وإذاعات القرآن الكريم من ١٢ دولة أخرى، وستة أصوات أذان جديدة، وإيقاف الأذان بفعلك فقط (قلب الهاتف، زر الصوت، زر التشغيل، الضغط مرتين) لا بانطفاء الشاشة، ومواقيت الفجر والعشاء في البلاد الشمالية، ومراجعة ثانية شاملة.
 - **الأمان:** فحص كامل للتطبيق والموقع، وإغلاق ثغرة رابط الدخول المرسَل من شخص آخر (٢٫١٫١).
 
 ### ما جاء في الإصدار ١٫٧
@@ -271,7 +273,7 @@ The code is released under the [MIT License](LICENSE). Texts, recordings, broadc
 - **استماع:** ١٧٧ إذاعة، و٢٤١ قارئاً بكل الروايات، والتفسير الصوتي، والبث المباشر من الحرمين، والمفضلة، ومؤقت النوم.
 - **المكتبة:** الكتب الستة والموطأ بأحكام الألباني والأرناؤوط وغيرهما، ورياض الصالحين، وبلوغ المرام، والأدب المفرد، والشمائل، والمشكاة، والأربعينات، والدارمي، ومسند أحمد؛ وصفة صلاة النبي ﷺ على ترتيب كتاب الألباني بأدلتها.
 - **التقويم الهجري وتنبيهات السنن:** صيام الاثنين والخميس والأيام البيض وعرفة وعاشوراء والست من شوال، ورمضان والعشر، بالدليل والتخريج.
-- **صلواتي ورمضان والأدوات:** سجل الصلوات والسنن والقضاء، والإمساكية، وحاسبة الزكاة، ودليل الحج والعمرة، والأسماء الحسنى، والاستخارة، والمساجد القريبة، ومحوّل التاريخ، والقبلة.
+- **صلواتي ورمضان والأدوات:** سجل الصلوات والسنن والقضاء، والإمساكية، وقسم «الأدوات» (في «المزيد» على الموبايل): حاسبة الزكاة، ودليل الحج والعمرة، والأسماء الحسنى، والاستخارة، والمساجد القريبة، ومحوّل التاريخ؛ والقبلة.
 - **الأذكار والأدعية:** الصباح والمساء وبعد الصلاة وغيرها، مع العدّاد والتلاوة الصوتية والمسبحة.
 - **الأذان والتنبيهات:** أربعة أصوات أذان وأذان مستقل للفجر، يعمل والتطبيق مغلق، وتذكير الإقامة، وكروت تذكير تُشارَك صوراً، وويدجت للصلاة وآية اليوم والمسبحة.
 - **المهام والتركيز:** مهام فرعية وتتبع الوقت وتقسيم اليوم حسب الصلاة، ومؤقت تركيز، وملاحظات، وكروت مراجعة، وعادات، وتقرير، ومكتبة أصوات للتركيز.

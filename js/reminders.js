@@ -12,8 +12,10 @@
   const FIRED = 'noon-remind-fired'; // per device: which rings were announced here
   const KINDS = { task: 'مهمة', card: 'كارت مراجعة', thought: 'فكرة مشتتة', note: 'تذكير' };
   const REPEATS = [['none', 'مرة واحدة'], ['daily', 'كل يوم'], ['weekly', 'كل أسبوع']];
-  let S = Object.assign({ items: [] }, load(KEY, {}));
-  if (!Array.isArray(S.items)) S.items = [];
+  let S;
+  // The stored copy is the truth: another tab (or sync) may have changed it since.
+  const reload = () => { S = Object.assign({ items: [] }, load(KEY, {})); if (!Array.isArray(S.items)) S.items = []; };
+  reload();
   const changed = () => window.dispatchEvent(new CustomEvent('noon-reminders'));
   function save() {
     S.items = R.prune(S.items, Date.now());
@@ -22,7 +24,7 @@
     changed();
     if (open) render();
   }
-  onRemote(KEY, () => { S = Object.assign({ items: [] }, load(KEY, {})); changed(); if (open) render(); });
+  onRemote(KEY, () => { reload(); changed(); if (open) render(); });
 
   const native = () => window.noonNative;
   const active = () => S.items.filter((r) => R.nextAt(r, Date.now()) !== null);
@@ -253,13 +255,21 @@
 
   // ================= the ring =================
   let fired = {};
-  try { fired = JSON.parse(localStorage.getItem(FIRED) || '{}'); } catch (_) {}
+  const readFired = () => { try { fired = Object.assign(fired, JSON.parse(localStorage.getItem(FIRED) || '{}')); } catch (_) {} };
+  readFired();
+  // Another tab rang or changed a reminder: take its copy, so neither rings twice nor brings back
+  // a reminder dismissed there.
+  window.addEventListener('storage', (ev) => {
+    if (ev.key === FIRED) readFired();
+    else if (ev.key === KEY) { reload(); changed(); if (open) render(); }
+  });
   const keepFired = () => {
     const now = Date.now();
     for (const k of Object.keys(fired)) if (now - fired[k] > 2 * 864e5) delete fired[k];
     try { localStorage.setItem(FIRED, JSON.stringify(fired)); } catch (_) {}
   };
   function update(id, fn) {
+    reload();
     const r = S.items.find((x) => x.id === id);
     if (!r) return null;
     const x = fn(r);
@@ -282,6 +292,8 @@
 
   function check() {
     const now = Date.now();
+    reload();
+    readFired();
     const due = R.dueNow(S.items, now, fired);
     if (!due.length) return;
     for (const { r, t, key } of due) {

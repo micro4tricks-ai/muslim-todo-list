@@ -13,13 +13,26 @@
   // The sound when a prayer is due: a short chime or a full adhan (sounds/adhan, see CREDITS.md there).
   const SOUNDS = [
     ['madinah', 'أذان من المسجد النبوي'], ['fakhri', 'أذان بصوت صباح فخري'], ['beautiful', 'أذان هادئ'],
-    ['azeez', 'أذان بصوت عاقب عزيز'], ['chime', 'نغمة قصيرة فقط']
+    ['azeez', 'أذان بصوت عاقب عزيز'], ['malmo', 'أذان الفجر من مسجد مالمو'], ['fouad', 'أذان الفجر بصوت فؤاد'],
+    ['mardin', 'أذان تركي من ماردين'], ['kazakh', 'أذان من مسجد في قازاخستان'], ['malaysia', 'أذان من مسجد في كوالالمبور'],
+    ['javed', 'أذان بصوت عاصم جاويد'], ['chime', 'نغمة قصيرة فقط']
   ];
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); if (native()) native().schedulePrayers(true); };
-  // Remember what we've already announced today, per device.
+  // Remember what we've already announced, per device (kept across reopening the app, and shared
+  // by open tabs): id -> when, pruned after two days.
+  const FIRED = 'noon-prayer-fired';
   let fired = {};
-  try { fired = JSON.parse(sessionStorage.getItem('noon-prayer-fired') || '{}'); } catch (_) {}
-  const mark = (id) => { fired[id] = 1; try { sessionStorage.setItem('noon-prayer-fired', JSON.stringify(fired)); } catch (_) {} };
+  const readFired = () => {
+    try { fired = Object.assign(fired, JSON.parse(localStorage.getItem(FIRED) || '{}')); } catch (_) {}
+  };
+  readFired();
+  const mark = (id) => {
+    readFired();
+    const now = Date.now();
+    fired[id] = now;
+    for (const k of Object.keys(fired)) if (!(now - fired[k] < 2 * 864e5)) delete fired[k];
+    try { localStorage.setItem(FIRED, JSON.stringify(fired)); } catch (_) {}
+  };
 
   // ---- settings (in the location & prayer times panel) ----
   const en = $('paEnabled'), no = $('paNotify'), ap = $('paPause'), bf = $('paBefore'), snd = $('paSound'), pre = $('paPreview');
@@ -153,8 +166,15 @@
   // ---- the watcher ----
   function check() {
     if (!S.enabled || !window.noonAstro) return;
-    const snap = window.noonAstro.snapshot(Date.now());
-    const day = dayKey(), now = snap.nowH;
+    readFired();
+    const t = Date.now(), snap = window.noonAstro.snapshot(t);
+    // Yesterday too: an Isha at 23:55 is still announced by a first check at 00:05.
+    const yEpoch = t - (snap.nowH + 1) * 3600e3;
+    const ySnap = window.noonAstro.snapshot(yEpoch);
+    watch(ySnap, dayKey(yEpoch), ySnap.nowH + (t - yEpoch) / 3600e3);
+    watch(window.noonAstro.snapshot(t), dayKey(t), snap.nowH);
+  }
+  function watch(snap, day, now) {
     for (const k of PRAYERS) {
       const at = snap.today[k];
       if (!Number.isFinite(at)) continue;

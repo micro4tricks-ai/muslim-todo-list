@@ -199,6 +199,13 @@
       sunset: angleTime(0.833, g.sunset / 24),
       isha: method.ishaMin ? NaN : angleTime(method.isha, g.isha / 24)
     };
+    // High latitudes (AngleBased, as PrayTimes.org): when the sun never gets that far below the
+    // horizon (NaN) or the time drifts too far into the night, Fajr is at most angle/60 of the
+    // night (sunset to sunrise) before sunrise, and Isha as much after sunset.
+    const night = fix(t.sunrise - t.sunset, 24);
+    const portion = (angle) => (angle / 60) * night;
+    if (!Number.isFinite(t.fajr) || fix(t.sunrise - t.fajr, 24) > portion(method.fajr)) t.fajr = t.sunrise - portion(method.fajr);
+    if (!method.ishaMin && (!Number.isFinite(t.isha) || fix(t.isha - t.sunset, 24) > portion(method.isha))) t.isha = t.sunset + portion(method.isha);
     const adj = tzHours - lon / 15;
     const out = {};
     for (const k in t) out[k] = t[k] + adj;
@@ -256,8 +263,11 @@
     const local = new Date(epoch + off);
     const y = local.getUTCFullYear(), m = local.getUTCMonth() + 1, d = local.getUTCDate();
     const nowH = local.getUTCHours() + local.getUTCMinutes() / 60 + local.getUTCSeconds() / 3600;
-    const tzH = off / 3600000;
-    const today = shifted(prayerTimes(y, m, d, place.lat, place.lon, tzH, method, place.asr));
+    // Each date takes the offset at its own local noon, so a clock change (DST) between today and
+    // tomorrow moves tomorrow's times with it.
+    const tzAtNoon = (yy, mm, dd) => tzOffset(Date.UTC(yy, mm - 1, dd, 12) - off, place.tz) / 3600000;
+    const nowTzH = off / 3600000;
+    const today = shifted(prayerTimes(y, m, d, place.lat, place.lon, tzAtNoon(y, m, d), method, place.asr));
 
     let next = null;
     for (const k of PRAYER_ORDER) {
@@ -265,8 +275,13 @@
     }
     if (!next) {
       const tm = new Date(Date.UTC(y, m - 1, d + 1));
-      const tomorrow = shifted(prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate(), place.lat, place.lon, tzH, method, place.asr));
-      next = { key: 'fajr', h: tomorrow.fajr, inH: tomorrow.fajr + 24 - nowH };
+      const ty = tm.getUTCFullYear(), tmo = tm.getUTCMonth() + 1, td = tm.getUTCDate();
+      const tzT = tzAtNoon(ty, tmo, td);
+      const tomorrow = shifted(prayerTimes(ty, tmo, td, place.lat, place.lon, tzT, method, place.asr));
+      // The first prayer of tomorrow that has a time (near the poles even Fajr may have none).
+      const k = PRAYER_ORDER.find((p) => Number.isFinite(tomorrow[p])) || 'fajr';
+      // Real hours to wait: a 23- or 25-hour day around a clock change counts as such.
+      next = { key: k, h: tomorrow[k], inH: tomorrow[k] + 24 - nowH - (tzT - nowTzH) };
     }
     next.name = T(PRAYER_NAMES[next.key]);
     next.time = fmtHM(next.h);

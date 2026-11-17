@@ -2,15 +2,16 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v48';
+const VERSION = 'v49';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
 const LIBRARY = 'library-v1'; // hadith chapters, tafsirs and the full books (books/), kept once read
+const SAVED = 'saved-v1'; // the parts of books kept whole (js/book-reader.js): never trimmed
 const LISTEN = 'listen-v1'; // the station and reciter lists, kept by js/listen.js itself
-const OURS = /^(shell|media|quran|library|listen|sounds)-v\d+$/; // every cache name this app uses
+const OURS = /^(shell|media|quran|library|saved|listen|sounds)-v\d+$/; // every cache name this app uses
 const FILES = [
-  './', 'index.html', 'install.html', 'manifest.webmanifest',
+  './', 'index.html', 'en/', 'install.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png',
   'js/i18n.js', 'js/clock.js', 'js/astro.js', 'js/look.js', 'js/sounds.js', 'js/tasks.js', 'js/views.js',
   'js/notes.js', 'js/cards.js', 'js/adhkar-data.js', 'js/adhkar.js', 'js/habits.js', 'js/focus-plus.js',
@@ -50,7 +51,7 @@ self.addEventListener('activate', (ev) => {
   ev.waitUntil((async () => {
     // Only this app's own old caches go. Other sites on micro4tricks-ai.github.io share this
     // origin's cache storage (e.g. learn-n8n-english's site-*), so their caches are left alone.
-    const KEEP = [SHELL, MEDIA, QURAN, LIBRARY, LISTEN, 'sounds-v1']; // sounds-v1: js/sounds.js
+    const KEEP = [SHELL, MEDIA, QURAN, LIBRARY, SAVED, LISTEN, 'sounds-v1']; // sounds-v1: js/sounds.js
     for (const k of await caches.keys()) if (OURS.test(k) && !KEEP.includes(k)) await caches.delete(k);
     await self.clients.claim();
   })());
@@ -80,22 +81,39 @@ self.addEventListener('fetch', (ev) => {
   ev.respondWith(networkFirst(req, SHELL));
 });
 
+// Browsing copies only: a book kept whole also sits in SAVED, which is never trimmed.
+const LIBRARY_MAX = 3000;
 async function cacheFirst(req, cacheName) {
   const cache = await caches.open(cacheName);
-  const hit = await cache.match(req);
+  const hit = await cache.match(req) || (cacheName === LIBRARY && await (await caches.open(SAVED)).match(req));
   if (hit) return hit;
   const res = await fetch(req);
-  if (res.ok) cache.put(req, res.clone());
+  // Whole answers only: never an opaque one, a partial (206) or an error page.
+  if (res.status === 200) {
+    await cache.put(req, res.clone());
+    if (cacheName === LIBRARY) {
+      const keys = await cache.keys();
+      for (const k of keys.slice(0, Math.max(0, keys.length - LIBRARY_MAX))) await cache.delete(k);
+    }
+  }
   return res;
 }
+// The network, unless it takes over 4 s and a saved copy exists: then the copy, while the
+// download still goes on and refreshes it for next time.
 async function networkFirst(req, cacheName) {
   const cache = await caches.open(cacheName);
-  try {
-    const res = await fetch(req);
-    if (res.ok && res.type !== 'opaque') cache.put(stripSearch(req), res.clone());
+  const key = stripSearch(req);
+  const saved = () => cache.match(key).then(async (hit) => hit
+    || (req.mode === 'navigate' && (/\/en\//.test(new URL(req.url).pathname) && await cache.match('./en/') || cache.match('./'))));
+  const net = fetch(req).then((res) => {
+    if (res.ok && res.type !== 'opaque') cache.put(key, res.clone());
     return res;
+  });
+  const slow = new Promise((resolve) => setTimeout(resolve, 4000)).then(saved).then((hit) => hit || net);
+  try {
+    return await Promise.race([net, slow]);
   } catch (e) {
-    const hit = await cache.match(stripSearch(req)) || (req.mode === 'navigate' && await cache.match('./'));
+    const hit = await saved();
     if (hit) return hit;
     throw e;
   }

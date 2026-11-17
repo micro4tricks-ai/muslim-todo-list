@@ -11,7 +11,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 /**
  * The page's link to the native adhan player (js/native.js):
- * schedule({ items: JSON }) books the adhan times, stop() silences it, test({ sound }) plays it now.
+ * schedule({ items: JSON }) books the adhan times, stop() silences it, test({ sound }) plays it now,
+ * playing() answers { playing }.
  * The "adhan" event ({ playing }) lets the page pause its radio while the adhan plays.
  */
 @CapacitorPlugin(name = "Adhan")
@@ -38,6 +39,13 @@ public class AdhanPlugin extends Plugin {
     public void stop(PluginCall call) {
         getContext().stopService(new Intent(getContext(), AdhanService.class));
         call.resolve();
+    }
+
+    @PluginMethod
+    public void playing(PluginCall call) {
+        JSObject d = new JSObject();
+        d.put("playing", AdhanService.playing);
+        call.resolve(d);
     }
 
     @PluginMethod

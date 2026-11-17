@@ -104,10 +104,12 @@
   async function radios() {
     const [d, cfg] = await Promise.all([api('radios'), liveCfg()]);
     const extra = (cfg.radios || []).map((r) => ({ id: r.id, name: I.isEn ? r.en : r.ar, note: '', urls: r.urls, kind: 'live' }));
-    return extra.concat(d.radios.map((r) => {
+    const all = d.radios.map((r) => {
       const style = STYLE.find(([re]) => re.test(slug(r.url)));
       return { id: r.id, name: clean(r.name).replace(/^Radio\s+/i, ''), note: style ? T(style[1]) : '', urls: hosts(r.url), kind: kindOf(r.url) };
-    }));
+    });
+    // Makkah (in the mp3quran.net list), then live.json's in its order: Cairo first, then the other countries.
+    return all.filter((r) => r.kind === 'live').concat(extra, all.filter((r) => r.kind !== 'live'));
   }
   async function reciters() {
     const d = await api('reciters');
@@ -190,15 +192,38 @@
       return;
     }
     it.tried = 0;
-    audio.src = it.urls[0];
+    const loading = setSrc(it.urls[0]);
     if (pos) audio.addEventListener('loadedmetadata', () => { if (audio.src === it.urls[it.tried]) try { audio.currentTime = pos; } catch (_) {} }, { once: true });
     state = 'loading'; paint();
-    tryPlay();
+    loading.then(tryPlay);
     // Other players (the Mushaf, the focus sounds) fall quiet.
     window.dispatchEvent(new CustomEvent('noon-recitation', { detail: { from: 'listen' } }));
     S.last = Object.assign({ pos: pos || 0, title: it.title, sub: it.sub }, it.last);
     save();
     session(it);
+  }
+  // Some national stations broadcast only as HLS (.m3u8): hls.js plays them where the browser
+  // can't by itself (Safari and the app's native player can).
+  let aHls = null;
+  function clearSrc() {
+    if (aHls) { aHls.destroy(); aHls = null; }
+    audio.removeAttribute('src'); audio.load();
+  }
+  function setSrc(url) {
+    if (aHls) { aHls.destroy(); aHls = null; }
+    if (!/\.m3u8(\?|$)/i.test(url) || audio.canPlayType('application/vnd.apple.mpegurl')) { audio.src = url; return Promise.resolve(); }
+    return loadHls().then((Hls) => {
+      if (!Hls.isSupported()) throw new Error('no HLS');
+      const h = aHls = new Hls({ maxBufferLength: 20 });
+      h.on(Hls.Events.ERROR, (e, d) => { if (d.fatal && aHls === h) broken(); });
+      h.loadSource(url); h.attachMedia(audio);
+    }).catch(() => broken());
+  }
+  // The source failed: the backup link, else the notice.
+  function broken() {
+    const it = Q[at];
+    if (it && it.tried + 1 < it.urls.length) { setSrc(it.urls[++it.tried]).then(tryPlay); return; }
+    failed();
   }
   // A broken source reports through the 'error' event; here only a play the browser refused.
   const tryPlay = () => audio.play().catch((e) => { if (e && e.name === 'NotAllowedError') { state = 'paused'; paint(); } });
@@ -210,7 +235,7 @@
   function pause() {
     if (!Q[at]) return;
     if (NP) { NP.pause(); state = 'paused'; paint(); return; }
-    if (Q[at].live) { audio.removeAttribute('src'); audio.load(); } // a live stream resumes at "now", not where it stopped
+    if (Q[at].live) clearSrc(); // a live stream resumes at "now", not where it stopped
     else audio.pause();
     state = 'paused'; paint();
   }
@@ -234,7 +259,7 @@
   function step(d) { const n = at + d; if (n >= 0 && n < Q.length) start(Q, n); }
   function stop(close) {
     if (NP) NP.stop();
-    audio.pause(); audio.removeAttribute('src'); audio.load();
+    audio.pause(); clearSrc();
     setSleep(0);
     state = close ? 'off' : 'paused';
     paint();
@@ -244,10 +269,7 @@
   audio.addEventListener('waiting', () => { if (state === 'playing') { state = 'loading'; paint(); } });
   audio.addEventListener('pause', () => { if (state === 'playing' && !audio.ended) { state = 'paused'; paint(); } });
   audio.addEventListener('error', () => {
-    if (!audio.getAttribute('src')) return;
-    const it = Q[at];
-    if (it && it.tried + 1 < it.urls.length) { audio.src = it.urls[++it.tried]; tryPlay(); return; } // the backup link
-    failed();
+    if (audio.getAttribute('src') && !aHls) broken(); // hls.js reports its own errors
   });
   audio.addEventListener('ended', () => { if (at + 1 < Q.length) start(Q, at + 1); else { state = 'paused'; S.last = null; save(); paint(); } });
   let lastSave = 0;
@@ -516,12 +538,20 @@
       const all = await radios();
       box.replaceChildren();
       const live = all.filter((r) => r.kind === 'live');
-      live.forEach((r) => {
+      live.slice(0, 2).forEach((r) => {
         const f = button('ls-live', '', () => playRadio(all, all.indexOf(r)));
         f.dataset.play = `r${r.id}`;
         f.append(icon('radio'), el('span', 'ls-live-t', r.name), el('span', 'ls-badge', T('بث مباشر')));
         box.append(f);
       });
+      // The other countries' Quran radios, folded, by name in the current language.
+      if (live.length > 2) {
+        const g = el('details', 'ls-group');
+        g.append(el('summary', '', T('إذاعات القرآن الكريم من دول أخرى')));
+        live.slice(2).sort((a, b) => a.name.localeCompare(b.name, I.isEn ? 'en' : 'ar'))
+          .forEach((r) => g.append(row(`r${r.id}`, r.name, T('بث مباشر'), () => playRadio(all, all.indexOf(r)))));
+        box.append(g);
+      }
       const q = search('ابحث عن قارئ أو إذاعة');
       const cats = el('div', 'ls-cats');
       const list = el('div', 'ls-list');

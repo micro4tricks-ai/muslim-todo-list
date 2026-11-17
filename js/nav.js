@@ -71,7 +71,7 @@
   sheet.setAttribute('role', 'dialog');
   sheet.setAttribute('aria-label', T('المزيد'));
   const grid = el('div', 'more-grid');
-  const SECTIONS = [['tasks', 'المهام'], ['library', 'المكتبة'], ['calendar', 'التقويم'], ['habits', 'عادات وصلواتي'], ['notes', 'ملاحظات'], ['cards', 'كروت'], ['report', 'تقرير']];
+  const SECTIONS = [['tasks', 'المهام'], ['library', 'المكتبة'], ['tools', 'الأدوات'], ['calendar', 'التقويم'], ['habits', 'عادات وصلواتي'], ['notes', 'ملاحظات'], ['cards', 'كروت'], ['report', 'تقرير']];
   SECTIONS.forEach(([view, label]) => {
     const b = button('more-item', '', () => { closeSheet(); go(view); });
     b.dataset.view = view;
