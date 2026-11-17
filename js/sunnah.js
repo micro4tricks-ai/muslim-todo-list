@@ -18,7 +18,7 @@
 
   const MONTHS_AR = ['محرّم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوّال', 'ذو القعدة', 'ذو الحجة'];
   const MONTHS_EN = ['Muharram', 'Safar', 'Rabi‘ al-Awwal', 'Rabi‘ al-Akhir', 'Jumada al-Ula', 'Jumada al-Akhirah', 'Rajab', 'Sha‘ban', 'Ramadan', 'Shawwal', 'Dhu al-Qa‘dah', 'Dhu al-Hijjah'];
-  const monthName = (m) => (I.isEn ? MONTHS_EN : MONTHS_AR)[m - 1];
+  const monthName = (m) => (I.isAr ? MONTHS_AR : I.isEn ? MONTHS_EN : I.hijriMonths)[m - 1];
 
   // ---- dates: a day is its local midnight (ms); the Hijri date follows Umm al-Qura plus the user's shift ----
   const midnight = (t) => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
@@ -86,7 +86,7 @@
     if (w === 5) add('friday');
     return out;
   }
-  const title = (id) => (I.isEn ? INFO[id][1] : INFO[id][0]);
+  const title = (id) => I.pair(INFO[id][0], INFO[id][1]);
   const kind = (id) => INFO[id][2];
 
   // ---- reminders ----
@@ -114,11 +114,11 @@
   }
   function brief(id) {
     const t = TX[INFO[id][3][0]];
-    return t ? (I.isEn ? t.en : t.ar) : '';
+    return t ? (I.pick(t)) : '';
   }
   function refOf(id) {
     const t = TX[INFO[id][3][0]];
-    return t ? (I.isEn ? t.refEn : t.refAr) : '';
+    return t ? (I.ref(t)) : '';
   }
   // Everything due from `from` (ms) over `days` days, as { key, at, title, body }.
   function plan(from, days) {
@@ -132,7 +132,7 @@
         const fast = tomorrow.some((id) => kind(id) === 'fast');
         out.push({
           key: `eve-${dayKey(next)}`, at: at(day, hm(S.time)),
-          title: `${T('غداً')}: ${tomorrow.map(title).join(I.isEn ? ' · ' : ' · ')}`,
+          title: `${T('غداً')}: ${tomorrow.map(title).join(' · ')}`,
           body: fast ? `${T('انوِ الصيام من الليل ولا تنسَ السحور.')} ${brief(tomorrow[0])}` : brief(tomorrow[0]),
           hadith: brief(tomorrow[0]), ref: refOf(tomorrow[0]), note: fast ? T('انوِ الصيام من الليل ولا تنسَ السحور.') : '', view: 'calendar'
         });
@@ -154,7 +154,7 @@
       }
       if (S.daily && window.NOON_EXTRAS) {
         const v = verseOfDay(day);
-        out.push({ key: `daily-${dayKey(day)}`, at: at(day, 7.5), title: T('آية اليوم'), body: I.isEn ? v.en : v.ar, hadith: I.isEn ? v.en : v.ar, ref: I.isEn ? v.refEn : v.refAr, quran: !I.isEn, view: 'quran' });
+        out.push({ key: `daily-${dayKey(day)}`, at: at(day, 7.5), title: T('آية اليوم'), body: I.pick(v), hadith: I.pick(v), ref: I.ref(v), quran: I.isAr, view: 'quran' });
       }
       // Friday evening: the week's harvest, in the Report (Settings here).
       if (S.weekly && new Date(day).getDay() === 5) out.push({ key: `week-${dayKey(day)}`, at: at(day, 20.5), title: T('حصاد أسبوعك'), body: T('انظر ما أنجزته هذا الأسبوع من صلاة وقرآن وتركيز، وشاركه ككارت إن شئت.'), view: 'report' });
@@ -280,7 +280,7 @@
       upd(); tick = setInterval(() => { if (!box.isConnected) clearInterval(tick); else upd(); }, 30000);
     }
     const X = window.NOON_EXTRAS && window.NOON_EXTRAS.texts;
-    const quote = (id) => { const t = X && X[id]; if (!t) return el('span'); const q = el('blockquote', 'cal-hadith'); const a = el('p', 'cal-hadith-ar', t.ar); a.lang = 'ar'; a.dir = 'rtl'; q.append(a, el('cite', '', I.isEn ? `${t.en} — ${t.refEn}` : t.refAr)); return q; };
+    const quote = (id) => { const t = X && X[id]; if (!t) return el('span'); const q = el('blockquote', 'cal-hadith'); const a = el('p', 'cal-hadith-ar', t.ar); a.lang = 'ar'; a.dir = 'rtl'; q.append(a, el('cite', '', I.foreign ? `${I.trans(t)} — ${I.ref(t)}` : t.refAr)); return q; };
     if (h.m === 9) {
       box.append(el('p', 'hint', T('دعاء الإفطار:')), quote('iftar'));
       if (h.d >= 20) box.append(el('p', 'hint', T('في العشر الأواخر:')), quote('qadr'), el('p', 'hint', T('وأخرج زكاة الفطر قبل صلاة العيد.')));
@@ -342,9 +342,9 @@
     const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#14213D'); g.addColorStop(1, '#0B1426');
     c.fillStyle = g; c.fillRect(0, 0, W, H);
     c.strokeStyle = '#D4AF37'; c.lineWidth = 5; c.strokeRect(30, 30, W - 60, H - 60);
-    c.textAlign = 'center'; c.direction = I.isEn ? 'ltr' : 'rtl';
+    c.textAlign = 'center'; c.direction = I.dir;
     c.fillStyle = '#F2D58A'; c.font = '700 48px "IBM Plex Sans Arabic", sans-serif'; c.fillText(title, W / 2, 130);
-    const cols = I.isEn ? [150, 420, 700, 930] : [930, 660, 380, 150];
+    const cols = I.rtl ? [930, 660, 380, 150] : [150, 420, 700, 930];
     c.font = '600 30px "IBM Plex Sans Arabic", sans-serif'; c.fillStyle = 'rgba(247,241,225,0.7)';
     [T('اليوم'), T('التاريخ'), T('الإمساك'), T('الإفطار')].forEach((x, k) => c.fillText(x, cols[k], 210));
     c.font = '500 30px "IBM Plex Sans Arabic", sans-serif';
@@ -397,7 +397,7 @@
     found.sort((a, b) => a.n - b.n).slice(0, 3).forEach(({ t, n, day }) => {
       const c = el('div', 'cal-cd');
       c.append(el('b', '', n === 0 ? T('اليوم') : `${I.num(n)}`), el('small', '', n === 0 ? '' : T(n === 1 ? 'يوم' : 'يوماً')),
-        el('span', '', I.isEn ? t[1] : t[0]), el('small', 'cal-cd-date', gregText(day, { day: 'numeric', month: 'short' })));
+        el('span', '', I.pair(t[0], t[1])), el('small', 'cal-cd-date', gregText(day, { day: 'numeric', month: 'short' })));
       wrap.append(c);
     });
     return wrap;
@@ -407,8 +407,8 @@
     const box = el('div', 'cal-month');
     const h0 = hijri(shown);
     const nav = el('div', 'cal-nav');
-    const prev = button('cal-arrow', I.isEn ? '‹' : '›', () => { shown = monthStart(plusDays(shown, -2)); render(); }, T('الشهر السابق'));
-    const next = button('cal-arrow', I.isEn ? '›' : '‹', () => { shown = monthStart(plusDays(shown, 31)); render(); }, T('الشهر التالي'));
+    const prev = button('cal-arrow', I.rtl ? '›' : '‹', () => { shown = monthStart(plusDays(shown, -2)); render(); }, T('الشهر السابق'));
+    const next = button('cal-arrow', I.rtl ? '‹' : '›', () => { shown = monthStart(plusDays(shown, 31)); render(); }, T('الشهر التالي'));
     const len = (() => { let n = 29; while (n < 31 && hijri(plusDays(shown, n)).m === h0.m) n++; return n; })();
     const label = el('div', 'cal-title');
     label.append(el('b', '', `${monthName(h0.m)} ${I.num(h0.y)}`),
@@ -417,8 +417,9 @@
     if (shown !== monthStart(today)) nav.append(button('link-btn', T('اليوم'), () => { shown = monthStart(today); picked = today; render(); }));
     box.append(nav);
     const grid = el('div', 'cal-grid');
-    const first = I.isEn ? 0 : 6; // week starts on Sunday in English, Saturday in Arabic
-    const WD = I.isEn ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+    const first = I.weekStart; // Saturday in Arabic, Sunday in English, Monday in the others
+    const wdFmt = new Intl.DateTimeFormat(I.locale, { weekday: 'short' });
+    const WD = I.isAr ? ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'] : [0, 1, 2, 3, 4, 5, 6].map((d) => wdFmt.format(new Date(2024, 0, 7 + d)));
     for (let k = 0; k < 7; k++) grid.append(el('span', 'cal-wd', WD[(first + k) % 7]));
     const lead = (new Date(shown).getDay() - first + 7) % 7;
     for (let k = 0; k < lead; k++) grid.append(el('span', 'cal-pad'));
@@ -457,7 +458,7 @@
         const q = el('blockquote', 'cal-hadith');
         const a = el('p', 'cal-hadith-ar', t.ar); a.lang = 'ar'; a.dir = 'rtl';
         const e = el('p', 'cal-hadith-en', t.en); e.lang = 'en'; e.dir = 'ltr';
-        q.append(...(I.isEn ? [e, a] : [a, e]), el('cite', '', I.isEn ? t.refEn : t.refAr));
+        q.append(...(I.foreign ? [e, a] : [a, e]), el('cite', '', I.ref(t)));
         item.append(q);
       });
       if (id === 'white' && hijri(day).m === 12) item.append(el('p', 'hint', T('الثالث عشر من ذي الحجة من أيام التشريق فلا يُصام.')));
@@ -514,7 +515,7 @@
       const looks = el('div', 'rc-looks');
       looks.append(el('span', 'hint', T('شكل كروت التذكير')));
       window.noonCard.themes.forEach(([k, ar, en]) => {
-        const b = button(`rc-look`, I.isEn ? en : ar, () => {
+        const b = button(`rc-look`, I.pair(ar, en), () => {
           window.noonCard.setTheme(k);
           looks.querySelectorAll('.rc-look').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
           window.noonCard.show({ title: title('monday'), body: brief('monday'), ref: refOf('monday'), kicker: T('معاينة') });

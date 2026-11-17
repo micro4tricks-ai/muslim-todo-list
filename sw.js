@@ -2,7 +2,7 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v49';
+const VERSION = 'v50';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
@@ -13,8 +13,8 @@ const OURS = /^(shell|media|quran|library|saved|listen|sounds)-v\d+$/; // every 
 const FILES = [
   './', 'index.html', 'en/', 'install.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png',
-  'js/i18n.js', 'js/clock.js', 'js/astro.js', 'js/look.js', 'js/sounds.js', 'js/tasks.js', 'js/views.js',
-  'js/notes.js', 'js/cards.js', 'js/adhkar-data.js', 'js/adhkar.js', 'js/habits.js', 'js/focus-plus.js',
+  'js/i18n.js', 'js/lang/en.js', 'js/lang/ur.js', 'js/lang/id.js', 'js/lang/tr.js', 'js/lang/es.js', 'js/lang/surah-names.js', 'js/clock.js', 'js/astro.js', 'js/look.js', 'js/sounds.js', 'js/tasks.js', 'js/views.js',
+  'js/notes.js', 'js/cards.js', 'js/adhkar-data.js', 'js/adhkar-i18n.js', 'js/adhkar.js', 'js/habits.js', 'js/focus-plus.js',
   'js/prayer-alerts.js', 'js/report.js', 'js/focus-mode.js', 'js/config.js', 'js/vendor/supabase.js',
   'js/sync-core.js', 'js/sync.js', 'js/native.js', 'js/app.js',
   'js/quran-meta.js', 'js/quran.js', 'js/sunnah-data.js', 'js/sunnah.js', 'js/qibla.js',

@@ -13,7 +13,7 @@
   let S = Object.assign({ tab: 'radio', cat: 'all', riwaya: 0, fav: [], favRec: [], last: null }, load(KEY, {}));
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); };
   const pad3 = (n) => String(n).padStart(3, '0');
-  const surahName = (k) => (I.isEn ? M.surahs[k][1] : M.surahs[k][0].replace(/^سُورَةُ\s*/, ''));
+  const surahName = (k) => (I.surah(k) || (I.latin ? M.surahs[k][1] : M.surahs[k][0].replace(/^سُورَةُ\s*/, '')));
   const norm = (s) => String(s).toLowerCase().replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g, '')
     .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/\s+/g, ' ').trim();
   const clean = (s) => String(s || '').replace(/^[\s*\-–—]+|[\s*\-–—]+$/g, '').replace(/\s+/g, ' ');
@@ -46,7 +46,7 @@
   // ================= data =================
   const got = new Map();
   function api(path, lang) {
-    const url = `${API}${path}${path.includes('?') ? '&' : '?'}language=${lang || (I.isEn ? 'eng' : 'ar')}`;
+    const url = `${API}${path}${path.includes('?') ? '&' : '?'}language=${lang || ({ en: 'eng' }[I.lang] || I.lang)}`;
     if (!got.has(url)) {
       const p = kept(url);
       p.catch(() => got.delete(url));
@@ -103,7 +103,7 @@
   const hosts = (u) => { const m = String(u).replace('//backup.qurango.net/', '//qurango.net/'); return m === u ? [u] : [m, u]; };
   async function radios() {
     const [d, cfg] = await Promise.all([api('radios'), liveCfg()]);
-    const extra = (cfg.radios || []).map((r) => ({ id: r.id, name: I.isEn ? r.en : r.ar, note: '', urls: r.urls, kind: 'live' }));
+    const extra = (cfg.radios || []).map((r) => ({ id: r.id, name: I.pick(r), note: '', urls: r.urls, kind: 'live' }));
     const all = d.radios.map((r) => {
       const style = STYLE.find(([re]) => re.test(slug(r.url)));
       return { id: r.id, name: clean(r.name).replace(/^Radio\s+/i, ''), note: style ? T(style[1]) : '', urls: hosts(r.url), kind: kindOf(r.url) };
@@ -145,15 +145,15 @@
   bar.hidden = true;
   bar.setAttribute('role', 'region');
   bar.setAttribute('aria-label', T('مشغّل الاستماع'));
-  bar.dir = I.isEn ? 'ltr' : 'rtl';
+  bar.dir = I.dir;
   const eq = el('span', 'lp-eq'); eq.append(el('i'), el('i'), el('i'));
   const tt = el('div', 'lp-text');
   const tTitle = el('b', 'lp-title'), tSub = el('span', 'lp-sub');
   tt.append(tTitle, tSub);
   tt.addEventListener('click', () => window.noonUI.go('listen'));
-  const bPrev = iconBtn(I.isEn ? 'prev' : 'next', 'السابق', () => step(-1));
+  const bPrev = iconBtn(I.rtl ? 'next' : 'prev', 'السابق', () => step(-1));
   const bPlay = iconBtn('play', 'تشغيل', () => toggle(), 'lp-main');
-  const bNext = iconBtn(I.isEn ? 'next' : 'prev', 'التالي', () => step(1));
+  const bNext = iconBtn(I.rtl ? 'prev' : 'next', 'التالي', () => step(1));
   const bSleep = iconBtn('moon', 'مؤقت النوم', () => cycleSleep(), 'lp-sleep');
   const sleepLbl = el('small', 'lp-sleep-min');
   bSleep.append(sleepLbl);
@@ -422,7 +422,7 @@
       n.classList.toggle('is-saved', saved.has(id));
       n.classList.toggle('is-getting', pct !== undefined);
       const badge = n.querySelector('.ls-dl');
-      if (badge) badge.textContent = pct !== undefined ? (pct >= 0 ? `${I.num(pct)}${I.isEn ? '%' : '٪'}` : '…') : saved.has(id) ? '✓' : '';
+      if (badge) badge.textContent = pct !== undefined ? (pct >= 0 ? `${I.pct(pct)}` : '…') : saved.has(id) ? '✓' : '';
     });
   }
   const sizeText = (b) => (b > 1e9 ? `${I.num((b / 1e9).toFixed(1))} ${T('جيجابايت')}` : `${I.num(Math.round(b / 1e6))} ${T('ميجابايت')}`);
@@ -548,7 +548,7 @@
       if (live.length > 2) {
         const g = el('details', 'ls-group');
         g.append(el('summary', '', T('إذاعات القرآن الكريم من دول أخرى')));
-        live.slice(2).sort((a, b) => a.name.localeCompare(b.name, I.isEn ? 'en' : 'ar'))
+        live.slice(2).sort((a, b) => a.name.localeCompare(b.name, I.lang))
           .forEach((r) => g.append(row(`r${r.id}`, r.name, T('بث مباشر'), () => playRadio(all, all.indexOf(r)))));
         box.append(g);
       }
@@ -626,8 +626,8 @@
     stopTv();
     video.hidden = true;
     const f = el('iframe', 'tv-yt');
-    f.src = `${window.noonNative ? SITE : ''}tv.html?v=${encodeURIComponent(ch.youtube.video)}&hl=${I.isEn ? 'en' : 'ar'}`;
-    f.title = I.isEn ? ch.en : ch.ar;
+    f.src = `${window.noonNative ? SITE : ''}tv.html?v=${encodeURIComponent(ch.youtube.video)}&hl=${I.lang}`;
+    f.title = I.pick(ch);
     f.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
     f.allowFullscreen = true;
     f.referrerPolicy = 'strict-origin-when-cross-origin';
@@ -718,7 +718,7 @@
           : T(kind === 'yt' ? 'بدون إعلانات (جودة أقل)' : 'جودة عالية (يوتيوب، قد تظهر إعلانات)');
         const safeOfficial = /^https:\/\//.test(cur.official || '') ? cur.official : ''; // links only to https pages
         official.hidden = !!HTTP || !safeOfficial;
-        if (safeOfficial) official.href = I.isEn ? safeOfficial.replace('/ar/', '/en/') : safeOfficial;
+        if (safeOfficial) official.href = I.foreign ? safeOfficial.replace('/ar/', '/en/') : safeOfficial;
         const next = () => { if (mine === run && k + 1 < order.length) { playAt(k + 1); if (order[k] !== 'official') toast(T('البث عالي الجودة غير متاح الآن، فشُغّل الرابط البديل.')); } };
         if (kind === 'yt') { tvFail = next; playYoutube(cur, frame, video, note); return; }
         let ch = cur;
@@ -737,7 +737,7 @@
           playAt(0);
         });
         b.setAttribute('aria-pressed', 'false');
-        b.append(icon('play'), el('span', '', I.isEn ? c.en : c.ar), el('span', 'ls-badge', T('بث مباشر')));
+        b.append(icon('play'), el('span', '', I.pick(c)), el('span', 'ls-badge', T('بث مباشر')));
         chips.append(b);
       });
       box.append(chips, frame, note, swap, official, el('p', 'hint', T(HTTP
@@ -782,7 +782,7 @@
   const score = (m) => (S.riwaya && m.riwaya === S.riwaya ? 1000 : 0) + m.list.length * 4 + (m.riwaya === 1 ? 2 : 0) + (/مرتل|murattal/i.test(m.name) ? 1 : 0);
   function renderReciter() {
     const head = el('div', 'view-head');
-    const backBtn = button('btn btn-quiet', `${I.isEn ? '←' : '→'} ${T('التلاوات')}`, () => go({ name: 'home' }));
+    const backBtn = button('btn btn-quiet', `${I.back} ${T('التلاوات')}`, () => go({ name: 'home' }));
     backBtn.dataset.back = '';
     head.append(backBtn);
     root.append(head);
@@ -876,7 +876,7 @@
         const words = norm(q.value);
         list.replaceChildren();
         for (let s = 0; s < 114; s++) {
-          if (words && !norm(`${surahName(s)} ${M.surahs[s][0]} ${M.surahs[s][1]} ${s + 1}`).includes(words)) continue;
+          if (words && !norm(`${surahName(s)} ${M.surahs[s][0]} ${(I.surah(s) || M.surahs[s][1])} ${s + 1}`).includes(words)) continue;
           const parts = all.filter((x) => x.s === s);
           if (!parts.length) continue;
           if (parts.length === 1) { list.append(row(`t${parts[0].id}`, `${I.num(s + 1)}. ${surahName(s)}`, '', () => playTafsir(all, all.indexOf(parts[0])))); continue; }

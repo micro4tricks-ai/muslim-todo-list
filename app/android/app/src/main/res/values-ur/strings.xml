@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_description">نماز کے اوقات اور اگلی نماز تک الٹی گنتی</string>
+    <string name="verse_widget_description">آج کی آیت</string>
+    <string name="tasbih_widget_description">تسبیح: گننے کے لیے دبائیں</string>
+    <string name="verse_title">آج کی آیت</string>
+    <string name="qibla_widget_description">قبلہ کی سمت</string>
+    <string name="qibla_empty">ایپ ایک بار کھولیں</string>
+    <string name="verse_empty">آج کی آیت دیکھنے کے لیے ایپ ایک بار کھولیں۔</string>
+    <string name="shortcut_listen">ریڈیو</string>
+    <string name="shortcut_quran">قرآن</string>
+    <string name="shortcut_adhkar">اذکار</string>
+    <string name="shortcut_qibla">قبلہ</string>
+</resources>

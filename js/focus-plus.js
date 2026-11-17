@@ -68,7 +68,7 @@
     tipBox.replaceChildren();
     tipBox.append(el('p', 'tip-kind', T({ dhikr: 'ذكر للاستراحة', move: 'حركة', water: 'ماء', eyes: 'راحة للعين', breath: 'تنفس', wudu: 'وضوء' }[tip.kind])));
     const text = el('p', 'tip-text', T(tip.text));
-    if (tip.kind === 'dhikr' && !I.isEn) text.lang = 'ar';
+    if (tip.kind === 'dhikr' && I.isAr) text.lang = 'ar';
     tipBox.append(text, el('p', 'tip-note', T(tip.note)));
     const row = el('div', 'tip-row');
     if (tip.count) {

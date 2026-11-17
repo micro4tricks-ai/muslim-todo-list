@@ -109,7 +109,7 @@
     const q = el('blockquote', 'cal-hadith');
     const a = el('p', 'cal-hadith-ar', t.ar); a.lang = 'ar'; a.dir = 'rtl';
     const e = el('p', 'cal-hadith-en', t.en); e.lang = 'en'; e.dir = 'ltr';
-    q.append(...(I.isEn ? [e, a] : [a, e]), el('cite', '', I.isEn ? t.refEn : t.refAr));
+    q.append(...(I.foreign ? [e, a] : [a, e]), el('cite', '', I.ref(t)));
     return q;
   }
 

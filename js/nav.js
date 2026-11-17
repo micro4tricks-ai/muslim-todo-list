@@ -30,7 +30,7 @@
   // ---- the bar ----
   const nav = el('nav', 'bnav');
   nav.setAttribute('aria-label', T('التنقل'));
-  nav.dir = I.isEn ? 'ltr' : 'rtl';
+  nav.dir = I.dir;
   const ITEMS = [['home', 'الرئيسية'], ['quran', 'المصحف'], ['listen', 'استماع'], ['adhkar', 'الأذكار'], ['more', 'المزيد']];
   ITEMS.forEach(([id, label]) => {
     const b = button('bnav-item', '', () => pick(id));
@@ -67,7 +67,7 @@
   // ---- the "More" sheet ----
   const veil = el('div', 'more-veil'); veil.hidden = true;
   const sheet = el('div', 'more'); sheet.hidden = true;
-  sheet.dir = I.isEn ? 'ltr' : 'rtl';
+  sheet.dir = I.dir;
   sheet.setAttribute('role', 'dialog');
   sheet.setAttribute('aria-label', T('المزيد'));
   const grid = el('div', 'more-grid');
@@ -111,7 +111,7 @@
 
   // ---- home: when the clock scrolls away, a slim bar keeps the time and the next prayer ----
   const mini = button('mini-clock', '', () => scrollTo({ top: 0, behavior: (matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-calm')) ? 'auto' : 'smooth' }), T('العودة إلى الساعة'));
-  mini.dir = I.isEn ? 'ltr' : 'rtl';
+  mini.dir = I.dir;
   const miniTime = el('b', 'mini-time'), miniNext = el('span', 'mini-next');
   mini.append(miniTime, miniNext);
   mini.hidden = true;

@@ -86,7 +86,7 @@
   const screenOf = (view) => (PHONE.matches && view !== 'tasks' ? view : 'home');
   const bar = document.createElement('div');
   bar.className = 'screen-bar';
-  bar.dir = I.isEn ? 'ltr' : 'rtl';
+  bar.dir = I.dir;
   const backBtn = document.createElement('button');
   backBtn.type = 'button';
   backBtn.className = 'screen-back';
@@ -148,7 +148,7 @@
   // Arrow keys move between tabs.
   document.querySelector('.views').addEventListener('keydown', (ev) => {
     const i = tabs.findIndex((b) => b.dataset.view === current);
-    const dir = { ArrowRight: I.isEn ? 1 : -1, ArrowLeft: I.isEn ? -1 : 1, Home: -Infinity, End: Infinity }[ev.key];
+    const dir = { ArrowRight: I.rtl ? -1 : 1, ArrowLeft: I.rtl ? 1 : -1, Home: -Infinity, End: Infinity }[ev.key];
     if (dir === undefined) return;
     ev.preventDefault();
     const n = Math.max(0, Math.min(tabs.length - 1, Number.isFinite(dir) ? (i + dir + tabs.length) % tabs.length : (dir < 0 ? 0 : tabs.length - 1)));

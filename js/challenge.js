@@ -25,11 +25,11 @@
   // ---- the screen, closed by the back key like Settings ----
   const root = el('div', 'st kh ch');
   root.hidden = true;
-  root.dir = I.isEn ? 'ltr' : 'rtl';
+  root.dir = I.dir;
   root.setAttribute('role', 'dialog');
   const title = el('h2', 'st-title', T('التحدي الجماعي'));
   const bar = el('header', 'st-bar');
-  bar.append(button('st-back', I.isEn ? '←' : '→', () => history.back(), T('رجوع')), title);
+  bar.append(button('st-back', I.back, () => history.back(), T('رجوع')), title);
   const body = el('div', 'st-body');
   root.append(bar, body);
   document.body.append(root);

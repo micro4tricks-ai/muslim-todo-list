@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_description">Jadwal salat dan hitung mundur ke salat berikutnya</string>
+    <string name="verse_widget_description">Ayat hari ini</string>
+    <string name="tasbih_widget_description">Tasbih: ketuk untuk menghitung</string>
+    <string name="verse_title">Ayat hari ini</string>
+    <string name="qibla_widget_description">Arah kiblat</string>
+    <string name="qibla_empty">Buka aplikasi sekali</string>
+    <string name="verse_empty">Buka aplikasi sekali untuk menampilkan ayat hari ini.</string>
+    <string name="shortcut_listen">Radio</string>
+    <string name="shortcut_quran">Al-Qur\'an</string>
+    <string name="shortcut_adhkar">Zikir</string>
+    <string name="shortcut_qibla">Kiblat</string>
+</resources>

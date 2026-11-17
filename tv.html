@@ -27,7 +27,7 @@
       new YT.Player('player', {
         videoId: v,
         host: 'https://www.youtube.com',
-        playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, hl: p.get('hl') === 'en' ? 'en' : 'ar' },
+        playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1, hl: ['en', 'ur', 'id', 'tr', 'es'].includes(p.get('hl')) ? p.get('hl') : 'ar' },
         events: {
           onReady: function (e) { e.target.playVideo(); tell('ready'); },
           onStateChange: function (e) { if (e.data === 1) tell('playing'); if (e.data === 0) tell('error', 'ended'); },

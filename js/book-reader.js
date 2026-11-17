@@ -124,7 +124,7 @@
     base = []; let acc = 0; b.fc.forEach((n) => { base.push(acc); acc += n; });
     parts.clear(); data.clear(); doc.replaceChildren(); pageEls = []; hits = []; hitAt = -1; toc = [];
     closeSearch(); closeSheet(); selBar.hidden = true;
-    tTitle.textContent = I.isEn ? b.en : b.ar;
+    tTitle.textContent = I.pick(b);
     tMeta.textContent = '';
     applyLook();
     box.hidden = false;
@@ -542,7 +542,7 @@
   function sourceOf(pgEl) {
     const o = Number(pgEl.dataset.ord), f = fileOfOrd(o), pg = (data.get(f) || [])[o - base[f]];
     const lbl = pg ? label(pg) : '';
-    return `${I.isEn ? B.en : B.ar} — ${I.isEn ? B.authorEn : B.author}${lbl ? `، ${lbl}` : ''}`;
+    return `${I.pick(B)} — ${I.ref(B, 'author', 'authorEn')}${lbl ? `، ${lbl}` : ''}`;
   }
   // Copied text carries its source, whichever way it is copied.
   doc.addEventListener('copy', (ev) => {

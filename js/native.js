@@ -158,7 +158,7 @@
     if (!Widget || !Widget.verse || !N || !N.verseOfDay) return;
     const v = N.verseOfDay();
     if (!v) return;
-    const data = JSON.stringify({ title: T('آية اليوم'), text: I.isEn ? v.en : v.ar, ref: I.isEn ? v.refEn : v.refAr });
+    const data = JSON.stringify({ title: T('آية اليوم'), text: I.pick(v), ref: I.ref(v) });
     if (data === verseSig) return;
     verseSig = data;
     quiet(Widget.verse({ data }));
@@ -173,7 +173,7 @@
     const deg = Math.round(q.bearing);
     const point = CC ? T(CC.POINTS[CC.compassPoint(q.bearing)]) : '';
     const data = JSON.stringify({ title: T('اتجاه القبلة'), bearing: q.bearing, text: `${I.num(deg)}°${point ? ` · ${point}` : ''}`,
-      place: A.snapshot(Date.now()).place.name, hint: T('من الشمال مع عقارب الساعة. اضغط للبوصلة.'), north: I.isEn ? 'N' : 'ش' });
+      place: A.snapshot(Date.now()).place.name, hint: T('من الشمال مع عقارب الساعة. اضغط للبوصلة.'), north: I.compass[0] });
     if (data === qiblaSig) return;
     qiblaSig = data;
     quiet(Widget.qibla({ data }));

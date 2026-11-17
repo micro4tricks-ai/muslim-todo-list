@@ -34,7 +34,7 @@
     pg.classList.toggle('is-right', p % 2 === 1);
     const s0 = q.surahOf(a);
     const head = el('header', 'mb-head');
-    head.append(el('span', '', M.surahs[s0][0].replace(/^سُورَةُ\s*/, '')), el('span', '', `${I.isEn ? 'Juz' : 'الجزء'} ${q.ar(q.juzOf(a))}`));
+    head.append(el('span', '', M.surahs[s0][0].replace(/^سُورَةُ\s*/, '')), el('span', '', `${I.tp('juz', 'الجزء')} ${q.ar(q.juzOf(a))}`));
     const text = el('div', 'mb-text');
     text.lang = 'ar'; text.dir = 'rtl';
     const flow = el('div', 'mb-flow');
@@ -125,7 +125,7 @@
     const pages = two ? C.spread(page, PAGES) : [page];
     const q = Q();
     const first = C.pageRange(M.pages, TOTAL, pages[0])[0];
-    B.title.textContent = I.isEn ? M.surahs[q.surahOf(first)][1] : M.surahs[q.surahOf(first)][0].replace(/^سُورَةُ\s*/, '');
+    B.title.textContent = I.surah(q.surahOf(first)) || (I.latin ? M.surahs[q.surahOf(first)][1] : M.surahs[q.surahOf(first)][0].replace(/^سُورَةُ\s*/, ''));
     B.meta.textContent = `${T('الجزء')} ${I.num(q.juzOf(first))} · ${T('صفحة')} ${I.num(pages[0])}${pages[1] && pages[1] !== pages[0] ? `–${I.num(pages[1])}` : ''}`;
     B.prev.disabled = page <= 1;
     B.next.disabled = two ? C.spread(page, PAGES)[1] >= PAGES : page >= PAGES;
@@ -314,7 +314,7 @@
     num.placeholder = T('رقم الصفحة'); num.setAttribute('aria-label', T('رقم الصفحة'));
     const sura = el('select'); sura.setAttribute('aria-label', T('السورة'));
     sura.append(new Option(T('السورة'), ''));
-    M.surahs.forEach((s, k) => sura.append(new Option(`${I.num(k + 1)}. ${I.isEn ? s[1] : s[0].replace(/^سُورَةُ\s*/, '')}`, String(k))));
+    M.surahs.forEach((s, k) => sura.append(new Option(`${I.num(k + 1)}. ${I.latin ? s[1] : s[0].replace(/^سُورَةُ\s*/, '')}`, String(k))));
     const juz = el('select'); juz.setAttribute('aria-label', T('الجزء'));
     juz.append(new Option(T('الجزء'), ''));
     M.juz.forEach((_, k) => juz.append(new Option(`${T('الجزء')} ${I.num(k + 1)}`, String(k))));

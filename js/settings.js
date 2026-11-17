@@ -33,8 +33,8 @@
   const root = el('div', 'st');
   root.id = 'settingsScreen';
   root.hidden = true;
-  root.dir = I.isEn ? 'ltr' : 'rtl';
-  root.lang = I.isEn ? 'en' : 'ar';
+  root.dir = I.dir;
+  root.lang = I.lang;
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-modal', 'true');
   const barTitle = el('h2', 'st-title');
@@ -67,10 +67,10 @@
     const L = window.noonLook, g = L.get();
     const ar = (L.fonts.ar.find((f) => f[0] === g.fontAr) || L.fonts.ar[0]);
     const en = (L.fonts.en.find((f) => f[0] === g.fontEn) || L.fonts.en[0]);
-    return `${I.isEn ? ar[1] : ar[2]} · ${en[1] || T('مثل الخط العربي')}`;
+    return `${I.latin ? ar[1] : ar[2]} · ${en[1] || T('مثل الخط العربي')}`;
   };
   const PAGES = {
-    lang: { title: 'اللغة', icon: 'globe', sub: () => (I.isEn ? 'English' : 'العربية'), build: buildLang },
+    lang: { title: 'اللغة', icon: 'globe', sub: () => I.langs.find((l) => l.code === I.lang).name, build: buildLang },
     place: { title: 'الموقع ومواقيت الصلاة', icon: 'pin', sub: () => $('placeName').textContent, node: () => $('placePanel'), open: () => window.noonPlace && window.noonPlace.open() },
     adhan: { title: 'الأذان والتنبيهات', icon: 'bell', node: () => pa,
       sub: () => (window.noonDevice && window.noonDevice.status() && !window.noonDevice.ok() ? `⚠ ${T('يحتاج ضبطاً')}` : T($('paEnabled').checked ? 'مفعّلة' : 'متوقفة')) },
@@ -191,8 +191,11 @@
   function buildLang(box) {
     const list = el('div', 'st-list');
     list.append(
-      choice('العربية', '', !I.isEn, () => { if (I.isEn) { keepStep(); I.setLang('ar'); } }),
-      choice('English', '', I.isEn, () => { if (!I.isEn) { keepStep(); I.setLang('en'); } })
+      ...I.langs.map((l) => {
+        const b = choice(l.name, '', l.code === I.lang, () => { if (l.code !== I.lang) { keepStep(); I.setLang(l.code); } });
+        const name = b.querySelector('b'); name.lang = l.code; name.dir = l.dir;
+        return b;
+      })
     );
     box.append(list, el('p', 'st-note', T('تُعاد الصفحة بعد تغيير اللغة.')));
   }
@@ -210,7 +213,7 @@
       const arG = el('section', 'st-group');
       arG.append(el('h3', 'st-group-name', T('الخط العربي')));
       const arL = el('div', 'st-list');
-      L.fonts.ar.forEach(([id, family, name]) => arL.append(choice(I.isEn ? family : name, 'بسم الله الرحمن الرحيم · مهام اليوم ١٢٣', g.fontAr === id,
+      L.fonts.ar.forEach(([id, family, name]) => arL.append(choice(I.latin ? family : name, 'بسم الله الرحمن الرحيم · مهام اليوم ١٢٣', g.fontAr === id,
         () => { L.setFont('ar', id); draw(); }, `"${family}", sans-serif`)));
       arG.append(arL);
       const enG = el('section', 'st-group');
@@ -328,7 +331,7 @@
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
     card.setAttribute('aria-label', T('نحتاج إذنين'));
-    card.dir = I.isEn ? 'ltr' : 'rtl';
+    card.dir = I.dir;
     const logo = el('img', 'st-logo'); logo.src = 'icons/icon-192.png'; logo.alt = '';
     const list = el('ul', 'st-perm-list');
     [['📍', 'موقعك', 'لمواقيت الصلاة واتجاه القبلة بدقة. يبقى على جهازك.'],

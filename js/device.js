@@ -77,7 +77,7 @@
     const show = (t) => { if (msg) msg.textContent = t; };
     let sub = null;
     try {
-      sub = await D.addListener('progress', (p) => show(p.percent >= 0 ? `${T('جارٍ التنزيل…')} ${I.num(p.percent)}${I.isEn ? '%' : '٪'}` : T('جارٍ التنزيل…')));
+      sub = await D.addListener('progress', (p) => show(p.percent >= 0 ? `${T('جارٍ التنزيل…')} ${I.pct(p.percent)}` : T('جارٍ التنزيل…')));
       show(T('جارٍ التنزيل…'));
       await D.update();
       show(T('اضغط «تثبيت» في الشاشة التي ظهرت.'));

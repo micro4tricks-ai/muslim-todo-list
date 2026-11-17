@@ -45,7 +45,7 @@
     for (const c of DATA) {
       const p = progress(c.id);
       const b = button(`adhkar-cat${p.complete ? ' is-done' : ''}`, '', () => { open = c.id; render(); root.scrollIntoView({ block: 'start' }); });
-      b.append(el('span', 'adhkar-cat-name', I.isEn ? c.en : c.ar),
+      b.append(el('span', 'adhkar-cat-name', I.pick(c)),
         el('span', 'adhkar-cat-meta', p.complete ? T('تمّت اليوم') : `${I.num(c.items.length)} ${T('ذكر')}`));
       const ring = el('span', 'adhkar-ring');
       ring.style.setProperty('--p', p.total ? p.done / p.total : 0);
@@ -60,7 +60,7 @@
   function renderCategory(c) {
     if (!c) { open = null; return render(); }
     const head = el('div', 'view-head');
-    head.append(button('btn btn-quiet', T('← كل الأذكار'), () => { stopAudio(); open = null; render(); }), el('h2', '', I.isEn ? c.en : c.ar));
+    head.append(button('btn btn-quiet', T('← كل الأذكار'), () => { stopAudio(); open = null; render(); }), el('h2', '', I.pick(c)));
     const p = progress(c.id);
     head.append(button('btn btn-quiet', T('إعادة العد'), () => { S.counts[c.id] = {}; save(); render(); }));
     root.append(head);
@@ -70,6 +70,7 @@
     root.append(bar);
     if (c.id === 'am-pm') root.append(el('p', 'hint', T(period() === 'am' ? 'الآن وقت أذكار الصباح. ما بين القوسين [ ] يقال في المساء.' : 'الآن وقت أذكار المساء. ما بين القوسين [ ] هو صيغة المساء.')));
 
+    const OWN = window.NOON_ADHKAR_I18N && window.NOON_ADHKAR_I18N[I.lang];
     const list = el('ol', 'dhikr-list');
     for (const it of c.items) {
       const n = countOf(c.id, it), done = n >= it.repeat;
@@ -77,9 +78,19 @@
       const text = el('p', 'dhikr-text', it.ar);
       text.lang = 'ar'; text.dir = 'rtl';
       li.append(text);
-      if (I.isEn && it.en) li.append(el('p', 'dhikr-en', it.en));
-      if (I.isEn && it.tr) li.append(el('p', 'dhikr-tr', it.tr));
-      if (it.ref) li.append(el('p', 'dhikr-ref', I.isEn ? it.refEn : it.ref));
+      if (I.foreign) {
+        // This language's own translation (the Quran's, or HadeethEnc's) with its source; the English otherwise.
+        const own = OWN && OWN[it.id];
+        const t = own ? own.t : I.trans(it);
+        if (t) {
+          const p = el('p', 'dhikr-en', t);
+          p.lang = own ? I.lang : 'en'; p.dir = own ? I.dir : 'ltr';
+          li.append(p);
+          if (own) li.append(el('p', 'dhikr-src', own.s));
+        }
+      }
+      if (I.latin && it.tr) li.append(el('p', 'dhikr-tr', it.tr));
+      if (it.ref) li.append(el('p', 'dhikr-ref', I.ref(it, 'ref', 'refEn')));
       const row = el('div', 'dhikr-row');
       const counter = button('dhikr-count', '', () => {
         if (countOf(c.id, it) >= it.repeat) return;

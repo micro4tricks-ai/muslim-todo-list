@@ -120,7 +120,7 @@
     },
     library() {
       const B = window.noonLibrary, b = B && B.lastBook && B.lastBook();
-      return b ? card('td-library', T('تابع القراءة في المكتبة'), I.isEn ? b.en : b.ar, b.label, () => B.openBook(b.slug, true)) : null;
+      return b ? card('td-library', T('تابع القراءة في المكتبة'), I.pick(b), b.label, () => B.openBook(b.slug, true)) : null;
     },
     hadith() {
       const X = window.NOON_EXTRAS;
@@ -133,7 +133,7 @@
     book() {
       const B = window.noonLibrary, b = cfg.book && B && B.book && B.book(cfg.book);
       if (!b) return card('td-library', T('كتاب مثبّت'), T('اختر كتاباً'), T('من صفحة «كروت يومي» في الإعدادات'), customize);
-      return card('td-library', T('كتابك'), I.isEn ? b.en : b.ar, I.isEn ? b.authorEn : b.author, () => B.openBook(b.slug, true));
+      return card('td-library', T('كتابك'), I.pick(b), I.ref(b, 'author', 'authorEn'), () => B.openBook(b.slug, true));
     },
     tasbih() {
       const Z = window.noonAdhkar;
@@ -272,7 +272,7 @@
         const sel = el('select', 'td-set-book');
         sel.setAttribute('aria-label', T('الكتاب المثبّت'));
         sel.append(new Option(T('اختر كتاباً'), ''));
-        B.books().forEach((b) => sel.append(new Option(I.isEn ? b.en : b.ar, b.slug)));
+        B.books().forEach((b) => sel.append(new Option(I.pick(b), b.slug)));
         sel.value = cfg.book || '';
         sel.addEventListener('change', () => {
           cfg.book = sel.value || undefined;

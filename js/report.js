@@ -102,7 +102,7 @@
     tiles.append(
       tile(T('وقت التركيز'), dur(focus), `${I.num(count)} ${T('جلسات')}${n > 1 ? ` · ${T('المتوسط')} ${dur(Math.round(focus / n))} ${T('يومياً')}` : ''}`),
       tile(T('مهام أنجزتها'), I.num(tasks), n > 1 ? `${T('المتوسط')} ${I.num(Math.round((tasks / n) * 10) / 10)} ${T('يومياً')}` : T('اليوم')),
-      tile(T('العادات'), `${I.num(hRate)}${I.isEn ? '%' : '٪'}`, T('نسبة الإنجاز')),
+      tile(T('العادات'), `${I.pct(hRate)}`, T('نسبة الإنجاز')),
       tile(T('صفحات القرآن'), I.num(pages), n > 1 ? `${T('المتوسط')} ${I.num(Math.round((pages / n) * 10) / 10)} ${T('يومياً')}` : T('اليوم')),
       tile(T('الصلوات في وقتها'), `${I.num(onTime)} / ${I.num(5 * n)}`, `${T('منها جماعة')} ${I.num(jamaah)} · ${T('الرواتب')} ${I.num(rak)} ${T('ركعة')}`),
       tile(T('أيام الصيام'), I.num(fasts), T('صيام تطوع')),
@@ -238,7 +238,7 @@
     tip.hidden = true;
     items.forEach((d, i) => {
       // Right-to-left pages read time from the right.
-      const idx = I.isEn ? i : items.length - 1 - i;
+      const idx = !I.rtl ? i : items.length - 1 - i;
       const cx = padL + slot * idx + slot / 2;
       const v = d[field];
       const h = Math.max(0, y(0) - y(v));
@@ -255,7 +255,7 @@
         tip.replaceChildren(el('b', '', d.tip), el('span', '', `${T('تركيز')}: ${dur(d.mins)}`), el('span', '', `${T('مهام')}: ${I.num(d.tasks)}`),
           el('span', '', `${T('صفحات')}: ${I.num(d.pages)}`));
         tip.hidden = false;
-        tip.style.insetInlineStart = `${((I.isEn ? cx : W - cx) / W) * 100}%`;
+        tip.style.insetInlineStart = `${((!I.rtl ? cx : W - cx) / W) * 100}%`;
       });
       hit.addEventListener('pointerleave', () => { tip.hidden = true; });
     });

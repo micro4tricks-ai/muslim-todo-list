@@ -205,7 +205,7 @@
       const { tip: t } = window.noonFocusPlus.tip();
       tip.append(el('p', 'fm-kicker', T('استراحة مفيدة')));
       const p = el('p', 'fm-tip-text', T(t.text));
-      if (t.kind === 'dhikr' && !I.isEn) p.lang = 'ar';
+      if (t.kind === 'dhikr' && I.isAr) p.lang = 'ar';
       tip.append(p, el('p', 'fm-hint', T(t.note)));
       if (t.count) {
         let n = 0;

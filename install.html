@@ -155,8 +155,10 @@
 (() => {
   'use strict';
   let lang = new URLSearchParams(location.search).get('lang');
-  if (lang !== 'en' && lang !== 'ar') { try { lang = localStorage.getItem('noon-sweep-lang'); } catch (_) {} }
-  const en = lang === 'en';
+  const LANGS = ['ar', 'en', 'ur', 'id', 'tr', 'es'];
+  if (!LANGS.includes(lang)) { try { lang = localStorage.getItem('noon-sweep-lang'); } catch (_) {} }
+  // This guide is in Arabic and English; the app's other languages read the English one.
+  const en = LANGS.includes(lang) && lang !== 'ar';
   if (en) {
     document.documentElement.lang = 'en';
     document.documentElement.dir = 'ltr';

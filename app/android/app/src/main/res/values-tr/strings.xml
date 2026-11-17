@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="widget_description">Namaz vakitleri ve sonraki namaza geri sayım</string>
+    <string name="verse_widget_description">Günün ayeti</string>
+    <string name="tasbih_widget_description">Tesbih: saymak için dokunun</string>
+    <string name="verse_title">Günün ayeti</string>
+    <string name="qibla_widget_description">Kıble yönü</string>
+    <string name="qibla_empty">Uygulamayı bir kez açın</string>
+    <string name="verse_empty">Günün ayetini görmek için uygulamayı bir kez açın.</string>
+    <string name="shortcut_listen">Radyo</string>
+    <string name="shortcut_quran">Kur\'an</string>
+    <string name="shortcut_adhkar">Zikirler</string>
+    <string name="shortcut_qibla">Kıble</string>
+</resources>
