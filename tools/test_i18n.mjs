@@ -108,3 +108,20 @@ test('every language has every phrase the English dictionary has', () => {
     assert.equal(missing.length, 0, `${code} lacks ${missing.length}: ${missing.slice(0, 5).join(' | ')}`);
   }
 });
+
+test('the adhkar translations belong to real adhkar and are not empty', () => {
+  const win = {};
+  new Function('window', readFileSync(new URL('../js/adhkar-data.js', import.meta.url), 'utf8'))(win);
+  new Function('window', readFileSync(new URL('../js/adhkar-i18n.js', import.meta.url), 'utf8'))(win);
+  const ids = new Set(win.NOON_ADHKAR.categories.flatMap((c) => c.items.map((i) => i.id)));
+  for (const lang of ['ur', 'id', 'tr', 'es']) {
+    const own = win.NOON_ADHKAR_I18N[lang];
+    assert.ok(Object.keys(own).length >= 40, `${lang} has too few adhkar translated`);
+    for (const [id, v] of Object.entries(own)) {
+      assert.ok(ids.has(id), `${lang}: ${id} is not an adhkar item`);
+      assert.ok(v.t && v.t.length > 5 && v.s, `${lang}: ${id} is empty or has no source`);
+      // a Latin-script translation holds no Arabic-script text but the honorifics HadeethEnc leaves
+      if (lang !== 'ur') assert.ok(!/[؀-ۿ]{4}/.test(v.t.replace(/[ﷺ]/g, '')), `${lang}: ${id} holds Arabic text`);
+    }
+  }
+});

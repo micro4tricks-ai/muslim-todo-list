@@ -70,6 +70,7 @@
     root.append(bar);
     if (c.id === 'am-pm') root.append(el('p', 'hint', T(period() === 'am' ? 'الآن وقت أذكار الصباح. ما بين القوسين [ ] يقال في المساء.' : 'الآن وقت أذكار المساء. ما بين القوسين [ ] هو صيغة المساء.')));
 
+    const OWN = window.NOON_ADHKAR_I18N && window.NOON_ADHKAR_I18N[I.lang];
     const list = el('ol', 'dhikr-list');
     for (const it of c.items) {
       const n = countOf(c.id, it), done = n >= it.repeat;
@@ -77,7 +78,17 @@
       const text = el('p', 'dhikr-text', it.ar);
       text.lang = 'ar'; text.dir = 'rtl';
       li.append(text);
-      if (I.foreign && I.trans(it)) li.append(el('p', 'dhikr-en', I.trans(it)));
+      if (I.foreign) {
+        // This language's own translation (the Quran's, or HadeethEnc's) with its source; the English otherwise.
+        const own = OWN && OWN[it.id];
+        const t = own ? own.t : I.trans(it);
+        if (t) {
+          const p = el('p', 'dhikr-en', t);
+          p.lang = own ? I.lang : 'en'; p.dir = own ? I.dir : 'ltr';
+          li.append(p);
+          if (own) li.append(el('p', 'dhikr-src', own.s));
+        }
+      }
       if (I.latin && it.tr) li.append(el('p', 'dhikr-tr', it.tr));
       if (it.ref) li.append(el('p', 'dhikr-ref', I.ref(it, 'ref', 'refEn')));
       const row = el('div', 'dhikr-row');
