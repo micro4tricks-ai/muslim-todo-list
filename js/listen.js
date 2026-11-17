@@ -13,7 +13,7 @@
   let S = Object.assign({ tab: 'radio', cat: 'all', riwaya: 0, fav: [], favRec: [], last: null }, load(KEY, {}));
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); };
   const pad3 = (n) => String(n).padStart(3, '0');
-  const surahName = (k) => (I.latin ? M.surahs[k][1] : M.surahs[k][0].replace(/^سُورَةُ\s*/, ''));
+  const surahName = (k) => (I.surah(k) || (I.latin ? M.surahs[k][1] : M.surahs[k][0].replace(/^سُورَةُ\s*/, '')));
   const norm = (s) => String(s).toLowerCase().replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g, '')
     .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/\s+/g, ' ').trim();
   const clean = (s) => String(s || '').replace(/^[\s*\-–—]+|[\s*\-–—]+$/g, '').replace(/\s+/g, ' ');
@@ -876,7 +876,7 @@
         const words = norm(q.value);
         list.replaceChildren();
         for (let s = 0; s < 114; s++) {
-          if (words && !norm(`${surahName(s)} ${M.surahs[s][0]} ${M.surahs[s][1]} ${s + 1}`).includes(words)) continue;
+          if (words && !norm(`${surahName(s)} ${M.surahs[s][0]} ${(I.surah(s) || M.surahs[s][1])} ${s + 1}`).includes(words)) continue;
           const parts = all.filter((x) => x.s === s);
           if (!parts.length) continue;
           if (parts.length === 1) { list.append(row(`t${parts[0].id}`, `${I.num(s + 1)}. ${surahName(s)}`, '', () => playTafsir(all, all.indexOf(parts[0])))); continue; }

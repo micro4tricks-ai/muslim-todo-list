@@ -12,7 +12,7 @@
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); window.dispatchEvent(new CustomEvent('noon-hifz')); };
   onRemote(KEY, () => { S = Object.assign({ items: [] }, load(KEY, {})); if (open) render(); });
 
-  const name = (s) => (I.latin ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, ''));
+  const name = (s) => (I.surah(s) || (I.latin ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, '')));
   const count = (s) => M.surahs[s][4];
   const label = (it) => (it.from === 1 && it.to === count(it.s) ? name(it.s) : `${name(it.s)} ${I.num(it.from)}–${I.num(it.to)}`);
   const today = () => dayKey();

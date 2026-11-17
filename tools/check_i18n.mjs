@@ -23,7 +23,7 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith('.js') && n !== 'i18n.
   }
 }
 
-const files = readdirSync(new URL('../js/lang/', import.meta.url)).filter((n) => n.endsWith('.js')).sort((a, b) => (a === 'en.js' ? -1 : b === 'en.js' ? 1 : a.localeCompare(b)));
+const files = readdirSync(new URL('../js/lang/', import.meta.url)).filter((n) => n.endsWith('.js') && n !== 'surah-names.js').sort((a, b) => (a === 'en.js' ? -1 : b === 'en.js' ? 1 : a.localeCompare(b)));
 const en = new Set(read('en.js').keys);
 let bad = 0;
 for (const file of files) {

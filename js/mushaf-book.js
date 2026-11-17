@@ -125,7 +125,7 @@
     const pages = two ? C.spread(page, PAGES) : [page];
     const q = Q();
     const first = C.pageRange(M.pages, TOTAL, pages[0])[0];
-    B.title.textContent = I.latin ? M.surahs[q.surahOf(first)][1] : M.surahs[q.surahOf(first)][0].replace(/^سُورَةُ\s*/, '');
+    B.title.textContent = I.surah(q.surahOf(first)) || (I.latin ? M.surahs[q.surahOf(first)][1] : M.surahs[q.surahOf(first)][0].replace(/^سُورَةُ\s*/, ''));
     B.meta.textContent = `${T('الجزء')} ${I.num(q.juzOf(first))} · ${T('صفحة')} ${I.num(pages[0])}${pages[1] && pages[1] !== pages[0] ? `–${I.num(pages[1])}` : ''}`;
     B.prev.disabled = page <= 1;
     B.next.disabled = two ? C.spread(page, PAGES)[1] >= PAGES : page >= PAGES;

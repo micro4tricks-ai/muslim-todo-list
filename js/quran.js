@@ -104,7 +104,7 @@
   const pageOf = (i) => bsearch(M.pages, i) + 1;         // 1-based page
   const juzOf = (i) => bsearch(M.juz, i) + 1;
   const ayahOf = (i) => i - starts[surahOf(i)] + 1;
-  const surahName = (s) => (I.latin ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, ''));
+  const surahName = (s) => (I.surah(s) || (I.latin ? M.surahs[s][1] : M.surahs[s][0].replace(/^سُورَةُ\s*/, '')));
   const refText = (i) => `${surahName(surahOf(i))} ${I.num(ayahOf(i))}`;
   const sajda = new Set(M.sajdas);
 
@@ -321,7 +321,7 @@
       M.surahs.forEach((s, k) => {
         const b = button('q-surah', '', () => open(starts[k]));
         const name = el('span', 'q-surah-name');
-        name.append(el('b', '', I.latin ? s[1] : surahName(k)), el('small', '', I.latin ? s[2] : I.isAr ? s[1] : s[2]));
+        name.append(el('b', '', surahName(k)), el('small', '', I.isAr ? s[1] : I.isEn ? s[2] : ''));
         b.append(el('span', 'q-num', I.num(k + 1)), name,
           el('span', 'q-surah-meta', `${T(s[3] === 'M' ? 'مكية' : 'مدنية')} · ${I.num(s[4])} ${T('آية')}`),
           el('span', `q-surah-side${I.latin ? ' is-ar' : ''}`, I.latin ? surahNameAr(k) : `${T('صفحة')} ${I.num(pageOf(starts[k]))}`));
@@ -337,7 +337,7 @@
         const row = el('div', `kids-row${stars >= 3 ? ' is-done' : ''}`);
         const name = el('div', 'kids-name');
         const a = el('b', '', surahNameAr(k)); a.lang = 'ar';
-        name.append(a, el('small', '', `${I.latin ? M.surahs[k][1] + ' · ' : ''}${I.num(M.surahs[k][4])} ${T('آية')}`));
+        name.append(a, el('small', '', `${I.latin ? (I.surah(k) || M.surahs[k][1]) + ' · ' : ''}${I.num(M.surahs[k][4])} ${T('آية')}`));
         const st = el('span', 'kids-stars', '★'.repeat(stars) + '☆'.repeat(3 - stars));
         st.setAttribute('aria-label', `${I.num(stars)} / ${I.num(3)}`);
         row.append(name, st,
@@ -622,7 +622,7 @@
     const frame = el('div', 'qr-frame');
     frame.append(el('span', 'qr-frame-name', M.surahs[s][0]));
     frame.lang = 'ar';
-    head.append(frame, el('p', 'qr-head-meta', `${I.latin ? `${M.surahs[s][1]} · ${M.surahs[s][2]} · ` : ''}${T(M.surahs[s][3] === 'M' ? 'مكية' : 'مدنية')} · ${I.num(count)} ${T('آية')}`));
+    head.append(frame, el('p', 'qr-head-meta', `${I.latin ? `${(I.surah(s) || M.surahs[s][1])} · ${I.isEn ? `${M.surahs[s][2]} · ` : ''}` : ''}${T(M.surahs[s][3] === 'M' ? 'مكية' : 'مدنية')} · ${I.num(count)} ${T('آية')}`));
     frag.append(head);
     if (s !== 0 && s !== 8) {
       const b = el('p', 'qr-basmala', M.basmala);
@@ -684,7 +684,7 @@
     frag.append(nav);
     R.page.replaceChildren(frag);
     R.page.classList.toggle('is-hide', !!S.hide);
-    R.tName.textContent = I.latin ? `${M.surahs[s][1]}` : surahName(s);
+    R.tName.textContent = surahName(s);
     observe();
     if (at !== null && at !== undefined && at > first) {
       const target = R.page.querySelector(`[data-i="${at}"]`);

@@ -105,6 +105,8 @@
     // The translation that goes with an Arabic text (a verse, a dhikr, a hadith) in a foreign page:
     // this language's own, else the English the app carries.
     trans: (o) => (o ? o[lang] || o.en || '' : ''),
+    // The name of surah k (0-based) in the page language, from js/lang/surah-names.js; null if there is none (Arabic, English).
+    surah: (k) => { const n = window.NOON_SURAH_NAMES; return n && n[lang] ? n[lang][k] : null; },
     // A reference or a name: transliterated in Latin-script languages, Arabic otherwise.
     ref: (o, ar = 'refAr', en = 'refEn') => (o ? (rtl ? o[ar] : o[en] || o[ar]) : ''),
     hijriMonths: HIJRI[lang],
