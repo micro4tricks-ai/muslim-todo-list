@@ -31,7 +31,7 @@
   const SH = (path) => !!(window.noonShamela && window.noonShamela.owns(path));
   const bookUrl = (path, v) => (SH(path) ? window.noonShamela.url(path) : BOOKS + path + (v ? `?v=${v}` : ''));
   const save = () => { S.updatedAt = Date.now(); store(KEY, S); };
-  let screen = { name: 'home' }; // home | book | section | salah | marks | shelf (a full book) | read (its text)
+  let screen = { name: 'home' }; // home | book | section | salah | marks | shelf (a full book) | read (its text) | shamela | mushafs
 
   const SCHOLARS = {
     'Al-Albani': 'الألباني', 'Shuaib Al Arnaut': 'شعيب الأرناؤوط', 'Ahmad Muhammad Shakir': 'أحمد شاكر',
@@ -140,6 +140,7 @@
     if (screen.name === 'marks') return renderMarks();
     if (screen.name === 'shelf') return renderShelf();
     if (screen.name === 'read') return renderRead();
+    if (screen.name === 'mushafs' && window.noonFlipbook) return window.noonFlipbook.render(root, { back });
     if (screen.name === 'shamela' && window.noonShamela) {
       return window.noonShamela.render(root, { T, I, el, button, toast, skeleton, back, norm, sizeText, deathText, shelf: screen.shelf, open: (slug) => go({ name: 'shelf', slug }) });
     }
@@ -193,6 +194,13 @@
       sh.append(el('span', 'lib-salah-kicker', T(window.__TAURI__ ? 'على هذا الكمبيوتر' : 'على هذا الجهاز')), el('b', '', T('المكتبة الشاملة')),
         el('span', '', T('آلاف من كتب المتقدّمين: حمِّل القسم الذي تريده، ثم اقرأ وابحث دون إنترنت')));
       root.append(sh);
+    }
+    // Translated Mushafs, their pages turning like paper (js/flipbook.js).
+    if (window.noonFlipbook) {
+      const fb = button('lib-salah lib-mushafs', '', () => go({ name: 'mushafs' }));
+      fb.append(el('span', 'lib-salah-kicker', T('تُقلَّب صفحاتها كالورق')), el('b', '', T('مصاحف مترجمة')),
+        el('span', '', T('ترجمات معاني القرآن الكريم إلى لغات كثيرة، وطبعات المصحف من مجمع الملك فهد')));
+      root.append(fb);
     }
     renderShelves();
     if (S.marks.length) root.append(button('btn btn-quiet', `${T('الأحاديث المحفوظة')} (${I.num(S.marks.length)})`, () => go({ name: 'marks' })));

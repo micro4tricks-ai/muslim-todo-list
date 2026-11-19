@@ -1,5 +1,5 @@
 // Copies the website files from the repository root into app/www for the Android build.
-import { cpSync, rmSync, mkdirSync, readdirSync } from 'node:fs';
+import { cpSync, rmSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -8,7 +8,9 @@ const root = path.dirname(app);
 const www = path.join(app, 'www');
 rmSync(www, { recursive: true, force: true });
 mkdirSync(www);
-for (const item of ['index.html', 'install.html', 'manifest.webmanifest', 'icons', 'fonts', 'js', 'en', 'quran']) {
+for (const item of ['index.html', 'install.html', 'manifest.webmanifest', 'icons', 'fonts', 'js', 'en', 'quran', 'mushafs']) {
+  // mushafs/ = the translated Mushafs' list and covers only; their pages are hosted apart (js/flipbook.js).
+  if (item === 'mushafs' && !existsSync(path.join(root, item))) continue;
   cpSync(path.join(root, item), path.join(www, item), { recursive: true });
 }
 // The focus sounds (about 50 MB) stay out of the app: js/sounds.js fetches each from the website

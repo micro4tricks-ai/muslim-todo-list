@@ -1709,5 +1709,21 @@ window.noonI18n.use({
   'ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.': 'PDF listos para imprimir y leer sin conexión, del mushaf del Complejo Rey Fahd, en cinco qirāʾat.',
   'تحميل المصحف كاملاً (حفص)': 'Descargar el mushaf completo (Hafs)',
   'سورة أو صفحة أو رواية أخرى': 'Una sura, una página u otra qirāʾa',
-  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'El archivo completo pesa unos 210 MB, así que conviene descargarlo con Wi-Fi; el de cada sura es mucho más pequeño.'
+  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'El archivo completo pesa unos 210 MB, así que conviene descargarlo con Wi-Fi; el de cada sura es mucho más pequeño.',
+  'ترجمة معاني القرآن الكريم': "Traducción del significado del Corán",
+  'مصاحف مترجمة': "Mushafs traducidos",
+  'تعذّر تحميل القائمة. تحتاج اتصالاً بالإنترنت أول مرة.': "No se pudo cargar la lista. La primera vez necesita conexión a internet.",
+  'ابحث باللغة أو الاسم': "Buscar por idioma o nombre",
+  'محفوظ للقراءة دون إنترنت': "Guardado para leer sin conexión",
+  'صور صفحات من طبعات مجمع الملك فهد لطباعة المصحف الشريف. اسحب طرف الصفحة لتقليبها، أو استخدم الأزرار تحت الكتاب.': "Imágenes de las páginas de las ediciones del Complejo Rey Fahd. Arrastra el borde de una página para pasarla, o usa los botones bajo el libro.",
+  'صفحات هذا المصحف لم تُرفع على الإنترنت بعد.': "Las páginas de este Mushaf aún no están en línea.",
+  'تعذّر فتح الكتاب.': "No se pudo abrir el libro.",
+  'تنزيل للقراءة دون إنترنت': "Descargar para leer sin conexión",
+  'ينتظر تنزيل مصحف آخر حتى ينتهي.': "Espera a que termine la descarga del otro Mushaf.",
+  'تمّ التنزيل.': "Descargado.",
+  'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "La descarga se detuvo. Toca de nuevo para terminarla.",
+  'تُقلَّب صفحاتها كالورق': "Páginas que se pasan como papel",
+  'ترجمات معاني القرآن الكريم إلى لغات كثيرة، وطبعات المصحف من مجمع الملك فهد': "Traducciones del significado del Corán a muchos idiomas, y ediciones del Mushaf del Complejo Rey Fahd",
+  'الصفحة الأولى': "Primera página",
+  'الصفحة الأخيرة': "Última página"
 });

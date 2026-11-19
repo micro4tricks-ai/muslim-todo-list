@@ -1885,6 +1885,36 @@
   .lib-salah { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: start; padding: 18px; border-radius: 18px; border: none; color: #F5F1E6;
     background: radial-gradient(ellipse at 90% 0%, rgba(233, 196, 106, 0.35), transparent 55%), linear-gradient(135deg, #3B2A14, #6B4A12); }
   .lib-salah.lib-shamela { margin-top: 10px; background: radial-gradient(ellipse at 90% 0%, rgba(233, 196, 106, 0.3), transparent 55%), linear-gradient(135deg, #0D3F33, #1D6B57); }
+  .lib-salah.lib-mushafs { margin-top: 10px; background: radial-gradient(ellipse at 90% 0%, rgba(233, 196, 106, 0.3), transparent 55%), linear-gradient(135deg, #14324A, #1F5A6B); }
+  /* Translated Mushafs (js/flipbook.js): the list, then the pages turning like paper */
+  .fb-filter { width: 100%; margin: 4px 0 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; }
+  .fb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .fb-card { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px; text-align: start; border-radius: 14px; background: var(--paper); border: 1px solid var(--line); color: var(--ink); }
+  .fb-card[hidden] { display: none; }
+  .fb-card b { font-size: 14px; line-height: 1.4; }
+  .fb-card span, .fb-card small { font-size: 12px; color: var(--ink-soft); }
+  .fb-card .fb-saved { color: var(--accent); }
+  .fb-cover { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px; background: var(--line); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
+  body.fb-open { overflow: hidden; }
+  body.fb-open .lp, body.fb-open .bnav, body.fb-open .mini-clock { display: none; }
+  .fb { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; background: #2A2620; color: #F3EEE2; }
+  .fb[hidden] { display: none; }
+  .fb-top { display: flex; align-items: center; gap: 10px; padding: calc(8px + env(safe-area-inset-top)) 12px 8px; }
+  .fb-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+  .fb-x { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.1); color: inherit; font-size: 24px; line-height: 1; }
+  .fb-save { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: inherit; font: inherit; font-size: 13px; }
+  .fb-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 6px; overflow: hidden; }
+  .fb-book { width: 100%; height: 100%; }
+  .fb-page { background: #FBF8F1; overflow: hidden; }
+  .fb-page img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+  .fb-pg-n { position: absolute; inset: 0; display: grid; place-items: center; color: #B9AE95; font-size: 22px; }
+  .fb-blank { background: #EFE9DA; }
+  .fb-bar { padding: 6px 14px calc(10px + env(safe-area-inset-bottom)); }
+  .fb-range { width: 100%; accent-color: #D8B46A; }
+  .fb-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .fb-nav { min-width: 44px; height: 44px; border-radius: 12px; border: none; background: rgba(255, 255, 255, 0.1); color: inherit; font-size: 22px; }
+  .fb-nav:disabled { opacity: 0.35; }
+  .fb-count { min-width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
   .sh-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
   .sh-list .hadith-acts { margin-bottom: 8px; }
   .lib-book.is-away { opacity: 0.72; border-inline-start-color: var(--line); }
@@ -2367,6 +2397,8 @@
 <script src="js/shamela.js?v=2.10.0"></script>
 <script src="js/library.js?v=2.10.0"></script>
 <script src="js/book-reader.js?v=2.10.0"></script>
+<script src="js/vendor/page-flip.browser.js?v=2.10.0"></script>
+<script src="js/flipbook.js?v=2.10.0"></script>
 <script src="js/listen.js?v=2.10.0"></script>
 <script src="js/report.js?v=2.10.0"></script>
 <script src="js/focus-mode.js?v=2.10.0"></script>

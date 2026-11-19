@@ -2,7 +2,7 @@
 // Page files: network first, so every visit gets the newest version, with the
 // saved copy as the fallback when there is no connection.
 // Sound recordings: saved the first time they play, then served from the device.
-const VERSION = 'v51';
+const VERSION = 'v52';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 const QURAN = 'quran-v1'; // the Mushaf texts: large and fixed, so kept once fetched
@@ -21,7 +21,7 @@ const FILES = [
   'js/remind-card.js', 'js/library-meta.js', 'js/salah-data.js', 'js/library.js', 'js/book-reader.js',
   'js/extras-data.js', 'js/tools.js', 'js/prayers.js', 'js/listen.js', 'js/settings.js', 'js/device.js', 'js/today.js', 'js/nav.js', 'js/hifz.js', 'js/khatma.js', 'js/challenge.js', 'js/a11y.js', 'js/clock-core.js', 'js/reminders-core.js', 'js/reminders.js',
   'js/tajweed-core.js', 'js/tajweed-rules.js', 'js/mushaf-core.js', 'js/mushaf-book.js', 'js/library-books.js', 'js/library-local.js', 'js/shamela.js',
-  'js/wmm-data.js', 'js/compass-core.js', 'js/today-core.js',
+  'js/wmm-data.js', 'js/compass-core.js', 'js/today-core.js', 'js/vendor/page-flip.browser.js', 'js/flipbook.js',
   'fonts/AmiriQuran-400-arabic.woff2',
   'fonts/Amiri-400-arabic.woff2',
   'fonts/Amiri-400-latin-ext.woff2',
@@ -77,6 +77,10 @@ self.addEventListener('fetch', (ev) => {
   if (url.origin !== location.origin) return; // time servers, Supabase, CDNs: straight to the network
   if (url.pathname.endsWith('.apk')) return; // the Android app download is never kept offline
   if (/\/quran\/[a-z]+\.json$/.test(url.pathname)) { ev.respondWith(cacheFirst(req, QURAN)); return; }
+  // Translated Mushafs (js/flipbook.js): covers kept once seen; pages straight from the network
+  // (a book kept for offline reading has its own cache, flipbook-v1, read by the page itself).
+  if (/\/mushafs\/[^/]+\/p\d+\.webp$/.test(url.pathname)) return;
+  if (/\/mushafs\/[^/]+\/cover\.webp$/.test(url.pathname)) { ev.respondWith(cacheFirst(req, LIBRARY)); return; }
   if (/\/books\/.+\.json\.gz$/.test(url.pathname)) { ev.respondWith(cacheFirst(req, LIBRARY)); return; } // the books never change once built
   ev.respondWith(networkFirst(req, SHELL));
 });

@@ -1709,5 +1709,21 @@ window.noonI18n.use({
   'ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.': 'PDF siap cetak untuk dibaca tanpa internet, dari mushaf Kompleks Raja Fahd, dalam lima qira’at.',
   'تحميل المصحف كاملاً (حفص)': 'Unduh mushaf lengkap (Hafs)',
   'سورة أو صفحة أو رواية أخرى': 'Satu surah, satu halaman, atau qira’at lain',
-  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'Berkas lengkapnya sekitar 210 MB, jadi sebaiknya diunduh lewat Wi-Fi; berkas tiap surah jauh lebih kecil.'
+  'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'Berkas lengkapnya sekitar 210 MB, jadi sebaiknya diunduh lewat Wi-Fi; berkas tiap surah jauh lebih kecil.',
+  'ترجمة معاني القرآن الكريم': "Terjemahan makna Al-Qur’an",
+  'مصاحف مترجمة': "Mushaf terjemahan",
+  'تعذّر تحميل القائمة. تحتاج اتصالاً بالإنترنت أول مرة.': "Daftar tidak dapat dimuat. Pertama kali perlu koneksi internet.",
+  'ابحث باللغة أو الاسم': "Cari menurut bahasa atau nama",
+  'محفوظ للقراءة دون إنترنت': "Tersimpan untuk dibaca offline",
+  'صور صفحات من طبعات مجمع الملك فهد لطباعة المصحف الشريف. اسحب طرف الصفحة لتقليبها، أو استخدم الأزرار تحت الكتاب.': "Gambar halaman dari cetakan Kompleks Raja Fahd. Seret tepi halaman untuk membaliknya, atau gunakan tombol di bawah buku.",
+  'صفحات هذا المصحف لم تُرفع على الإنترنت بعد.': "Halaman mushaf ini belum tersedia online.",
+  'تعذّر فتح الكتاب.': "Buku tidak dapat dibuka.",
+  'تنزيل للقراءة دون إنترنت': "Unduh untuk dibaca offline",
+  'ينتظر تنزيل مصحف آخر حتى ينتهي.': "Tunggu sampai unduhan mushaf lain selesai.",
+  'تمّ التنزيل.': "Selesai diunduh.",
+  'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "Unduhan berhenti. Ketuk lagi untuk menyelesaikannya.",
+  'تُقلَّب صفحاتها كالورق': "Halaman yang dibalik seperti kertas",
+  'ترجمات معاني القرآن الكريم إلى لغات كثيرة، وطبعات المصحف من مجمع الملك فهد': "Terjemahan makna Al-Qur’an ke banyak bahasa, dan cetakan mushaf dari Kompleks Raja Fahd",
+  'الصفحة الأولى': "Halaman pertama",
+  'الصفحة الأخيرة': "Halaman terakhir"
 });
