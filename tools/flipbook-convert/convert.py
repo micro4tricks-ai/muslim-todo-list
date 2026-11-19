@@ -41,6 +41,14 @@ LANGS = {
 
 # Files whose name gives no language, checked by eye (book id -> the Arabic name in LANGS).
 LANG_BY_ID = {'111726': 'التركية'}
+# Files named in Latin letters: all Madinah Mushaf prints (same cover), named here from their file names.
+TITLE_BY_ID = {
+    'big-quran': 'مصحف المدينة النبوية — الحجم الكبير',
+    'mumtaz-1': 'مصحف المدينة النبوية — الطبعة الممتازة',
+    'sousi-1': 'مصحف المدينة النبوية — رواية السوسي',
+    'standard1-quran': 'مصحف المدينة النبوية — الطبعة العادية',
+    'mshf-almdynh-alnbwyh-alkbyr-alazrq-hfs': 'مصحف المدينة النبوية الكبير (الأزرق) — رواية حفص',
+}
 
 TRANSLIT = str.maketrans({
     'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h', 'خ': 'kh',
@@ -68,6 +76,7 @@ def describe(pdf: Path):
         lang_ar = 'البوسنية' if key.startswith('Kuran') else key
     title = re.sub(r'^\d+\s*[-_]?\s*', '', stem).replace('_', ' ').strip()
     title = re.sub(r'\s*=.*$', '', title).strip() or stem
+    title = TITLE_BY_ID.get(book_id(pdf), title)
     return title, lang, lang_ar
 
 
