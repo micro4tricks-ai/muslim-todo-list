@@ -163,7 +163,8 @@ def main():
     a = ap.parse_args()
     src, root = Path(a.src), Path(a.out)
     root.mkdir(parents=True, exist_ok=True)
-    pdfs = sorted(src.rglob('*.pdf'), key=lambda p: book_id(p))
+    # ~$name / ~~$name: lock files left by a program that has the PDF open
+    pdfs = sorted((p for p in src.rglob('*.pdf') if not p.name.startswith('~')), key=lambda p: book_id(p))
     ids = {}
     for p in pdfs:
         b = book_id(p)
