@@ -243,11 +243,11 @@
     status.innerHTML = CHECK_SVG;
 
     const body = el('div', 'task-body');
-    body.append(el('p', 'task-title', t.title));
+    body.append(el('p', 'task-title', T(t.title)));
     const RM = window.noonReminders;
     const rmBadge = RM && !t.completed && RM.badge('task', String(t.id));
     if (rmBadge) body.append(rmBadge);
-    if (t.description) body.append(el('p', 'task-desc', t.description));
+    if (t.description) body.append(el('p', 'task-desc', T(t.description)));
 
     if (t.subtasks.length) {
       const ul = el('ul', 'subtasks');
@@ -261,7 +261,7 @@
         cb.dataset.sub = s.id;
         cb.id = `sub-${s.id}`;
         lab.htmlFor = cb.id;
-        lab.append(cb, el('span', '', s.title));
+        lab.append(cb, el('span', '', T(s.title)));
         item.append(lab);
         ul.append(item);
       }
@@ -296,7 +296,7 @@
       play.setAttribute('aria-label', T(tracking ? 'إيقاف تتبّع الوقت' : 'ابدأ تتبّع الوقت لهذه المهمة'));
       play.title = play.getAttribute('aria-label');
       actions.append(play);
-      if (RM) actions.append(RM.button('task', String(t.id), t.title));
+      if (RM) actions.append(RM.button('task', String(t.id), T(t.title)));
     }
     const edit = el('button', 'link-btn', T('تعديل'));
     edit.type = 'button'; edit.dataset.act = 'edit';

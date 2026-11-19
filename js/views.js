@@ -90,7 +90,7 @@
   const backBtn = document.createElement('button');
   backBtn.type = 'button';
   backBtn.className = 'screen-back';
-  backBtn.setAttribute('aria-label', T('رجوع إلى الرئيسية'));
+  backBtn.setAttribute('aria-label', T('رجوع'));
   backBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const barTitle = document.createElement('h2');
   barTitle.className = 'screen-title';
@@ -98,12 +98,18 @@
   const host = document.querySelector('.todo');
   if (host) host.prepend(bar);
   const tabLabel = (view) => { const b = document.querySelector(`.views [data-view="${view}"] span`); return b ? b.textContent : ''; };
-  function home() {
-    // Back the way we came when the screen was a step in the history; otherwise straight home.
+  // Every screen opened is a step in the page's history (d counts the steps since home), so back
+  // returns one screen at a time, forward goes in again, and «home» jumps all the way back.
+  function stepBack() {
     if (history.state && history.state.screen) history.back();
     else show('tasks');
   }
-  backBtn.addEventListener('click', home);
+  function home() {
+    const st = history.state;
+    if (st && st.screen) history.go(-(st.d || 1));
+    else show('tasks');
+  }
+  backBtn.addEventListener('click', stepBack);
   let popping = false;
   function setScreen(view) {
     const screen = screenOf(view);
@@ -114,8 +120,7 @@
     const st = history.state;
     if (screen !== 'home') {
       if (st && st.screen === view) return;
-      if (st && st.screen) history.replaceState({ screen: view }, '');
-      else history.pushState({ screen: view }, '');
+      history.pushState({ screen: view, d: (st && st.screen ? st.d || 1 : 0) + 1 }, '');
     }
   }
   addEventListener('popstate', (ev) => {

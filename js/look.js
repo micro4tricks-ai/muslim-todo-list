@@ -65,7 +65,10 @@
   ];
 
   // Clock faces (js/clock.js), the modern face's colour, and what each interactive slot shows.
-  const FACE_OPTS = [['classic', 'كلاسيكي'], ['modern', 'حديث'], ['minimal', 'بسيط']];
+  const FACE_OPTS = [['classic', 'كلاسيكي'], ['arabic', 'بأرقام عربية'], ['zakhrafa', 'زخرفة إسلامية'], ['hilal', 'هلال'], ['modern', 'حديث'], ['minimal', 'بسيط']];
+  // The faces that are a drawing variant of another face (js/clock.js draws the ornament, `deco`).
+  const FACE_BASE = { arabic: 'classic', zakhrafa: 'minimal', hilal: 'modern' };
+  const baseFace = (f) => FACE_BASE[f] || f;
   // The modern face's themes: background and accent together (light, medium, and dark but not black).
   const THEME_OPTS = [
     ['pearl', 'لؤلؤي وفيروزي', '#F4F6F7', '#DDE5E8', '#0E9AA0'], ['sand', 'رملي ومرجاني', '#F6EEE2', '#E6D5BD', '#D9603B'],
@@ -78,8 +81,9 @@
     ['reminder', 'التذكير القادم'], ['focus', 'التركيز'], ['none', 'مخفية']];
   const SLOT_DEFAULTS = { classic: { A: 'prayer' }, minimal: { A: 'prayer', B: 'hijri', C: 'moon', D: 'none' }, modern: { A: 'qibla', B: 'prayer', C: 'sun' } };
   const SLOT_NAMES = { minimal: ['الخانة العلوية', 'الخانة اليمنى', 'الخانة السفلية', 'الخانة اليسرى'] };
+  Object.keys(FACE_BASE).forEach((f) => { SLOT_DEFAULTS[f] = SLOT_DEFAULTS[FACE_BASE[f]]; SLOT_NAMES[f] = SLOT_NAMES[FACE_BASE[f]]; });
 
-  let L = { bg: 'girih', dial: 'navy', metal: 'gold', mode: 'auto', scale: 1, fontAr: 'plex', fontEn: 'same', face: 'classic', theme: 'pearl', slots: null };
+  let L = { bg: 'girih', dial: 'emerald', metal: 'gold', mode: 'auto', scale: 1, fontAr: 'plex', fontEn: 'same', face: 'classic', theme: 'pearl', slots: null };
   try { Object.assign(L, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) {}
   let customImage = null;
   try { customImage = localStorage.getItem(IMG_KEY); } catch (_) {}
@@ -131,7 +135,7 @@
 
   window.noonLook = {
     get: () => ({ dial: L.dial, metal: L.metal, mode: L.mode, fontAr: L.fontAr, fontEn: L.fontEn,
-      face: FACE_OPTS.some((f) => f[0] === L.face) ? L.face : 'classic', slots: slotsFor(L.face),
+      face: FACE_OPTS.some((f) => f[0] === L.face) ? baseFace(L.face) : 'classic', deco: FACE_BASE[L.face] ? L.face : '', slots: slotsFor(L.face),
       theme: (() => { const t = THEME_OPTS.find((x) => x[0] === L.theme) || THEME_OPTS[0]; return { id: t[0], bg1: t[2], bg2: t[3], accent: t[4] }; })() }),
     SLOTS: SLOT_OPTS,
     fonts: { ar: AR_FONTS, en: EN_FONTS },
@@ -169,7 +173,7 @@
       b.addEventListener('click', () => { L.face = id; save(); announce(); renderPanel(); });
       return b;
     }));
-    $('lookAccentBox').hidden = L.face !== 'modern';
+    $('lookAccentBox').hidden = baseFace(L.face) !== 'modern';
     $('lookAccents').replaceChildren(...THEME_OPTS.map(([id, label, bg1, bg2, accent]) =>
       swatch(label, (L.theme || 'pearl') === id, { background: `radial-gradient(circle at 50% 50%, ${accent} 0 22%, transparent 24%), linear-gradient(160deg, ${bg1}, ${bg2})` },
         () => { L.theme = id; save(); announce(); renderPanel(); }, 'sw sw-round')));

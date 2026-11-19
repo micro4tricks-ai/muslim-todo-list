@@ -12,6 +12,11 @@
   let S = Object.assign({ enabled: true, notify: !!native(), autoPause: true, before: 10, sound: 'madinah', fajrSound: '', iqamah: 0 }, load(KEY, {}));
   // The sound when a prayer is due: a short chime or a full adhan (sounds/adhan, see CREDITS.md there).
   const SOUNDS = [
+    ['minshawi', 'أذان بصوت الشيخ محمد صديق المنشاوي'], ['minshawi2', 'أذان بصوت الشيخ المنشاوي (تسجيل ثانٍ)'],
+    ['basit', 'أذان بصوت الشيخ عبد الباسط عبد الصمد'], ['basit_cairo', 'أذان القاهرة بصوت الشيخ عبد الباسط'],
+    ['husary', 'أذان بصوت الشيخ محمود خليل الحصري'], ['rifaat', 'أذان بصوت الشيخ محمد رفعت'],
+    ['banna', 'أذان بصوت الشيخ محمود علي البنا'], ['naeina', 'أذان بصوت الشيخ أحمد نعينع'],
+    ['shaisha', 'أذان بصوت الشيخ أبو العينين شعيشع'], ['mustafa', 'أذان بصوت الشيخ مصطفى إسماعيل'],
     ['madinah', 'أذان من المسجد النبوي'], ['fakhri', 'أذان بصوت صباح فخري'], ['beautiful', 'أذان هادئ'],
     ['azeez', 'أذان بصوت عاقب عزيز'], ['malmo', 'أذان الفجر من مسجد مالمو'], ['fouad', 'أذان الفجر بصوت فؤاد'],
     ['mardin', 'أذان تركي من ماردين'], ['kazakh', 'أذان من مسجد في قازاخستان'], ['malaysia', 'أذان من مسجد في كوالالمبور'],

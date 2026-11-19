@@ -142,7 +142,7 @@
     const l = window.noonLook ? window.noonLook.get() : {};
     const theme = modernTheme(l.theme);
     return { dial: DIALS[l.dial] || DIALS.ceramic, metal: METALS[l.metal] || METALS.steel,
-      face: l.face || 'classic', theme, accent: theme.accent, slots: l.slots || { A: 'prayer' } };
+      face: l.face || 'classic', deco: l.deco || '', theme, accent: theme.accent, slots: l.slots || { A: 'prayer' } };
   };
   let T = look();
 
@@ -228,6 +228,53 @@
     return [shadeN(-c, -s), shadeN(c, s)];
   }
 
+  // An n-pointed star (outer and inner radius, rotation in radians) as the current path.
+  function starPath(g, cx, cy, ro, ri, n, rot) {
+    g.beginPath();
+    for (let i = 0; i < n * 2; i++) {
+      const r = i % 2 ? ri : ro, a = rot + (i * Math.PI) / n;
+      const x = cx + Math.sin(a) * r, y = cy - Math.cos(a) * r;
+      if (i) g.lineTo(x, y); else g.moveTo(x, y);
+    }
+    g.closePath();
+  }
+  // The «زخرفة» face: eight-pointed stars (the khatim) and a ring of petals, drawn in the dial's soft ink.
+  function drawRosette(g, D) {
+    g.save();
+    circlePath(g, CX, CY, R * 0.99);
+    g.clip();
+    g.strokeStyle = rgba(D.soft, 0.7);
+    g.lineWidth = Math.max(0.9, R * 0.006);
+    starPath(g, CX, CY, R * 0.86, R * 0.6, 8, 0); g.stroke();
+    starPath(g, CX, CY, R * 0.86, R * 0.6, 8, Math.PI / 8); g.stroke();
+    starPath(g, CX, CY, R * 0.52, R * 0.36, 8, Math.PI / 8); g.stroke();
+    for (let i = 0; i < 16; i++) {
+      const a = (i * TAU) / 16;
+      circlePath(g, CX + Math.sin(a) * R * 0.78, CY - Math.cos(a) * R * 0.78, R * 0.085);
+      g.stroke();
+    }
+    g.restore();
+  }
+  // The «هلال» face: a large pale crescent and star behind the time, in the theme's accent.
+  function drawCrescent(g, accent) {
+    g.save();
+    circlePath(g, CX, CY, R);
+    g.clip();
+    g.globalAlpha = 0.26;
+    g.fillStyle = accent;
+    const cx = CX - R * 0.04, cy = CY - R * 0.14;
+    g.beginPath(); g.arc(cx, cy, R * 0.6, 0, TAU); g.clip();
+    g.beginPath(); g.rect(CX - R, CY - R, R * 2, R * 2); g.arc(cx + R * 0.24, cy - R * 0.08, R * 0.52, 0, TAU);
+    g.fill('evenodd');
+    g.restore();
+    g.save();
+    g.globalAlpha = 0.3;
+    g.fillStyle = accent;
+    starPath(g, CX + R * 0.3, CY - R * 0.4, R * 0.075, R * 0.03, 5, 0);
+    g.fill();
+    g.restore();
+  }
+
   // ---------- Static layer: case, crown, bezel, dial, track, indices, numerals ----------
   function buildStatic() {
     const [c, g] = makeLayer();
@@ -305,6 +352,7 @@
       g.fillStyle = base;
       g.fillRect(CX - R, CY - R, R * 2, R * 2);
       g.restore();
+      if (T.deco === 'hilal') drawCrescent(g, M.accent);
       return c;
     }
 
@@ -350,6 +398,8 @@
     g.lineWidth = 0.8;
     circlePath(g, CX, CY, R);
     g.stroke();
+
+    if (T.deco === 'zakhrafa') drawRosette(g, D);
 
     // Railway minute track
     g.strokeStyle = rgba(D.soft, 0.8);
@@ -402,6 +452,7 @@
 
     // Printed numerals (not on the minimal face)
     if (T.face === 'minimal') return c;
+    const arabicDigits = T.deco === 'arabic';
     const numR = R * 0.7;
     g.font = `500 ${R * 0.115}px "IBM Plex Sans Arabic", "Helvetica Neue", "Segoe UI", Arial, sans-serif`;
     g.textAlign = 'center';
@@ -411,9 +462,9 @@
       const x = CX + Math.sin(a) * numR;
       const y = CY - Math.cos(a) * numR + R * 0.006;
       g.fillStyle = D.finish === 'ceramic' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)';
-      g.fillText(String(n), x + R * 0.002, y + R * 0.003);
+      g.fillText(arabicDigits ? String(n).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]) : String(n), x + R * 0.002, y + R * 0.003);
       g.fillStyle = D.ink;
-      g.fillText(String(n), x, y);
+      g.fillText(arabicDigits ? String(n).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]) : String(n), x, y);
     }
     return c;
   }
