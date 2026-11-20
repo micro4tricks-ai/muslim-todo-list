@@ -113,6 +113,7 @@
   const bPrev = nav('الصفحة السابقة', '→', () => step(-1));
   const count = el('span', 'fb-count');
   count.setAttribute('aria-live', 'polite');
+  count.dir = 'ltr'; // "16–17 / 625" must not be reordered by the RTL row
   const bNext = nav('الصفحة التالية', '←', () => step(1));
   const bLast = nav('الصفحة الأخيرة', '⇤', () => goPage(B.pages));
   const range = el('input', 'fb-range');
