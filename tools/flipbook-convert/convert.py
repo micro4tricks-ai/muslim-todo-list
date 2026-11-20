@@ -53,16 +53,7 @@ TITLE_BY_ID = {
     'madinah-qalun-1443': 'مصحف المدينة النبوية الرقمي — رواية قالون (1443هـ)',
 }
 # Books left out of the list because a better copy replaced them (id -> the one that replaced it).
-# All the scanned Mushaf editions are left out: the owner chose the Complex's digital Mushaf
-# instead (2026-11-20). Tafsirs, readings and translations stay.
-_DIGITAL = 'madinah-hafs-1441'
-REPLACED = {'mshf-qalwn': 'madinah-qalun-1443', **{i: _DIGITAL for i in (
-    'almshf-almbyn-lahkam-altjwyd', 'alqran-alkrym-almshf-alaady', 'alqran-alkrym-almshf-alwst',
-    'alqran-alkrym-mshf-almdynh-alnbwyh-almwafq-ltbah-alshmrly', 'alqran-alkrym-wfq-rwayh-hfs-an-aasm',
-    'big-quran', 'mshf-aldwry', 'mshf-almdynh-alnbwyh-alkbyr-alazrq-hfs', 'mshf-alswsy',
-    'mshf-byan-altjwyd-ala-rwayh-hfs-an-aasm',
-    'mshf-rwayh-shabh-an-aasm-an-zr-an-aly-wathman-an-alnby-sla-a', 'mshf-wrsh', 'mumtaz-1',
-    'sousi-1', 'standard1-quran')}}
+REPLACED = {'mshf-qalwn': 'madinah-qalun-1443'}
 
 TRANSLIT = str.maketrans({
     'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h', 'خ': 'kh',
