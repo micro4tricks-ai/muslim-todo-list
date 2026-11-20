@@ -230,6 +230,7 @@
     });
     pf.loadFromHTML(pages);
     pf.on('flip', () => update());
+    pf.on('changeState', (e) => { if (e.data === 'flipping') rustle(); });
     pf.on('changeOrientation', () => update());
     update();
   }
@@ -316,6 +317,59 @@
     else if (ev.key === 'End') goPage(B.pages);
   });
 
+  // ---- the sound of a paper page turning ----
+  // Made here with Web Audio (no recording to download, works offline): a swish of noise through a
+  // band that rises and falls as the page sweeps over, with the grain of paper in it, then the soft
+  // landing of the page. Each turn is a little different. On by default; off in the ☰ panel.
+  let ac = null;
+  function noise(n, fill) {
+    const buf = ac.createBuffer(1, n, ac.sampleRate);
+    fill(buf.getChannelData(0), n);
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    return src;
+  }
+  function rustle() {
+    if (S.sound === false) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+      const t0 = ac.currentTime + 0.01, sr = ac.sampleRate;
+      const dur = 0.38 + Math.random() * 0.1;
+      // the sweep
+      const sweep = noise(Math.floor(sr * dur), (d, n) => {
+        let grain = 0;
+        for (let i = 0; i < n; i++) {
+          const x = i / n;
+          const env = Math.pow(Math.sin(Math.PI * Math.min(1, x / 0.9)), 1.4);
+          if (Math.random() < 0.012) grain = 0.6 + Math.random() * 0.6; // the crackle of the sheet
+          grain *= 0.94;
+          d[i] = (Math.random() * 2 - 1) * env * (0.5 + grain);
+        }
+      });
+      const band = ac.createBiquadFilter();
+      band.type = 'bandpass'; band.Q.value = 0.7;
+      const top = 3000 + Math.random() * 1200;
+      band.frequency.setValueAtTime(800, t0);
+      band.frequency.exponentialRampToValueAtTime(top, t0 + dur * 0.5);
+      band.frequency.exponentialRampToValueAtTime(1200, t0 + dur);
+      const low = ac.createBiquadFilter();
+      low.type = 'highpass'; low.frequency.value = 350;
+      const g1 = ac.createGain();
+      g1.gain.value = 0.42;
+      sweep.connect(band).connect(low).connect(g1).connect(ac.destination);
+      sweep.start(t0);
+      // the page settling on the others
+      const land = noise(Math.floor(sr * 0.12), (d, n) => { for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (n * 0.18)); });
+      const soft = ac.createBiquadFilter();
+      soft.type = 'lowpass'; soft.frequency.value = 420;
+      const g2 = ac.createGain();
+      g2.gain.value = 0.7;
+      land.connect(soft).connect(g2).connect(ac.destination);
+      land.start(t0 + dur * 0.82);
+    } catch (_) { /* no sound on this device */ }
+  }
+
   // ---- marks: the reader marks a page (where they stopped, a page to come back to) ----
   // On a wide screen two pages show; a mark on either of them counts as here.
   function markedHere() { const v = visible(); return marksOf(B.id).find((m) => v.includes(m.p)); }
@@ -368,7 +422,12 @@
     panel.replaceChildren();
     const head = el('div', 'fb-panel-head');
     head.append(el('b', '', T('العلامات والفهرس')), button('fb-panel-x', '×', () => { panel.hidden = true; }, T('إغلاق')));
-    panel.append(head, el('h3', '', `🔖 ${T('علاماتي')}`));
+    const snd = el('label', 'fb-opt');
+    const sw = el('input');
+    sw.type = 'checkbox'; sw.checked = S.sound !== false;
+    sw.addEventListener('change', () => { S.sound = sw.checked; keep(); if (sw.checked) rustle(); });
+    snd.append(sw, el('span', '', T('صوت تقليب الصفحات')));
+    panel.append(head, snd, el('h3', '', `🔖 ${T('علاماتي')}`));
     const marks = marksOf(B.id);
     if (!marks.length) panel.append(el('p', 'fb-hint', T('لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.')));
     for (const m of marks) {

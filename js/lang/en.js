@@ -1588,5 +1588,6 @@ window.noonI18n.use({
   'وُضعت علامة على صفحة': "Bookmarked page",
   'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "No bookmarks yet. Tap 🔖 at the top to mark the page where you stopped or want to come back to.",
   'ملاحظة (اختياري)': "Note (optional)",
-  'حذف العلامة': "Remove bookmark"
+  'حذف العلامة': "Remove bookmark",
+  'صوت تقليب الصفحات': "Page-turning sound"
 });

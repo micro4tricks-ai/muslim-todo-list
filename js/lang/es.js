@@ -1727,5 +1727,6 @@ window.noonI18n.use({
   'وُضعت علامة على صفحة': "Marcador puesto en la página",
   'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Aún no hay marcadores. Toca 🔖 arriba para marcar la página donde te detuviste o a la que quieres volver.",
   'ملاحظة (اختياري)': "Nota (opcional)",
-  'حذف العلامة': "Quitar marcador"
+  'حذف العلامة': "Quitar marcador",
+  'صوت تقليب الصفحات': "Sonido al pasar página"
 });

@@ -1727,5 +1727,6 @@ window.noonI18n.use({
   'وُضعت علامة على صفحة': "İşaret konuldu: sayfa",
   'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Henüz işaret yok. Kaldığınız ya da dönmek istediğiniz sayfayı işaretlemek için üstteki 🔖 düğmesine dokunun.",
   'ملاحظة (اختياري)': "Not (isteğe bağlı)",
-  'حذف العلامة': "İşareti sil"
+  'حذف العلامة': "İşareti sil",
+  'صوت تقليب الصفحات': "Sayfa çevirme sesi"
 });
