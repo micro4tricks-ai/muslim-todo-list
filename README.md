@@ -231,7 +231,7 @@ Without sync, everything stays on your device. With sync, tasks and settings are
 - **Adhkar:** [Hisn al-Muslim](https://www.hisnmuslim.com). **Adhan recordings:** Wikimedia Commons (see `sounds/adhan/CREDITS.md`).
 - **Fonts:** IBM Plex Sans Arabic, Amiri, Cairo, Tajawal, Almarai, Noto Kufi/Naskh Arabic, Readex Pro, El Messiri, Inter, Roboto, Nunito, Lato and Poppins — SIL Open Font License, from Google Fonts.
 - **Libraries:** Capacitor, Media3 (Apache 2.0), hls.js (Apache 2.0), Supabase JS (MIT).
-- **Sounds:** [Moodist](https://github.com/remvze/moodist) (CC0 and the Pixabay licence). **Prayer times:** the [PrayTimes.org](http://praytimes.org) algorithm.
+- **Sounds:** [Moodist](https://github.com/remvze/moodist) (CC0 and the Pixabay licence); the page-turn sound from Kenney's [RPG Audio](https://kenney.nl/assets/rpg-audio) (CC0, `sounds/page-turn/CREDITS.md`). **Prayer times:** the [PrayTimes.org](http://praytimes.org) algorithm.
 
 ## License
 

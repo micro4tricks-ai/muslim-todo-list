@@ -194,6 +194,7 @@
     range.max = String(b.pages);
     paintSave();
     panel.hidden = true;
+    if (S.sound !== false) { try { loadTurns(); } catch (_) {} }
     box.hidden = false;
     document.body.classList.add('fb-open');
     if (!history.state || !history.state.fb) history.pushState({ fb: 1 }, '');
@@ -318,55 +319,40 @@
   });
 
   // ---- the sound of a paper page turning ----
-  // Made here with Web Audio (no recording to download, works offline): a swish of noise through a
-  // band that rises and falls as the page sweeps over, with the grain of paper in it, then the soft
-  // landing of the page. Each turn is a little different. On by default; off in the ☰ panel.
-  let ac = null;
-  function noise(n, fill) {
-    const buf = ac.createBuffer(1, n, ac.sampleRate);
-    fill(buf.getChannelData(0), n);
-    const src = ac.createBufferSource();
-    src.buffer = buf;
-    return src;
+  // Real recordings of a book's page turning (sounds/page-turn, CC0, kenney.nl), loaded once and
+  // played through Web Audio so a quick run of turns overlaps naturally. Each turn picks one and
+  // varies its pitch a little, so no two sound quite alike. On by default; off in the ☰ panel.
+  const TURNS = [['sounds/page-turn/page-turn-1.wav', 0.55], ['sounds/page-turn/page-turn-2.wav', 1]];
+  let ac = null, turns = null;
+  function loadTurns() {
+    if (turns) return turns;
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const get = async ([path, gain]) => {
+      for (const base of window.Capacitor ? ['', SITE] : ['']) {
+        try {
+          const r = await fetch(base + path);
+          if (r.ok) return { buf: await ac.decodeAudioData(await r.arrayBuffer()), gain };
+        } catch (_) {}
+      }
+      return null;
+    };
+    turns = Promise.all(TURNS.map(get)).then((l) => l.filter(Boolean));
+    return turns;
   }
-  function rustle() {
+  async function rustle() {
     if (S.sound === false) return;
     try {
-      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
-      if (ac.state === 'suspended') ac.resume();
-      const t0 = ac.currentTime + 0.01, sr = ac.sampleRate;
-      const dur = 0.38 + Math.random() * 0.1;
-      // the sweep
-      const sweep = noise(Math.floor(sr * dur), (d, n) => {
-        let grain = 0;
-        for (let i = 0; i < n; i++) {
-          const x = i / n;
-          const env = Math.pow(Math.sin(Math.PI * Math.min(1, x / 0.9)), 1.4);
-          if (Math.random() < 0.012) grain = 0.6 + Math.random() * 0.6; // the crackle of the sheet
-          grain *= 0.94;
-          d[i] = (Math.random() * 2 - 1) * env * (0.5 + grain);
-        }
-      });
-      const band = ac.createBiquadFilter();
-      band.type = 'bandpass'; band.Q.value = 0.7;
-      const top = 3000 + Math.random() * 1200;
-      band.frequency.setValueAtTime(800, t0);
-      band.frequency.exponentialRampToValueAtTime(top, t0 + dur * 0.5);
-      band.frequency.exponentialRampToValueAtTime(1200, t0 + dur);
-      const low = ac.createBiquadFilter();
-      low.type = 'highpass'; low.frequency.value = 350;
-      const g1 = ac.createGain();
-      g1.gain.value = 0.42;
-      sweep.connect(band).connect(low).connect(g1).connect(ac.destination);
-      sweep.start(t0);
-      // the page settling on the others
-      const land = noise(Math.floor(sr * 0.12), (d, n) => { for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (n * 0.18)); });
-      const soft = ac.createBiquadFilter();
-      soft.type = 'lowpass'; soft.frequency.value = 420;
-      const g2 = ac.createGain();
-      g2.gain.value = 0.7;
-      land.connect(soft).connect(g2).connect(ac.destination);
-      land.start(t0 + dur * 0.82);
+      const list = await loadTurns();
+      if (!list.length) return;
+      if (ac.state === 'suspended') await ac.resume();
+      const t = list[Math.random() < 0.7 ? 0 : list.length - 1];
+      const src = ac.createBufferSource();
+      src.buffer = t.buf;
+      src.playbackRate.value = 0.94 + Math.random() * 0.12;
+      const g = ac.createGain();
+      g.gain.value = t.gain * 0.8;
+      src.connect(g).connect(ac.destination);
+      src.start();
     } catch (_) { /* no sound on this device */ }
   }
 
