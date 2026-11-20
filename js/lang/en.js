@@ -1582,5 +1582,11 @@ window.noonI18n.use({
   'تمّ التنزيل.': "Downloaded.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "The download stopped. Tap again to finish it.",
   'الصفحة الأولى': "First page",
-  'الصفحة الأخيرة': "Last page"
+  'الصفحة الأخيرة': "Last page",
+  'علامات': "bookmarks",
+  'العلامات والفهرس': "Bookmarks and contents",
+  'وُضعت علامة على صفحة': "Bookmarked page",
+  'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "No bookmarks yet. Tap 🔖 at the top to mark the page where you stopped or want to come back to.",
+  'ملاحظة (اختياري)': "Note (optional)",
+  'حذف العلامة': "Remove bookmark"
 });

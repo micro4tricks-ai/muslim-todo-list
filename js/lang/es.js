@@ -1721,5 +1721,11 @@ window.noonI18n.use({
   'تمّ التنزيل.': "Descargado.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "La descarga se detuvo. Toca de nuevo para terminarla.",
   'الصفحة الأولى': "Primera página",
-  'الصفحة الأخيرة': "Última página"
+  'الصفحة الأخيرة': "Última página",
+  'علامات': "marcadores",
+  'العلامات والفهرس': "Marcadores e índice",
+  'وُضعت علامة على صفحة': "Marcador puesto en la página",
+  'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Aún no hay marcadores. Toca 🔖 arriba para marcar la página donde te detuviste o a la que quieres volver.",
+  'ملاحظة (اختياري)': "Nota (opcional)",
+  'حذف العلامة': "Quitar marcador"
 });

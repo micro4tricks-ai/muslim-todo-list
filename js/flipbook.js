@@ -10,15 +10,29 @@
 // a book can be kept on the device (Cache API "flipbook-v1") for reading offline.
 (() => {
   'use strict';
-  const { T, I, el, button, toast, skeleton } = window.noonUI;
+  const { T, I, el, button, toast, skeleton, load: loadKey, store, onRemote } = window.noonUI;
   const SITE = 'https://micro4tricks-ai.github.io/muslim-todo-list/';
   const LIST = 'mushafs/';
   const KEY = 'noon-flipbook';
   const CACHE = 'flipbook-v1';
   const NEAR = 6, FAR = 16; // pages loaded around the open one; pages further than FAR are let go
-  let S = { places: {}, saved: {} };
+  // This device's own: which books are kept offline.
+  let S = { saved: {} };
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (_) {}
   const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} };
+  // The reader's own, carried to their other devices (js/sync.js): where each book was left, and
+  // the pages marked in it with an optional note.  { places: {id: {p, at}}, marks: {id: [{p, at, note}]} }
+  const MKEY = 'noon-sweep-mushafs';
+  const readMarks = () => { const m = loadKey(MKEY, {}); m.places = m.places || {}; m.marks = m.marks || {}; return m; };
+  let M = readMarks();
+  if (S.places) { // the places used to be kept with the device's own data
+    if (!Object.keys(M.places).length) M.places = S.places;
+    delete S.places;
+    keep();
+    store(MKEY, M);
+  }
+  const keepMarks = () => store(MKEY, M);
+  const marksOf = (id) => M.marks[id] || [];
   const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-calm');
 
   // ---- the list ----
@@ -90,12 +104,13 @@
         c.dataset.book = b.id;
         const img = el('img', 'fb-cover');
         img.src = coverUrl(b); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
-        const place = S.places[b.id];
+        const place = M.places[b.id];
         // On the translations shelf the language is the name; elsewhere the book's own title.
         const name = el('b', '', kind === 'tr' ? langName(b) : b.title);
         name.dir = 'auto'; // an Arabic title reads right to left in any interface
         c.append(img, name, el('span', '', `${I.num(b.pages)} ${T('صفحة')}`));
         if (place) c.append(el('small', 'lib-at', `${T('وقفت عند')} ${T('صفحة')} ${I.num(place.p)}`));
+        if (marksOf(b.id).length) c.append(el('small', 'fb-marks', `🔖 ${I.num(marksOf(b.id).length)} ${T('علامات')}`));
         if (S.saved[b.id]) c.append(el('small', 'fb-saved', `✓ ${T('محفوظ للقراءة دون إنترنت')}`));
         grid1.append(c);
         const entry = [c, `${b.title} ${b.langName} ${b.langAr || ''} ${langName(b)} ${title(b)}`.toLowerCase()];
@@ -128,7 +143,10 @@
   const xBtn = button('fb-x', '×', () => close(), T('إغلاق'));
   const tTitle = el('b', 'fb-title');
   const saveBtn = button('fb-save', '', () => toggleSave());
-  top.append(xBtn, tTitle, saveBtn);
+  const markBtn = button('fb-tool fb-mark', '🔖', () => toggleMark());
+  const listBtn = button('fb-tool', '☰', () => openPanel(), T('العلامات والفهرس'));
+  listBtn.title = T('العلامات والفهرس');
+  top.append(xBtn, tTitle, markBtn, listBtn, saveBtn);
   const stage = el('div', 'fb-stage');
   const bar = el('div', 'fb-bar');
   const nav = (label, sym, fn) => { const b = button('fb-nav', sym, fn, T(label)); b.title = T(label); return b; };
@@ -150,7 +168,13 @@
   row.dir = 'rtl';
   row.append(bFirst, bPrev, count, bNext, bLast);
   bar.append(range, row);
-  box.append(top, stage, bar);
+  // Over the book: the marked pages (with their notes) and, for a Mushaf laid out like the Madinah
+  // Mushaf, its juz' and surahs by page.
+  const panel = el('div', 'fb-panel');
+  panel.hidden = true;
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', T('العلامات والفهرس'));
+  box.append(top, stage, bar, panel);
   document.body.append(box);
 
   let B = null, pf = null, L = 0, pad = 0, imgs = [], urls = new Map(), shown = 1, job = null;
@@ -169,10 +193,11 @@
     box.setAttribute('aria-label', title(b));
     range.max = String(b.pages);
     paintSave();
+    panel.hidden = true;
     box.hidden = false;
     document.body.classList.add('fb-open');
     if (!history.state || !history.state.fb) history.pushState({ fb: 1 }, '');
-    build((S.places[b.id] && S.places[b.id].p) || 1);
+    build((M.places[b.id] && M.places[b.id].p) || 1);
   }
   function build(at) {
     if (pf) { try { pf.destroy(); } catch (_) {} pf = null; }
@@ -222,8 +247,9 @@
     range.value = String(shown);
     bFirst.disabled = bPrev.disabled = shown <= 1;
     bLast.disabled = bNext.disabled = v[v.length - 1] >= B.pages;
-    S.places[B.id] = { p: shown, at: Date.now() };
-    keep();
+    M.places[B.id] = { p: shown, at: Date.now() };
+    keepMarks();
+    paintMark();
     load(pf.getCurrentPageIndex());
   }
   // Load the pages near the open one; let go of those far away (memory on a phone).
@@ -283,12 +309,101 @@
   addEventListener('popstate', () => { if (!box.hidden && !(history.state && history.state.fb)) shut(); });
   addEventListener('keydown', (ev) => {
     if (box.hidden || ev.target.closest('input, textarea')) return;
-    if (ev.key === 'Escape') close();
+    if (ev.key === 'Escape') { if (!panel.hidden) panel.hidden = true; else close(); }
     else if (ev.key === 'ArrowLeft' || ev.key === 'PageDown') { ev.preventDefault(); step(1); }
     else if (ev.key === 'ArrowRight' || ev.key === 'PageUp') { ev.preventDefault(); step(-1); }
     else if (ev.key === 'Home') goPage(1);
     else if (ev.key === 'End') goPage(B.pages);
   });
+
+  // ---- marks: the reader marks a page (where they stopped, a page to come back to) ----
+  // On a wide screen two pages show; a mark on either of them counts as here.
+  function markedHere() { const v = visible(); return marksOf(B.id).find((m) => v.includes(m.p)); }
+  function paintMark() {
+    if (!B || !pf) return;
+    const on = !!markedHere();
+    markBtn.classList.toggle('is-on', on);
+    markBtn.setAttribute('aria-pressed', String(on));
+    const label = on ? T('إزالة العلامة') : T('علامة على هذه الصفحة');
+    markBtn.title = label;
+    markBtn.setAttribute('aria-label', label);
+  }
+  function dropMark(id, m) {
+    M.marks[id] = marksOf(id).filter((x) => x !== m);
+    if (!M.marks[id].length) delete M.marks[id];
+  }
+  function toggleMark() {
+    if (!B || !pf) return;
+    const m = markedHere();
+    if (m) dropMark(B.id, m);
+    else {
+      const p = shown;
+      M.marks[B.id] = marksOf(B.id).concat({ p, at: Date.now(), note: '' }).sort((a, b) => a.p - b.p);
+      toast(`🔖 ${T('وُضعت علامة على صفحة')} ${I.num(p)}`, { label: T('أضف ملاحظة'), run: () => openPanel(p) });
+    }
+    keepMarks();
+    paintMark();
+    if (window.noonBuzz) window.noonBuzz(12);
+  }
+  // Books whose pages are the Madinah Mushaf's 604 pages (checked against the page images), so
+  // the page of each surah and juz' is known from js/quran-meta.js.
+  const MADINAH = new Set(['madinah-hafs-1441']);
+  function quranIndex(Q) {
+    const bs = (arr, i) => { let lo = 0, hi = arr.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (arr[mid] <= i) lo = mid; else hi = mid - 1; } return lo; };
+    const surahs = [];
+    let at = 0;
+    Q.surahs.forEach((s, k) => { surahs.push({ k, p: bs(Q.pages, at) + 1 }); at += s[4]; });
+    return { surahs, juz: Q.juz.map((i, j) => ({ j: j + 1, p: bs(Q.pages, i) + 1 })) };
+  }
+  const surahName = (Q, k) => (I.surah && I.surah(k)) || (I.latin ? Q.surahs[k][1] : Q.surahs[k][0].replace(/^سُورَةُ\s*/, ''));
+  function openPanel(notePage) {
+    fillPanel();
+    panel.hidden = false;
+    const f = panel.querySelector(notePage ? `[data-note="${notePage}"]` : '.fb-panel-x');
+    if (f) f.focus();
+  }
+  function jump(p) { panel.hidden = true; goPage(p); }
+  function fillPanel() {
+    if (!B) return;
+    panel.replaceChildren();
+    const head = el('div', 'fb-panel-head');
+    head.append(el('b', '', T('العلامات والفهرس')), button('fb-panel-x', '×', () => { panel.hidden = true; }, T('إغلاق')));
+    panel.append(head, el('h3', '', `🔖 ${T('علاماتي')}`));
+    const marks = marksOf(B.id);
+    if (!marks.length) panel.append(el('p', 'fb-hint', T('لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.')));
+    for (const m of marks) {
+      const row = el('div', 'fb-mk');
+      const go = button('fb-mk-go', '', () => jump(m.p));
+      go.append(el('b', '', `${T('صفحة')} ${I.num(m.p)}`), el('small', '', new Date(m.at).toLocaleDateString(I.locale, { day: 'numeric', month: 'short', year: 'numeric' })));
+      const note = el('input', 'fb-mk-note');
+      note.type = 'text'; note.maxLength = 200; note.value = m.note || ''; note.dir = 'auto';
+      note.placeholder = T('ملاحظة (اختياري)');
+      note.setAttribute('aria-label', `${T('ملاحظة (اختياري)')} · ${T('صفحة')} ${I.num(m.p)}`);
+      note.dataset.note = String(m.p);
+      note.addEventListener('change', () => { m.note = note.value.trim(); keepMarks(); });
+      const del = button('fb-mk-x', '×', () => { dropMark(B.id, m); keepMarks(); paintMark(); fillPanel(); }, `${T('حذف العلامة')} · ${T('صفحة')} ${I.num(m.p)}`);
+      row.append(go, note, del);
+      panel.append(row);
+    }
+    const Q = window.NOON_QURAN_META;
+    if (MADINAH.has(B.id) && Q && B.pages === 604) {
+      const ix = quranIndex(Q);
+      panel.append(el('h3', '', T('الأجزاء')));
+      const jg = el('div', 'fb-ix fb-ix-juz');
+      ix.juz.forEach(({ j, p }) => jg.append(button('fb-ix-j', I.num(j), () => jump(p), `${T('الجزء')} ${I.num(j)} · ${T('صفحة')} ${I.num(p)}`)));
+      panel.append(jg, el('h3', '', T('السور')));
+      const sg = el('div', 'fb-ix');
+      ix.surahs.forEach(({ k, p }) => {
+        const b = button('fb-ix-s', '', () => jump(p));
+        const n = el('b', '', surahName(Q, k));
+        n.dir = 'auto';
+        b.append(el('span', 'fb-ix-n', I.num(k + 1)), n, el('small', '', I.num(p)));
+        sg.append(b);
+      });
+      panel.append(sg);
+    }
+  }
+  onRemote(MKEY, () => { M = readMarks(); if (B) { paintMark(); if (!panel.hidden) fillPanel(); } });
 
   // ---- keeping a book for reading offline ----
   function paintSave() {

@@ -1721,5 +1721,11 @@ window.noonI18n.use({
   'تمّ التنزيل.': "İndirildi.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "İndirme durdu. Tamamlamak için tekrar dokunun.",
   'الصفحة الأولى': "İlk sayfa",
-  'الصفحة الأخيرة': "Son sayfa"
+  'الصفحة الأخيرة': "Son sayfa",
+  'علامات': "işaret",
+  'العلامات والفهرس': "İşaretler ve içindekiler",
+  'وُضعت علامة على صفحة': "İşaret konuldu: sayfa",
+  'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Henüz işaret yok. Kaldığınız ya da dönmek istediğiniz sayfayı işaretlemek için üstteki 🔖 düğmesine dokunun.",
+  'ملاحظة (اختياري)': "Not (isteğe bağlı)",
+  'حذف العلامة': "İşareti sil"
 });

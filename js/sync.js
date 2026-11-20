@@ -26,7 +26,7 @@
   const LIVE_KEYS = ['noon-sweep-notes', 'noon-sweep-cards', 'noon-sweep-habits', 'noon-sweep-adhkar',
     'noon-sweep-distractions', 'noon-sweep-focuslog', 'noon-sweep-prayer-alerts', 'noon-sweep-quran', 'noon-sweep-sunnah',
     'noon-sweep-library', 'noon-sweep-card-look', 'noon-sweep-prayers', 'noon-sweep-zakat', 'noon-sweep-hifz', 'noon-sweep-reminders',
-    'noon-sweep-today'];
+    'noon-sweep-today', 'noon-sweep-mushafs'];
   const SETTINGS_KEYS = RELOAD_KEYS.concat(LIVE_KEYS);
   const META_KEY = 'noon-sweep-sync-meta';
   const OWNER_KEY = 'noon-sweep-sync-owner';   // the account this device's data was last synced with

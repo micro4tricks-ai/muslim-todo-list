@@ -16,8 +16,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مهام المسلم">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="fonts/fonts.css?v=2.11.2">
-<link rel="stylesheet" href="fonts/extra.css?v=2.11.2">
+<link rel="stylesheet" href="fonts/fonts.css?v=2.12.0">
+<link rel="stylesheet" href="fonts/extra.css?v=2.12.0">
 <style>
   :root {
     /* Calm palette: parchment, deep emerald and a little gold. The accent stays quiet; red is only for errors. */
@@ -1904,6 +1904,30 @@
   .fb-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
   .fb-x { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.1); color: inherit; font-size: 24px; line-height: 1; }
   .fb-save { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: inherit; font: inherit; font-size: 13px; }
+  .fb-tool { width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: inherit; font-size: 18px; line-height: 1; }
+  .fb-mark { filter: grayscale(1); opacity: 0.75; }
+  .fb-mark.is-on { filter: none; opacity: 1; background: rgba(216, 180, 106, 0.3); border-color: #D8B46A; }
+  .fb-card .fb-marks { color: #A67C2E; }
+  .fb-panel { position: absolute; inset: 0; z-index: 5; overflow-y: auto; padding: calc(10px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); background: #2A2620; }
+  .fb-panel[hidden] { display: none; }
+  .fb-panel > * { max-width: 720px; margin-inline: auto; }
+  .fb-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .fb-panel-head b { font-size: 17px; }
+  .fb-panel-x { width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.1); color: inherit; font-size: 24px; line-height: 1; }
+  .fb-panel h3 { margin: 18px auto 8px; font-size: 15px; color: #D8B46A; }
+  .fb-hint { color: #C9C0AC; font-size: 14px; line-height: 1.7; }
+  .fb-mk { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .fb-mk-go { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 96px; padding: 8px 12px; border-radius: 12px; border: none; background: rgba(255, 255, 255, 0.1); color: inherit; font: inherit; text-align: start; }
+  .fb-mk-go small { font-size: 11.5px; opacity: 0.75; }
+  .fb-mk-note { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.2); color: inherit; font: inherit; font-size: 14px; }
+  .fb-mk-x { width: 36px; height: 36px; flex: none; border-radius: 50%; border: none; background: transparent; color: inherit; font-size: 22px; opacity: 0.7; }
+  .fb-ix { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+  .fb-ix-juz { grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); }
+  .fb-ix-j { height: 44px; border-radius: 10px; border: none; background: rgba(255, 255, 255, 0.1); color: inherit; font: inherit; }
+  .fb-ix-s { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: none; background: rgba(255, 255, 255, 0.07); color: inherit; font: inherit; text-align: start; }
+  .fb-ix-s b { flex: 1; font-weight: 600; font-size: 14px; }
+  .fb-ix-n { min-width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: rgba(216, 180, 106, 0.2); font-size: 12px; }
+  .fb-ix-s small { opacity: 0.65; font-size: 12px; }
   .fb-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 6px; overflow: hidden; }
   .fb-book { width: 100%; height: 100%; }
   .fb-page { background: #FBF8F1; overflow: hidden; }
@@ -2351,66 +2375,66 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="js/i18n.js?v=2.11.2"></script>
-<script src="js/a11y.js?v=2.11.2"></script>
-<script src="js/clock-core.js?v=2.11.2"></script>
-<script src="js/clock.js?v=2.11.2"></script>
-<script src="js/astro.js?v=2.11.2"></script>
-<script src="js/look.js?v=2.11.2"></script>
-<script src="js/sounds.js?v=2.11.2"></script>
-<script src="js/tasks.js?v=2.11.2"></script>
-<script src="js/views.js?v=2.11.2"></script>
-<script src="js/remind-card.js?v=2.11.2"></script>
-<script src="js/reminders-core.js?v=2.11.2"></script>
-<script src="js/reminders.js?v=2.11.2"></script>
-<script src="js/notes.js?v=2.11.2"></script>
-<script src="js/cards.js?v=2.11.2"></script>
-<script src="js/adhkar-data.js?v=2.11.2"></script>
-<script src="js/adhkar-i18n.js?v=2.11.2"></script>
-<script src="js/adhkar.js?v=2.11.2"></script>
-<script src="js/habits.js?v=2.11.2"></script>
-<script src="js/prayers.js?v=2.11.2"></script>
-<script src="js/focus-plus.js?v=2.11.2"></script>
-<script src="js/native.js?v=2.11.2"></script>
-<script src="js/prayer-alerts.js?v=2.11.2"></script>
-<script src="js/device.js?v=2.11.2"></script>
-<script src="js/extras-data.js?v=2.11.2"></script>
-<script src="js/quran-meta.js?v=2.11.2"></script>
-<script src="js/lang/surah-names.js?v=2.11.2"></script>
-<script src="js/hifz.js?v=2.11.2"></script>
-<script src="js/khatma.js?v=2.11.2"></script>
-<script src="js/challenge.js?v=2.11.2"></script>
-<script src="js/tajweed-core.js?v=2.11.2"></script>
-<script src="js/tajweed-rules.js?v=2.11.2"></script>
-<script src="js/quran.js?v=2.11.2"></script>
-<script src="js/mushaf-core.js?v=2.11.2"></script>
-<script src="js/mushaf-book.js?v=2.11.2"></script>
-<script src="js/sunnah-data.js?v=2.11.2"></script>
-<script src="js/sunnah.js?v=2.11.2"></script>
-<script src="js/wmm-data.js?v=2.11.2"></script>
-<script src="js/compass-core.js?v=2.11.2"></script>
-<script src="js/qibla.js?v=2.11.2"></script>
-<script src="js/library-meta.js?v=2.11.2"></script>
-<script src="js/salah-data.js?v=2.11.2"></script>
-<script src="js/tools.js?v=2.11.2"></script>
-<script src="js/library-books.js?v=2.11.2"></script>
-<script src="js/library-local.js?v=2.11.2"></script>
-<script src="js/shamela.js?v=2.11.2"></script>
-<script src="js/library.js?v=2.11.2"></script>
-<script src="js/book-reader.js?v=2.11.2"></script>
-<script src="js/vendor/page-flip.browser.js?v=2.11.2"></script>
-<script src="js/flipbook.js?v=2.11.2"></script>
-<script src="js/listen.js?v=2.11.2"></script>
-<script src="js/report.js?v=2.11.2"></script>
-<script src="js/focus-mode.js?v=2.11.2"></script>
-<script src="js/config.js?v=2.11.2"></script>
-<script src="js/vendor/supabase.js?v=2.11.2" defer></script>
-<script src="js/sync-core.js?v=2.11.2" defer></script>
-<script src="js/sync.js?v=2.11.2" defer></script>
-<script src="js/app.js?v=2.11.2" defer></script>
-<script src="js/settings.js?v=2.11.2" defer></script>
-<script src="js/today-core.js?v=2.11.2" defer></script>
-<script src="js/today.js?v=2.11.2" defer></script>
-<script src="js/nav.js?v=2.11.2" defer></script>
+<script src="js/i18n.js?v=2.12.0"></script>
+<script src="js/a11y.js?v=2.12.0"></script>
+<script src="js/clock-core.js?v=2.12.0"></script>
+<script src="js/clock.js?v=2.12.0"></script>
+<script src="js/astro.js?v=2.12.0"></script>
+<script src="js/look.js?v=2.12.0"></script>
+<script src="js/sounds.js?v=2.12.0"></script>
+<script src="js/tasks.js?v=2.12.0"></script>
+<script src="js/views.js?v=2.12.0"></script>
+<script src="js/remind-card.js?v=2.12.0"></script>
+<script src="js/reminders-core.js?v=2.12.0"></script>
+<script src="js/reminders.js?v=2.12.0"></script>
+<script src="js/notes.js?v=2.12.0"></script>
+<script src="js/cards.js?v=2.12.0"></script>
+<script src="js/adhkar-data.js?v=2.12.0"></script>
+<script src="js/adhkar-i18n.js?v=2.12.0"></script>
+<script src="js/adhkar.js?v=2.12.0"></script>
+<script src="js/habits.js?v=2.12.0"></script>
+<script src="js/prayers.js?v=2.12.0"></script>
+<script src="js/focus-plus.js?v=2.12.0"></script>
+<script src="js/native.js?v=2.12.0"></script>
+<script src="js/prayer-alerts.js?v=2.12.0"></script>
+<script src="js/device.js?v=2.12.0"></script>
+<script src="js/extras-data.js?v=2.12.0"></script>
+<script src="js/quran-meta.js?v=2.12.0"></script>
+<script src="js/lang/surah-names.js?v=2.12.0"></script>
+<script src="js/hifz.js?v=2.12.0"></script>
+<script src="js/khatma.js?v=2.12.0"></script>
+<script src="js/challenge.js?v=2.12.0"></script>
+<script src="js/tajweed-core.js?v=2.12.0"></script>
+<script src="js/tajweed-rules.js?v=2.12.0"></script>
+<script src="js/quran.js?v=2.12.0"></script>
+<script src="js/mushaf-core.js?v=2.12.0"></script>
+<script src="js/mushaf-book.js?v=2.12.0"></script>
+<script src="js/sunnah-data.js?v=2.12.0"></script>
+<script src="js/sunnah.js?v=2.12.0"></script>
+<script src="js/wmm-data.js?v=2.12.0"></script>
+<script src="js/compass-core.js?v=2.12.0"></script>
+<script src="js/qibla.js?v=2.12.0"></script>
+<script src="js/library-meta.js?v=2.12.0"></script>
+<script src="js/salah-data.js?v=2.12.0"></script>
+<script src="js/tools.js?v=2.12.0"></script>
+<script src="js/library-books.js?v=2.12.0"></script>
+<script src="js/library-local.js?v=2.12.0"></script>
+<script src="js/shamela.js?v=2.12.0"></script>
+<script src="js/library.js?v=2.12.0"></script>
+<script src="js/book-reader.js?v=2.12.0"></script>
+<script src="js/vendor/page-flip.browser.js?v=2.12.0"></script>
+<script src="js/flipbook.js?v=2.12.0"></script>
+<script src="js/listen.js?v=2.12.0"></script>
+<script src="js/report.js?v=2.12.0"></script>
+<script src="js/focus-mode.js?v=2.12.0"></script>
+<script src="js/config.js?v=2.12.0"></script>
+<script src="js/vendor/supabase.js?v=2.12.0" defer></script>
+<script src="js/sync-core.js?v=2.12.0" defer></script>
+<script src="js/sync.js?v=2.12.0" defer></script>
+<script src="js/app.js?v=2.12.0" defer></script>
+<script src="js/settings.js?v=2.12.0" defer></script>
+<script src="js/today-core.js?v=2.12.0" defer></script>
+<script src="js/today.js?v=2.12.0" defer></script>
+<script src="js/nav.js?v=2.12.0" defer></script>
 </body>
 </html>

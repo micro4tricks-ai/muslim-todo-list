@@ -1721,5 +1721,11 @@ window.noonI18n.use({
   'تمّ التنزيل.': "Selesai diunduh.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "Unduhan berhenti. Ketuk lagi untuk menyelesaikannya.",
   'الصفحة الأولى': "Halaman pertama",
-  'الصفحة الأخيرة': "Halaman terakhir"
+  'الصفحة الأخيرة': "Halaman terakhir",
+  'علامات': "penanda",
+  'العلامات والفهرس': "Penanda dan daftar isi",
+  'وُضعت علامة على صفحة': "Penanda dipasang di halaman",
+  'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Belum ada penanda. Ketuk 🔖 di atas untuk menandai halaman tempat Anda berhenti atau ingin kembali.",
+  'ملاحظة (اختياري)': "Catatan (opsional)",
+  'حذف العلامة': "Hapus penanda"
 });
