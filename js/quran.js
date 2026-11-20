@@ -182,27 +182,6 @@
     save();
   }
 
-  // ---- the Mushaf as PDF files: pdf.quran.ws, rendered from the King Fahd Complex masters ----
-  // The files are the Arabic Mushaf in five readings; only the site's own pages are in the reader's language.
-  function mushafPdf() {
-    root.replaceChildren();
-    const head = el('div', 'view-head');
-    const back = button('btn btn-quiet', `${I.back} ${T('رجوع')}`, () => renderIndex());
-    back.dataset.back = ''; // the phone's back key steps back through it (js/views.js)
-    head.append(back, el('h2', '', T('المصحف PDF')));
-    const site = `https://pdf.quran.ws/${I.isEn ? '' : `${I.lang}/`}`;
-    const link = (cls, text, href) => { const a = el('a', cls, text); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; return a; };
-    const bar = el('div', 'lib-bar');
-    bar.append(
-      link('btn btn-primary', T('تحميل المصحف كاملاً (حفص)'), 'https://pdf.quran.ws/pdfs/hafs/quran-hafs-mushaf.pdf'),
-      link('btn btn-quiet', T('سورة أو صفحة أو رواية أخرى'), site)
-    );
-    root.append(head, el('p', 'hint', T('ملفات PDF جاهزة للطباعة والقراءة دون إنترنت، من نسخة مجمع الملك فهد بخمس روايات.')), bar,
-      el('p', 'hint', T('الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.')),
-      el('p', 'credit', 'pdf.quran.ws · King Fahd Glorious Qur’an Printing Complex'));
-    window.scrollTo(0, 0);
-  }
-
   // Translated and scanned Mushafs whose pages turn like paper (js/flipbook.js).
   function flipMushafs() {
     root.replaceChildren();
@@ -306,7 +285,6 @@
       mode(h.due > 0, 'متابعة الحفظ', h.due ? `${I.num(h.due)} ${T('للمراجعة اليوم')}` : T('سجّل ما حفظته ونذكّرك بمراجعته في وقته'), () => window.noonHifz.open());
     }
     if (window.noonKhatma) mode(false, 'الختمة الجماعية', 'اقسموا الختمة على الأجزاء مع أهلك وأصحابك', () => window.noonKhatma.open());
-    mode(false, 'المصحف PDF', 'ملفات PDF للتنزيل والطباعة', mushafPdf);
     root.append(modes);
 
     // Search.
