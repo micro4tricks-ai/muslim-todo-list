@@ -203,6 +203,15 @@
     window.scrollTo(0, 0);
   }
 
+  // Translated and scanned Mushafs whose pages turn like paper (js/flipbook.js).
+  function flipMushafs() {
+    root.replaceChildren();
+    const back = button('btn btn-quiet', `${I.back} ${T('رجوع')}`, () => renderIndex());
+    back.dataset.back = ''; // the phone's back key steps back through it (js/views.js)
+    window.noonFlipbook.render(root, { back });
+    window.scrollTo(0, 0);
+  }
+
   // ================= the index (in the tab) =================
   let tab = 'surahs', query = '', found = null;
   function renderIndex() {
@@ -283,6 +292,7 @@
       modes.append(b);
     };
     if (window.noonMushafBook) mode(false, 'المصحف بتقليب الصفحات', '٦٠٤ صفحات كمصحف المدينة، تقلّبها بيدك', () => window.noonMushafBook.open());
+    if (window.noonFlipbook) mode(false, 'مصاحف مترجمة ومصوّرة', 'ترجمات المعاني بلغات كثيرة، وطبعات المصحف والتفاسير من مجمع الملك فهد', flipMushafs);
     mode(S.tajweed, 'مصحف التجويد', 'أحكام التجويد ملوّنة في النص', () => { S.tajweed = !S.tajweed; save(); renderIndex(); });
     mode(S.reciter === 'muallim', 'المصحف المعلّم', 'الحصري المعلّم، تكرار الآية ٣ مرات ومهلة لترديدها', () => {
       const on = S.reciter !== 'muallim';

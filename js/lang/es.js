@@ -1711,7 +1711,11 @@ window.noonI18n.use({
   'سورة أو صفحة أو رواية أخرى': 'Una sura, una página u otra qirāʾa',
   'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'El archivo completo pesa unos 210 MB, así que conviene descargarlo con Wi-Fi; el de cada sura es mucho más pequeño.',
   'ترجمة معاني القرآن الكريم': "Traducción del significado del Corán",
-  'مصاحف مترجمة': "Mushafs traducidos",
+  'مصاحف مترجمة ومصوّرة': 'Mushafs traducidos y escaneados',
+  'ترجمات المعاني بلغات كثيرة، وطبعات المصحف والتفاسير من مجمع الملك فهد': 'Traducciones del significado en muchos idiomas, y ediciones del Mushaf y tafsires del Complejo Rey Fahd',
+  'طبعات المصحف الشريف': 'Ediciones del Mushaf',
+  'التفاسير والقراءات': 'Tafsir y lecturas',
+  'ترجمات معاني القرآن الكريم': 'Traducciones del significado del Corán',
   'تعذّر تحميل القائمة. تحتاج اتصالاً بالإنترنت أول مرة.': "No se pudo cargar la lista. La primera vez necesita conexión a internet.",
   'ابحث باللغة أو الاسم': "Buscar por idioma o nombre",
   'محفوظ للقراءة دون إنترنت': "Guardado para leer sin conexión",
@@ -1722,8 +1726,6 @@ window.noonI18n.use({
   'ينتظر تنزيل مصحف آخر حتى ينتهي.': "Espera a que termine la descarga del otro Mushaf.",
   'تمّ التنزيل.': "Descargado.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "La descarga se detuvo. Toca de nuevo para terminarla.",
-  'تُقلَّب صفحاتها كالورق': "Páginas que se pasan como papel",
-  'ترجمات معاني القرآن الكريم إلى لغات كثيرة، وطبعات المصحف من مجمع الملك فهد': "Traducciones del significado del Corán a muchos idiomas, y ediciones del Mushaf del Complejo Rey Fahd",
   'الصفحة الأولى': "Primera página",
   'الصفحة الأخيرة': "Última página"
 });

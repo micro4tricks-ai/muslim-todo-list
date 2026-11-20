@@ -1711,7 +1711,11 @@ window.noonI18n.use({
   'سورة أو صفحة أو رواية أخرى': 'Satu surah, satu halaman, atau qira’at lain',
   'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'Berkas lengkapnya sekitar 210 MB, jadi sebaiknya diunduh lewat Wi-Fi; berkas tiap surah jauh lebih kecil.',
   'ترجمة معاني القرآن الكريم': "Terjemahan makna Al-Qur’an",
-  'مصاحف مترجمة': "Mushaf terjemahan",
+  'مصاحف مترجمة ومصوّرة': 'Mushaf terjemahan dan pindaian',
+  'ترجمات المعاني بلغات كثيرة، وطبعات المصحف والتفاسير من مجمع الملك فهد': 'Terjemahan makna dalam banyak bahasa, serta cetakan Mushaf dan tafsir dari Kompleks Raja Fahd',
+  'طبعات المصحف الشريف': 'Cetakan Mushaf',
+  'التفاسير والقراءات': 'Tafsir dan qiraat',
+  'ترجمات معاني القرآن الكريم': "Terjemahan makna Al-Qur'an",
   'تعذّر تحميل القائمة. تحتاج اتصالاً بالإنترنت أول مرة.': "Daftar tidak dapat dimuat. Pertama kali perlu koneksi internet.",
   'ابحث باللغة أو الاسم': "Cari menurut bahasa atau nama",
   'محفوظ للقراءة دون إنترنت': "Tersimpan untuk dibaca offline",
@@ -1722,8 +1726,6 @@ window.noonI18n.use({
   'ينتظر تنزيل مصحف آخر حتى ينتهي.': "Tunggu sampai unduhan mushaf lain selesai.",
   'تمّ التنزيل.': "Selesai diunduh.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "Unduhan berhenti. Ketuk lagi untuk menyelesaikannya.",
-  'تُقلَّب صفحاتها كالورق': "Halaman yang dibalik seperti kertas",
-  'ترجمات معاني القرآن الكريم إلى لغات كثيرة، وطبعات المصحف من مجمع الملك فهد': "Terjemahan makna Al-Qur’an ke banyak bahasa, dan cetakan mushaf dari Kompleks Raja Fahd",
   'الصفحة الأولى': "Halaman pertama",
   'الصفحة الأخيرة': "Halaman terakhir"
 });

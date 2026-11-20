@@ -1711,7 +1711,11 @@ window.noonI18n.use({
   'سورة أو صفحة أو رواية أخرى': 'Bir sure, bir sayfa veya başka bir kıraat',
   'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'Tam dosya yaklaşık 210 MB’tır, bu yüzden Wi-Fi ile indirmek en iyisidir; her sürenin dosyası çok daha küçüktür.',
   'ترجمة معاني القرآن الكريم': "Kur’an-ı Kerim meal",
-  'مصاحف مترجمة': "Tercümeli Mushaflar",
+  'مصاحف مترجمة ومصوّرة': 'Tercümeli ve taranmış Mushaflar',
+  'ترجمات المعاني بلغات كثيرة، وطبعات المصحف والتفاسير من مجمع الملك فهد': "Birçok dilde meal tercümeleri, Kral Fahd Kompleksi'nden Mushaf baskıları ve tefsirler",
+  'طبعات المصحف الشريف': 'Mushaf baskıları',
+  'التفاسير والقراءات': 'Tefsirler ve kıraatler',
+  'ترجمات معاني القرآن الكريم': "Kur'an-ı Kerim meal tercümeleri",
   'تعذّر تحميل القائمة. تحتاج اتصالاً بالإنترنت أول مرة.': "Liste yüklenemedi. İlk seferde internet bağlantısı gerekir.",
   'ابحث باللغة أو الاسم': "Dile veya ada göre ara",
   'محفوظ للقراءة دون إنترنت': "Çevrimdışı okumak için kaydedildi",
@@ -1722,8 +1726,6 @@ window.noonI18n.use({
   'ينتظر تنزيل مصحف آخر حتى ينتهي.': "Diğer Mushafın indirilmesi bitene kadar bekleyin.",
   'تمّ التنزيل.': "İndirildi.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "İndirme durdu. Tamamlamak için tekrar dokunun.",
-  'تُقلَّب صفحاتها كالورق': "Kâğıt gibi çevrilen sayfalar",
-  'ترجمات معاني القرآن الكريم إلى لغات كثيرة، وطبعات المصحف من مجمع الملك فهد': "Kur’an-ı Kerim’in birçok dile mealleri ve Kral Fahd Kompleksi Mushaf baskıları",
   'الصفحة الأولى': "İlk sayfa",
   'الصفحة الأخيرة': "Son sayfa"
 });

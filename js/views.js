@@ -127,6 +127,8 @@
     const st = ev.state;
     // Only the page's own screen steps; the Mushaf, Settings and other panels keep their own.
     if (st && !st.screen) return;
+    // Wide screens keep no screen steps, so an empty step there is a panel closing (a flip-book, the Mushaf).
+    if (!st && !PHONE.matches) return;
     const want = st ? st.screen : 'tasks';
     if (want === current && document.body.dataset.screen === screenOf(want)) return;
     popping = true;

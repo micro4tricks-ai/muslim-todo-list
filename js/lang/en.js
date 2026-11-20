@@ -1572,7 +1572,11 @@ window.noonI18n.use({
   'سورة أو صفحة أو رواية أخرى': 'A surah, a page or another reading',
   'الملف الكامل نحو ٢١٠ ميغابايت، فالأفضل تنزيله عبر الواي فاي؛ وملف كل سورة أصغر بكثير.': 'The full file is about 210 MB, so it is best downloaded over Wi-Fi; each surah’s file is much smaller.',
   'ترجمة معاني القرآن الكريم': "Translation of the meanings of the Quran",
-  'مصاحف مترجمة': "Translated Mushafs",
+  'مصاحف مترجمة ومصوّرة': 'Translated and scanned Mushafs',
+  'ترجمات المعاني بلغات كثيرة، وطبعات المصحف والتفاسير من مجمع الملك فهد': 'Translations of the meanings in many languages, and Mushaf prints and tafsirs from the King Fahd Complex',
+  'طبعات المصحف الشريف': 'Mushaf prints',
+  'التفاسير والقراءات': 'Tafsir and readings',
+  'ترجمات معاني القرآن الكريم': 'Translations of the meanings of the Quran',
   'تعذّر تحميل القائمة. تحتاج اتصالاً بالإنترنت أول مرة.': "The list could not be loaded. It needs an internet connection the first time.",
   'ابحث باللغة أو الاسم': "Search by language or name",
   'محفوظ للقراءة دون إنترنت': "Saved for reading offline",
@@ -1583,8 +1587,6 @@ window.noonI18n.use({
   'ينتظر تنزيل مصحف آخر حتى ينتهي.': "Wait until the other Mushaf finishes downloading.",
   'تمّ التنزيل.': "Downloaded.",
   'توقّف التنزيل. اضغط مرة أخرى لإكماله.': "The download stopped. Tap again to finish it.",
-  'تُقلَّب صفحاتها كالورق': "Pages that turn like paper",
-  'ترجمات معاني القرآن الكريم إلى لغات كثيرة، وطبعات المصحف من مجمع الملك فهد': "Translations of the meanings of the Quran into many languages, and Mushaf prints from the King Fahd Complex",
   'الصفحة الأولى': "First page",
   'الصفحة الأخيرة': "Last page"
 });

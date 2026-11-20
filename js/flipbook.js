@@ -52,10 +52,18 @@
   const title = (b) => (b.lang === 'ar' ? b.title : `${T('ترجمة معاني القرآن الكريم')}: ${langName(b)}`);
   const sizeText = (n) => (n >= 1e6 ? `${I.num(Math.round(n / 1e6))} ${T('ميجابايت')}` : `${I.num(Math.max(1, Math.round(n / 1e3)))} ${T('كيلوبايت')}`);
 
-  // In the library (js/library.js hands over its root and its back button).
+  // Three shelves: the Mushaf prints, tafsir and readings, then the translations by language.
+  const SHELVES = [
+    ['mushaf', 'طبعات المصحف الشريف'],
+    ['tafsir', 'التفاسير والقراءات'],
+    ['tr', 'ترجمات معاني القرآن الكريم'],
+  ];
+  const shelfOf = (b) => (b.lang !== 'ar' ? 'tr' : /تفسير|القراءات|غريب|كلمات القرآن/.test(b.title) ? 'tafsir' : 'mushaf');
+
+  // In the Mushaf tab (js/quran.js hands over its root and a back button).
   async function render(root, { back }) {
     const head = el('div', 'view-head');
-    head.append(back('المكتبة', { name: 'home' }), el('h2', '', T('مصاحف مترجمة')));
+    head.append(back, el('h2', '', T('مصاحف مترجمة ومصوّرة')));
     root.append(head);
     const wait = skeleton(T('جارٍ تحميل القائمة…'), 3);
     root.append(wait);
@@ -64,28 +72,44 @@
       return;
     }
     wait.remove();
-    const books = index.books.slice().sort((a, b) => (a.lang === 'ar') - (b.lang === 'ar') || langName(a).localeCompare(langName(b), I.locale) || a.id.localeCompare(b.id));
     const q = el('input', 'fb-filter');
     q.type = 'search'; q.placeholder = T('ابحث باللغة أو الاسم'); q.setAttribute('aria-label', T('ابحث باللغة أو الاسم'));
-    const grid = el('div', 'fb-grid');
     const none = el('p', 'hint', T('لا نتائج. جرّب كلمة أخرى.'));
     none.hidden = true;
-    const cards = books.map((b) => {
-      const c = button('fb-card', '', () => open(b));
-      c.dataset.book = b.id;
-      const img = el('img', 'fb-cover');
-      img.src = coverUrl(b); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
-      const place = S.places[b.id];
-      c.append(img, el('b', '', title(b)), el('span', '', `${langName(b)} · ${I.num(b.pages)} ${T('صفحة')}`));
-      if (place) c.append(el('small', 'lib-at', `${T('وقفت عند')} ${T('صفحة')} ${I.num(place.p)}`));
-      if (S.saved[b.id]) c.append(el('small', 'fb-saved', `✓ ${T('محفوظ للقراءة دون إنترنت')}`));
-      grid.append(c);
-      return [c, `${b.title} ${b.langName} ${langName(b)} ${title(b)}`.toLowerCase()];
-    });
+    const grid = el('div', 'fb-shelves');
+    const cards = [], shelves = [];
+    for (const [kind, name] of SHELVES) {
+      const books = index.books.filter((b) => shelfOf(b) === kind)
+        .sort((a, b) => (kind === 'tr' ? langName(a).localeCompare(langName(b), I.locale) : 0) || a.title.localeCompare(b.title, 'ar') || a.id.localeCompare(b.id));
+      if (!books.length) continue;
+      const sec = el('section', 'fb-shelf');
+      const shelfCards = [];
+      const grid1 = el('div', 'fb-grid');
+      for (const b of books) {
+        const c = button('fb-card', '', () => open(b));
+        c.dataset.book = b.id;
+        const img = el('img', 'fb-cover');
+        img.src = coverUrl(b); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+        const place = S.places[b.id];
+        // On the translations shelf the language is the name; elsewhere the book's own title.
+        const name = el('b', '', kind === 'tr' ? langName(b) : b.title);
+        name.dir = 'auto'; // an Arabic title reads right to left in any interface
+        c.append(img, name, el('span', '', `${I.num(b.pages)} ${T('صفحة')}`));
+        if (place) c.append(el('small', 'lib-at', `${T('وقفت عند')} ${T('صفحة')} ${I.num(place.p)}`));
+        if (S.saved[b.id]) c.append(el('small', 'fb-saved', `✓ ${T('محفوظ للقراءة دون إنترنت')}`));
+        grid1.append(c);
+        const entry = [c, `${b.title} ${b.langName} ${b.langAr || ''} ${langName(b)} ${title(b)}`.toLowerCase()];
+        cards.push(entry); shelfCards.push(entry);
+      }
+      sec.append(el('h3', 'fb-shelf-name', `${T(name)} (${I.num(books.length)})`), grid1);
+      shelves.push([sec, shelfCards]);
+      grid.append(sec);
+    }
     q.addEventListener('input', () => {
       const s = q.value.trim().toLowerCase();
       let shown = 0;
       cards.forEach(([c, text]) => { c.hidden = !!s && !text.includes(s); if (!c.hidden) shown++; });
+      shelves.forEach(([sec, list]) => { sec.hidden = list.every(([c]) => c.hidden); });
       none.hidden = shown > 0;
     });
     root.append(q, grid, none);
