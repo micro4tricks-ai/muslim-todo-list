@@ -30,7 +30,7 @@ def main():
     ap.add_argument('src')
     ap.add_argument('--keys', default=str(Path.home() / 'r2-mushafs.json'))
     ap.add_argument('--workers', type=int, default=32)
-    ap.add_argument('--only', help='upload only this book id')
+    ap.add_argument('--only', help='upload only these book ids (comma-separated), to spread the upload over days')
     ap.add_argument('--dry-run', action='store_true')
     a = ap.parse_args()
     k = json.loads(Path(a.keys).expanduser().read_text(encoding='utf-8'))
@@ -50,7 +50,8 @@ def main():
     src = Path(a.src)
     books = json.loads((src / 'index.json').read_text(encoding='utf-8'))['books']
     if a.only:
-        books = [b for b in books if b['id'] == a.only]
+        ids = set(a.only.split(','))
+        books = [b for b in books if b['id'] in ids]
     have = {}
     for page in s3.get_paginator('list_objects_v2').paginate(Bucket=bucket):
         for o in page.get('Contents', []):

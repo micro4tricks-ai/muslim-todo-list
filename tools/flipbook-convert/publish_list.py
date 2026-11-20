@@ -20,12 +20,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('src')
     ap.add_argument('--pages', default='', help='where the pages are hosted (empty: not online yet)')
+    ap.add_argument('--only', help='list only these book ids (comma-separated): the ones already uploaded')
     a = ap.parse_args()
     src = Path(a.src)
     idx = json.loads((src / 'index.json').read_text(encoding='utf-8'))
     out = ROOT / 'mushafs'
     out.mkdir(exist_ok=True)
     keep = set()
+    if a.only:
+        ids = set(a.only.split(','))
+        idx['books'] = [b for b in idx['books'] if b['id'] in ids]
     for b in idx['books']:
         d = out / b['id']
         d.mkdir(exist_ok=True)
