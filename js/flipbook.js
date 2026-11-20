@@ -5,8 +5,10 @@
 // the address in mushafs/index.json ("pages"), which can change without a new app.
 // The pages turn with StPageFlip (js/vendor/page-flip.browser.js, MIT, github.com/Nodlik/StPageFlip):
 // a page bends under the finger on a phone, two pages face each other on a wide screen.
-// These books open from the right, and StPageFlip only turns left to right, so the pages are given
-// to it in reverse and the book opens at its end. Only the pages near the open one are loaded;
+// These books open from the right, and StPageFlip curls a page well only when it turns towards the
+// left (on a phone, a page brought back from the left comes in flat). So the book is drawn mirrored
+// (.fb-mirror), the touches are mirrored to match, and each page is mirrored back to read right:
+// StPageFlip's own forward turn becomes this book's forward turn. Only the pages near the open one are loaded;
 // a book can be kept on the device (Cache API "flipbook-v1") for reading offline.
 (() => {
   'use strict';
@@ -178,9 +180,9 @@
   document.body.append(box);
 
   let B = null, pf = null, L = 0, pad = 0, imgs = [], urls = new Map(), shown = 1, job = null;
-  // Array position <-> page of the book (the array is reversed, with a blank first when needed).
-  const idxOf = (p) => L - p;
-  const pageAt = (i) => L - i;
+  // Array position <-> page of the book (a blank last when needed).
+  const idxOf = (p) => p - 1;
+  const pageAt = (i) => i + 1;
 
   function open(b) {
     if (!pagesBase()) { toast(T('صفحات هذا المصحف لم تُرفع على الإنترنت بعد.')); return; }
@@ -205,7 +207,9 @@
     release();
     stage.replaceChildren();
     const book = el('div', 'fb-book');
-    stage.append(book);
+    const mirror = el('div', 'fb-mirror');
+    mirror.append(book);
+    stage.append(mirror);
     imgs = [];
     const pages = [];
     for (let i = 0; i < L; i++) {
@@ -230,6 +234,28 @@
       startPage: Math.max(0, Math.min(L - 1, idxOf(at))), swipeDistance: 20
     });
     pf.loadFromHTML(pages);
+    // The book is drawn mirrored: a touch at its left edge is StPageFlip's right edge.
+    const ui = pf.getUI();
+    const raw = ui.getMousePos.bind(ui);
+    ui.getMousePos = (x, y) => { const q = raw(x, y); q.x = ui.distElement.getBoundingClientRect().width - q.x; return q; };
+    // On a phone (one page) StPageFlip finishes a dragged page only once it passes the far edge of
+    // the screen, so a page let go before that springs back. Past half the page is enough.
+    const fc = pf.flipController;
+    if (fc && fc.stopMove) {
+      const stop = fc.stopMove.bind(fc);
+      fc.stopMove = () => {
+        try {
+          if (fc.calc && pf.getOrientation() === 'portrait') {
+            const at = fc.calc.getPosition(), r = fc.getBoundsRect();
+            if (at.x > 0 && at.x < r.pageWidth / 2) {
+              fc.animateFlippingTo(at, { x: -r.pageWidth, y: fc.calc.getCorner() === 'bottom' ? r.height : 0 }, true);
+              return;
+            }
+          }
+        } catch (_) {}
+        stop();
+      };
+    }
     pf.on('flip', () => update());
     pf.on('changeState', (e) => { if (e.data === 'flipping') rustle(); });
     pf.on('changeOrientation', () => update());
@@ -284,9 +310,8 @@
   function release() { urls.forEach((u) => URL.revokeObjectURL(u)); urls.clear(); }
   function step(n) {
     if (!pf) return;
-    // Forward is the array's way back.
-    if (calm()) { const i = pf.getCurrentPageIndex(); pf.turnToPage(Math.max(0, Math.min(L - 1, n > 0 ? i - (pf.getOrientation() === 'landscape' ? 2 : 1) : i + (pf.getOrientation() === 'landscape' ? 2 : 1)))); update(); return; }
-    if (n > 0) pf.flipPrev(); else pf.flipNext();
+    if (calm()) { const i = pf.getCurrentPageIndex(), k = pf.getOrientation() === 'landscape' ? 2 : 1; pf.turnToPage(Math.max(0, Math.min(L - 1, i + (n > 0 ? k : -k)))); update(); return; }
+    if (n > 0) pf.flipNext(); else pf.flipPrev();
   }
   function goPage(p) {
     if (!pf) return;
