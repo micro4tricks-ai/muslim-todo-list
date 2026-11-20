@@ -48,7 +48,12 @@ TITLE_BY_ID = {
     'sousi-1': 'مصحف المدينة النبوية — رواية السوسي',
     'standard1-quran': 'مصحف المدينة النبوية — الطبعة العادية',
     'mshf-almdynh-alnbwyh-alkbyr-alazrq-hfs': 'مصحف المدينة النبوية الكبير (الأزرق) — رواية حفص',
+    # The Complex's digital Mushaf (vector pages, joined by join_pages.py from D:\القرآن الكريم\القرآن مايكرو).
+    'madinah-hafs-1441': 'مصحف المدينة النبوية الرقمي — رواية حفص (1441هـ)',
+    'madinah-qalun-1443': 'مصحف المدينة النبوية الرقمي — رواية قالون (1443هـ)',
 }
+# Books left out of the list because a better copy replaced them (id -> the one that replaced it).
+REPLACED = {'mshf-qalwn': 'madinah-qalun-1443'}
 
 TRANSLIT = str.maketrans({
     'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h', 'خ': 'kh',
@@ -193,7 +198,7 @@ def main():
     index = []
     for d in sorted(root.iterdir()):
         j = d / 'book.json'
-        if (d / '.done').exists() and j.exists():
+        if (d / '.done').exists() and j.exists() and d.name not in REPLACED:
             m = describe_into(json.loads(j.read_text(encoding='utf-8')))
             j.write_text(json.dumps(m, ensure_ascii=False, indent=1), encoding='utf-8')
             m.pop('source', None)
