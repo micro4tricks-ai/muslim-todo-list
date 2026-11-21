@@ -5,6 +5,9 @@
 // on a phone one page fills the screen and slides away under the finger (2D transform only).
 // The next page lies to the left: drag a page to the right, or press ←, to turn forward.
 // Pages and the rules for them are in js/mushaf-core.js; texts and reading progress in js/quran.js.
+// The toolbar above the pages: listen (the verse being recited is lit, and the page turns with it),
+// the teaching Mushaf (al-Husary al-Mu'allim, each verse three times with a pause to repeat it),
+// the tajweed colours with their key, the page colour, the text size, and «go to».
 (() => {
   'use strict';
   const { T, I, el, button, toast, skeleton } = window.noonUI;
@@ -127,6 +130,7 @@
     const first = C.pageRange(M.pages, TOTAL, pages[0])[0];
     B.title.textContent = I.surah(q.surahOf(first)) || (I.latin ? M.surahs[q.surahOf(first)][1] : M.surahs[q.surahOf(first)][0].replace(/^سُورَةُ\s*/, ''));
     B.meta.textContent = `${T('الجزء')} ${I.num(q.juzOf(first))} · ${T('صفحة')} ${I.num(pages[0])}${pages[1] && pages[1] !== pages[0] ? `–${I.num(pages[1])}` : ''}`;
+    paint();
     B.prev.disabled = page <= 1;
     B.next.disabled = two ? C.spread(page, PAGES)[1] >= PAGES : page >= PAGES;
     q.setPage(page);
@@ -291,7 +295,7 @@
     box.id = 'mushafBook';
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-modal', 'true');
-    box.setAttribute('aria-label', T('المصحف بتقليب الصفحات'));
+    box.setAttribute('aria-label', T('المصحف'));
     box.dir = I.dir;
     box.hidden = true;
     const icon = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -301,11 +305,33 @@
     const ttl = el('div', 'qr-title');
     const title = el('b'), meta = el('span');
     ttl.append(title, meta);
-    const goBtn = button('qr-icon', '', () => { B.go.hidden = !B.go.hidden; if (!B.go.hidden) num.focus(); }, T('انتقل إلى صفحة أو سورة أو جزء'));
-    goBtn.innerHTML = icon('M4 6h16M4 12h10M4 18h7M17 15l3 3-3 3');
-    const minus = button('qr-icon qr-aa', 'A−', () => setZoom(-0.25), T('تصغير الخط'));
-    const plus = button('qr-icon qr-aa', 'A+', () => setZoom(0.25), T('تكبير الخط'));
-    top.append(close, ttl, minus, plus, goBtn);
+    top.append(close, ttl);
+
+    // The toolbar: one row of switches, scrolled sideways on a narrow phone.
+    const tools = el('div', 'mb-tools');
+    tools.setAttribute('role', 'toolbar');
+    tools.setAttribute('aria-label', T('أدوات المصحف'));
+    const tool = (cls, svg, label, run, title) => {
+      const b = button(`mb-tool ${cls}`, '', run, title || T(label));
+      b.innerHTML = svg;
+      b.append(el('span', '', T(label)));
+      tools.append(b);
+      return b;
+    };
+    const listen = tool('mb-listen', '', 'استمع', () => listenClick());
+    const muallim = tool('mb-muallim', icon('M4 19V6a2 2 0 0 1 2-2h12v13H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h12M9 8h6M9 11h4'), 'المصحف المعلّم', () => muallimClick(),
+      T('الحصري المعلّم: تُكرَّر الآية ٣ مرات مع مهلة لترديدها'));
+    const tajweed = tool('mb-tajweed', icon('M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01'), 'التجويد', () => tajweedClick(),
+      T('أحكام التجويد ملوّنة في النص'));
+    const themeBtn = tool('mb-theme', icon('M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z'), 'لون الصفحة', () => themeClick());
+    tools.append(el('span', 'mb-tools-gap'));
+    tool('mb-aa', '', 'A−', () => setZoom(-0.25), T('تصغير الخط'));
+    tool('mb-aa', '', 'A+', () => setZoom(0.25), T('تكبير الخط'));
+    const goBtn = tool('mb-goto', icon('M4 6h16M4 12h10M4 18h7M17 15l3 3-3 3'), 'انتقال', () => { B.go.hidden = !B.go.hidden; goBtn.setAttribute('aria-pressed', String(!B.go.hidden)); if (!B.go.hidden) num.focus(); },
+      T('انتقل إلى صفحة أو سورة أو جزء'));
+    // The key to the tajweed colours, under the toolbar while they are on.
+    const legend = el('div', 'mb-legend qr-legend');
+    Q().legend.forEach(([k, a, e]) => { const x = el('span', `tj-${k}`); x.append(el('i'), I.latin ? e : a); legend.append(x); });
 
     // Go to a page, a surah or a juz.
     const go = el('form', 'mb-go');
@@ -342,7 +368,7 @@
     next.dir = prev.dir = I.dir;
     bar.dir = 'ltr';
     bar.append(next, el('span', 'hint mb-hint', T('اسحب الصفحة أو اضغط على طرفها لتقليبها')), prev);
-    box.append(top, go, stage, bar, measure);
+    box.append(top, tools, legend, go, stage, bar, measure);
     document.body.append(box);
 
     stage.addEventListener('pointerdown', onDown);
@@ -353,12 +379,85 @@
       if (ev.target.closest('input, select')) return;
       if (ev.key === 'ArrowLeft' || ev.key === 'PageDown') { ev.preventDefault(); turn(1); }
       else if (ev.key === 'ArrowRight' || ev.key === 'PageUp') { ev.preventDefault(); turn(-1); }
-      else if (ev.key === 'Escape') { if (!go.hidden) go.hidden = true; else close.click(); }
+      else if (ev.key === 'Escape') { if (!go.hidden) { go.hidden = true; goBtn.setAttribute('aria-pressed', 'false'); } else close.click(); }
     });
     let rz = 0;
     addEventListener('resize', () => { if (B.box.hidden) return; clearTimeout(rz); rz = setTimeout(() => { made.clear(); show(page); }, 150); });
-    B = { box, stage, book, measure, title, meta, go, prev, next };
+    B = { box, stage, book, measure, title, meta, go, prev, next, listen, muallim, tajweed, themeBtn, legend, goBtn };
   }
+
+  // ---- the toolbar ----
+  const ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+  const ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  const THEMES = [['paper', 'فاتح'], ['sepia', 'ورقي'], ['night', 'ليلي']];
+  let reciting = -1; // the verse being recited, lit on the page
+  function tools() {
+    const q = Q(), on = q.playing() >= 0;
+    B.listen.innerHTML = on ? ICON_PAUSE : ICON_PLAY;
+    B.listen.append(el('span', '', T(on ? 'إيقاف' : 'استمع')));
+    B.listen.setAttribute('aria-pressed', String(on));
+    B.listen.setAttribute('aria-label', T(on ? 'إيقاف التلاوة مؤقتاً' : 'استمع للتلاوة من هذه الصفحة'));
+    B.muallim.setAttribute('aria-pressed', String(q.muallim()));
+    B.tajweed.setAttribute('aria-pressed', String(q.tajweed()));
+    B.legend.hidden = !q.tajweed();
+    const t = THEMES.find((x) => x[0] === q.theme()) || THEMES[0];
+    B.themeBtn.querySelector('span').textContent = T(t[1]);
+    B.themeBtn.title = `${T('لون الصفحة')}: ${T(t[1])}`;
+  }
+  const shown = () => (two ? C.spread(page, PAGES) : [page]);
+  const firstVerse = () => C.pageRange(M.pages, TOTAL, shown()[0])[0];
+  function listenClick() {
+    const q = Q();
+    if (q.playing() >= 0) { q.pause(); return; }
+    // Carry on from the verse it paused on if that is on these pages; otherwise from the top of the page.
+    const at = q.paused();
+    q.play(at >= 0 && shown().includes(q.pageOf(at)) ? at : firstVerse());
+  }
+  function muallimClick() {
+    const q = Q(), on = !q.muallim();
+    q.setMuallim(on);
+    const at = q.playing();
+    if (at >= 0) q.play(at); // the same verse again, in the other recitation
+    tools();
+    if (on) toast(T(at >= 0 ? 'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.' : 'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.'));
+  }
+  async function tajweedClick() {
+    const q = Q(), on = !q.tajweed();
+    B.tajweed.disabled = true;
+    try { await q.setTajweed(on); } catch (_) { toast(T('تعذّر تحميل التجويد. تحقّق من الاتصال ثم حاول مرة أخرى.')); }
+    B.tajweed.disabled = false;
+    tools(); // the colour key shows first, so the pages are sized to the room left
+    made.clear();
+    show(page);
+  }
+  function themeClick() {
+    const q = Q();
+    const k = THEMES[(THEMES.findIndex((x) => x[0] === q.theme()) + 1) % THEMES.length][0];
+    q.setTheme(k);
+    B.box.dataset.theme = k;
+    tools();
+  }
+  // Light the verse being recited.
+  function paint() {
+    B.book.querySelectorAll('.ay.is-play').forEach((n) => n.classList.remove('is-play'));
+    if (reciting >= 0) B.book.querySelectorAll(`.ay[data-i="${reciting}"]`).forEach((n) => n.classList.add('is-play'));
+  }
+  // The recitation moved on: light its verse, and turn to its page when it is not open.
+  window.addEventListener('noon-ayah', (ev) => {
+    if (!B || B.box.hidden) return;
+    const { i, on } = ev.detail;
+    reciting = on ? i : -1;
+    tools();
+    if (on && !busy && !drag) {
+      const p = Q().pageOf(i);
+      if (!shown().includes(p)) {
+        const nx = C.step(page, 1, two, PAGES);
+        if ((two ? C.spread(nx, PAGES) : [nx]).includes(p)) turn(1); else show(p);
+        return;
+      }
+    }
+    paint();
+  });
   function setZoom(d) {
     zoom = Math.max(1, Math.min(2.5, Math.round((zoom + d) * 4) / 4));
     made.clear();
@@ -377,6 +476,7 @@
       B.book.replaceChildren(el('p', 'qr-loading', T('تعذّر تحميل نص المصحف. تحقّق من الاتصال ثم حاول مرة أخرى.')));
       return;
     }
+    tools();
     made.clear();
     show(p || Q().page());
     B.box.tabIndex = -1;
@@ -386,11 +486,13 @@
   function hide(keepBody) {
     if (!B || B.box.hidden) return;
     B.box.hidden = true;
+    if (Q().playing() >= 0) Q().pause(); // the recitation follows the pages, so it stops with them
+    reciting = -1;
     if (!keepBody) document.body.classList.remove('qr-open');
     if (lock) { lock.release().catch(() => {}); lock = null; }
     if (history.state && history.state.mb) history.replaceState(null, '');
   }
   addEventListener('popstate', () => { if (B && !B.box.hidden) hide(); });
 
-  window.noonMushafBook = { open, close: () => hide(), page: () => page };
+  window.noonMushafBook = { open, close: () => hide(), page: () => page, isOpen: () => !!B && !B.box.hidden };
 })();

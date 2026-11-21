@@ -1728,5 +1728,12 @@ window.noonI18n.use({
   'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Henüz işaret yok. Kaldığınız ya da dönmek istediğiniz sayfayı işaretlemek için üstteki 🔖 düğmesine dokunun.",
   'ملاحظة (اختياري)': "Not (isteğe bağlı)",
   'حذف العلامة': "İşareti sil",
-  'صوت تقليب الصفحات': "Sayfa çevirme sesi"
+  'صوت تقليب الصفحات': "Sayfa çevirme sesi",
+  'أدوات المصحف': "Mushaf araçları",
+  'الحصري المعلّم: تُكرَّر الآية ٣ مرات مع مهلة لترديدها': "Husarî Muallim: her ayet 3 kez, tekrar etmek için araya ara verilerek",
+  'تعذّر تحميل التجويد. تحقّق من الاتصال ثم حاول مرة أخرى.': "Tecvid yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.",
+  'استمع للتلاوة من هذه الصفحة': "Bu sayfadan itibaren tilaveti dinle",
+  'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Muallim Mushaf: ayeti dinleyin, ardından gelen arada tekrar edin.",
+  'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Muallim Mushaf: «Dinle»ye basın; her ayet 3 kez okunur ve tekrar etmeniz için ara verilir.",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "Medine Mushafı gibi elle çevrilen 604 sayfa; renkli tecvid, Muallim Mushaf ve dinleme ile"
 });

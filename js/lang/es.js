@@ -1728,5 +1728,12 @@ window.noonI18n.use({
   'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Aún no hay marcadores. Toca 🔖 arriba para marcar la página donde te detuviste o a la que quieres volver.",
   'ملاحظة (اختياري)': "Nota (opcional)",
   'حذف العلامة': "Quitar marcador",
-  'صوت تقليب الصفحات': "Sonido al pasar página"
+  'صوت تقليب الصفحات': "Sonido al pasar página",
+  'أدوات المصحف': "Herramientas del Mushaf",
+  'الحصري المعلّم: تُكرَّر الآية ٣ مرات مع مهلة لترديدها': "Al-Husary, recitación didáctica: cada aleya tres veces, con una pausa para repetirla",
+  'تعذّر تحميل التجويد. تحقّق من الاتصال ثم حاول مرة أخرى.': "No se pudo cargar el tajwid. Revisa la conexión e inténtalo de nuevo.",
+  'استمع للتلاوة من هذه الصفحة': "Escuchar la recitación desde esta página",
+  'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Mushaf didáctico: escucha la aleya y repítela en la pausa que le sigue.",
+  'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Mushaf didáctico: pulsa «Escuchar» y cada aleya se recita tres veces, con una pausa para repetirla.",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 páginas como el Mushaf de Medina, que pasas a mano, con tajwid en colores, la recitación didáctica y escucha"
 });

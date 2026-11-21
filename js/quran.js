@@ -270,15 +270,13 @@
       b.append(el('b', '', T(name)), el('span', '', T(note)));
       modes.append(b);
     };
-    if (window.noonMushafBook) mode(false, 'المصحف بتقليب الصفحات', '٦٠٤ صفحات كمصحف المدينة، تقلّبها بيدك', () => window.noonMushafBook.open());
+    // The Mushaf itself comes first, on its own row: the tajweed colours, the teaching recitation and
+    // listening are in its toolbar (js/mushaf-book.js).
+    if (window.noonMushafBook) {
+      mode(false, 'المصحف', '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع', () => window.noonMushafBook.open());
+      modes.lastChild.classList.add('is-main');
+    }
     if (window.noonFlipbook) mode(false, 'مصاحف مترجمة ومصوّرة', 'ترجمات المعاني بلغات كثيرة، وطبعات المصحف والتفاسير من مجمع الملك فهد', flipMushafs);
-    mode(S.tajweed, 'مصحف التجويد', 'أحكام التجويد ملوّنة في النص', () => { S.tajweed = !S.tajweed; save(); renderIndex(); });
-    mode(S.reciter === 'muallim', 'المصحف المعلّم', 'الحصري المعلّم، تكرار الآية ٣ مرات ومهلة لترديدها', () => {
-      const on = S.reciter !== 'muallim';
-      Object.assign(S, on ? { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 } : { reciter: 'ar.alafasy', repeat: 1, gap: 0 });
-      save(); renderIndex();
-      if (on) toast(T('فعّلنا المصحف المعلّم. افتح أي سورة واضغط ▶ واستمع ثم ردّد بعد القارئ.'));
-    });
     mode(S.hide, 'التسميع والحفظ', 'تُخفى الآيات فتسمّع حفظك، واضغط الآية لتظهر', () => { S.hide = !S.hide; save(); renderIndex(); });
     if (window.noonHifz) {
       const h = window.noonHifz.summary();
@@ -972,6 +970,10 @@
   let playing = -1;
   const nextAudio = new Audio();
   nextAudio.preload = 'auto';
+  // Which verse is being recited, for the page-turning Mushaf: {i, on} (i = -1 when it stopped).
+  const say = (i, on) => window.dispatchEvent(new CustomEvent('noon-ayah', { detail: { i, on } }));
+  // In the page-turning Mushaf the recitation carries on into the next surah; the reader stops at its end.
+  const through = () => !!(window.noonMushafBook && window.noonMushafBook.isOpen());
   const reciter = () => RECITERS.find((r) => r[0] === S.reciter) || RECITERS[0];
   const src = (i) => (reciter()[4] ? reciter()[4](i) : `https://cdn.islamic.network/quran/audio/${reciter()[1]}/${reciter()[0]}/${i + 1}.mp3`);
   let left = 0, gapTimer = 0; // repeats still to play; the pause before the next one
@@ -986,7 +988,7 @@
       stopped();
     });
     const end = starts[surahOf(i)] + M.surahs[surahOf(i)][4];
-    if (i + 1 < end) nextAudio.src = src(i + 1);
+    if (i + 1 < (through() ? TOTAL : end)) nextAudio.src = src(i + 1);
     if (R) {
       if (surahOf(i) !== cur && !R.box.hidden) renderSurah(surahOf(i), i);
       highlight(i, true);
@@ -1001,17 +1003,18 @@
       } catch (_) {}
     }
     setPlayIcon(true);
+    say(i, true);
   }
-  function pause() { clearTimeout(gapTimer); audio.pause(); setPlayIcon(false); }
+  function pause() { clearTimeout(gapTimer); audio.pause(); setPlayIcon(false); say(playing, false); }
   // The Listen tab started to play.
   window.addEventListener('noon-recitation', (ev) => { if (ev.detail && /^listen/.test(ev.detail.from) && playing >= 0) pause(); }); // also between two verses
-  function stopped() { playing = -1; setPlayIcon(false); if (R) R.page.querySelectorAll('.is-play').forEach((n) => n.classList.remove('is-play')); }
+  function stopped() { playing = -1; setPlayIcon(false); say(-1, false); if (R) R.page.querySelectorAll('.is-play').forEach((n) => n.classList.remove('is-play')); }
   audio.addEventListener('ended', () => {
     const s = surahOf(playing), end = starts[s] + M.surahs[s][4];
     const wait = (S.gap || 0) * (audio.duration || 0) * 1000 / (S.rate || 1);
     const next = () => {
       if (--left > 0) play(playing, true);
-      else if (playing + 1 < end) play(playing + 1);
+      else if (playing + 1 < (through() ? TOTAL : end)) play(playing + 1);
       else stopped();
     };
     if (wait > 0) gapTimer = setTimeout(next, wait); else next();
@@ -1089,7 +1092,14 @@
     verse, starts, surahOf, ayahOf, pageOf, juzOf, ar, sajda, markPage, setLast: (i) => setLast(i, 'book'),
     theme: () => S.theme, page: () => S.bookPage || (S.last ? pageOf(S.last.i) : 1),
     setPage: (p) => { if (S.bookPage !== p) { S.bookPage = p; save(); } },
-    openAt: (i) => open(i)
+    openAt: (i) => open(i),
+    setTheme: (k) => { S.theme = k; save(); },
+    // The toolbar's switches: the tajweed colours (their text is fetched the first time) and the teaching recitation.
+    tajweed: () => !!S.tajweed, legend: TAJWEED,
+    setTajweed: async (on) => { if (on) await data('tajweed'); S.tajweed = on; save(); },
+    muallim: () => S.reciter === 'muallim',
+    setMuallim: (on) => { Object.assign(S, on ? { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 } : { reciter: 'ar.alafasy', repeat: 1, gap: 0 }); save(); },
+    play: (i) => play(i), pause: () => pause(), playing: () => (playing >= 0 && !audio.paused ? playing : -1), paused: () => (playing >= 0 && audio.paused ? playing : -1)
   };
   // Back to where reading stopped, the way it was read: the page-turning Mushaf or the reader.
   function resume() {

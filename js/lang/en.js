@@ -1589,5 +1589,12 @@ window.noonI18n.use({
   'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "No bookmarks yet. Tap 🔖 at the top to mark the page where you stopped or want to come back to.",
   'ملاحظة (اختياري)': "Note (optional)",
   'حذف العلامة': "Remove bookmark",
-  'صوت تقليب الصفحات': "Page-turning sound"
+  'صوت تقليب الصفحات': "Page-turning sound",
+  'أدوات المصحف': "Mushaf tools",
+  'الحصري المعلّم: تُكرَّر الآية ٣ مرات مع مهلة لترديدها': "Al-Husary, teaching recitation: each verse three times, with a pause to repeat it",
+  'تعذّر تحميل التجويد. تحقّق من الاتصال ثم حاول مرة أخرى.': "Could not load the tajweed. Check your connection and try again.",
+  'استمع للتلاوة من هذه الصفحة': "Listen to the recitation from this page",
+  'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Teaching Mushaf: listen to the verse, then repeat it in the pause after it.",
+  'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Teaching Mushaf: press «Listen» and each verse is recited three times, with a pause to repeat it.",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 pages like the Madinah Mushaf, turned by hand, with colour-coded tajweed, the teaching recitation and listening"
 });

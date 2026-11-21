@@ -1728,5 +1728,12 @@ window.noonI18n.use({
   'لا علامات بعد. اضغط 🔖 أعلى الشاشة لتعلّم الصفحة التي وقفت عندها أو تريد الرجوع إليها.': "Belum ada penanda. Ketuk 🔖 di atas untuk menandai halaman tempat Anda berhenti atau ingin kembali.",
   'ملاحظة (اختياري)': "Catatan (opsional)",
   'حذف العلامة': "Hapus penanda",
-  'صوت تقليب الصفحات': "Suara membalik halaman"
+  'صوت تقليب الصفحات': "Suara membalik halaman",
+  'أدوات المصحف': "Alat mushaf",
+  'الحصري المعلّم: تُكرَّر الآية ٣ مرات مع مهلة لترديدها': "Al-Husary Muallim: setiap ayat diulang 3 kali dengan jeda untuk menirukannya",
+  'تعذّر تحميل التجويد. تحقّق من الاتصال ثم حاول مرة أخرى.': "Tajwid gagal dimuat. Periksa koneksi lalu coba lagi.",
+  'استمع للتلاوة من هذه الصفحة': "Dengarkan bacaan dari halaman ini",
+  'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Mushaf Muallim: dengarkan ayatnya, lalu tirukan pada jeda setelahnya.",
+  'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Mushaf Muallim: tekan «Dengarkan», setiap ayat dibaca 3 kali dengan jeda untuk menirukannya.",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 halaman seperti Mushaf Madinah yang dibalik dengan tangan, dengan tajwid berwarna, Mushaf Muallim, dan fitur mendengarkan"
 });
