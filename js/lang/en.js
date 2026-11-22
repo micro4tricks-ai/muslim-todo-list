@@ -1610,5 +1610,9 @@ window.noonI18n.use({
   'ابحث عن كتاب بالاسم أو المؤلف': "Find a book by title or author",
   'كتب الحديث': "Hadith collections",
   'لا كتاب بهذا الاسم هنا.': "No book by that name here.",
-  'أقسام المكتبة': "Library sections"
+  'أقسام المكتبة': "Library sections",
+  'عرض المزيد': "Show more",
+  'نتائج': "results",
+  'بالنص كما كتبته': "As you wrote it",
+  'فيها كل الكلمات بصيغها': "With all the words, in any form"
 });

@@ -1749,5 +1749,9 @@ window.noonI18n.use({
   'ابحث عن كتاب بالاسم أو المؤلف': "Adına veya yazarına göre kitap ara",
   'كتب الحديث': "Hadis kitapları",
   'لا كتاب بهذا الاسم هنا.': "Burada bu adda bir kitap yok.",
-  'أقسام المكتبة': "Kütüphane bölümleri"
+  'أقسام المكتبة': "Kütüphane bölümleri",
+  'عرض المزيد': "Daha fazla göster",
+  'نتائج': "sonuç",
+  'بالنص كما كتبته': "Yazdığınız gibi",
+  'فيها كل الكلمات بصيغها': "Tüm kelimeler, her biçimiyle"
 });

@@ -1749,5 +1749,9 @@ window.noonI18n.use({
   'ابحث عن كتاب بالاسم أو المؤلف': "Busca un libro por título o autor",
   'كتب الحديث': "Colecciones de hadices",
   'لا كتاب بهذا الاسم هنا.': "No hay ningún libro con ese nombre aquí.",
-  'أقسام المكتبة': "Secciones de la biblioteca"
+  'أقسام المكتبة': "Secciones de la biblioteca",
+  'عرض المزيد': "Mostrar más",
+  'نتائج': "resultados",
+  'بالنص كما كتبته': "Tal como lo escribiste",
+  'فيها كل الكلمات بصيغها': "Con todas las palabras, en cualquier forma"
 });

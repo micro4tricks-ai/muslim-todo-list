@@ -160,17 +160,37 @@
     }
     m = /^(\d{1,3})$/.exec(latin.trim());
     if (m && Number(m[1]) >= 1 && Number(m[1]) <= PAGES) return { page: Number(m[1]) };
-    const results = [];
+    // Every verse that has the words as written; then the verses that have all of them, in any order and
+    // in their other forms (with or without «ال» and a joined و ف ب ك ل س, and ة written ت before a suffix).
+    const results = [], more = [];
     if (/[a-z]/i.test(q)) {
-      const en = await data('en'), needle = q.toLowerCase();
-      for (let i = 0; i < TOTAL && results.length < 60; i++) if (en[i].toLowerCase().includes(needle)) results.push(i);
+      const en = await data('en'), needle = q.toLowerCase().trim();
+      const words = needle.split(/\s+/).filter((w) => w.length > 1);
+      for (let i = 0; i < TOTAL; i++) {
+        const v = en[i].toLowerCase();
+        if (v.includes(needle)) results.push(i);
+        else if (words.length > 1 && words.every((w) => v.includes(w))) more.push(i);
+      }
     } else {
       if (!normCache) normCache = (await data('clean')).map(norm);
-      const needle = norm(q);
-      if (needle.length < 2) return { results };
-      for (let i = 0; i < TOTAL && results.length < 60; i++) if (normCache[i].includes(needle)) results.push(i);
+      const needle = norm(q).trim();
+      if (needle.length < 2) return { results, more };
+      const words = needle.split(' ').filter((w) => w.length > 1).map(forms);
+      for (let i = 0; i < TOTAL; i++) {
+        const v = normCache[i];
+        if (v.includes(needle)) results.push(i);
+        else if (words.length && words.every((f) => f.some((x) => v.includes(x)))) more.push(i);
+      }
     }
-    return { results };
+    return { results, more };
+  }
+  // A word's forms to look for: itself, without «ال» or a joined letter before it, and ه→ت at its end.
+  function forms(w) {
+    const out = new Set([w]);
+    const bare = w.replace(/^(وال|فال|بال|كال|لل|ال)/, '').replace(/^[وف](?=..)/, '');
+    if (bare.length > 1) out.add(bare);
+    [...out].forEach((x) => { if (/ه$/.test(x) && x.length > 2) out.add(`${x.slice(0, -1)}ت`); });
+    return [...out];
   }
 
   // ---- reading progress ----
@@ -416,12 +436,27 @@
       list.append(b);
       return;
     }
-    const n = found.results.length;
-    list.append(el('p', 'view-sub', n ? `${I.num(n)}${n >= 60 ? '+' : ''} ${T('نتيجة')}` : T('لا نتائج. جرّب كلمة أخرى.')));
-    if (!n) return;
+    const n = found.results.length, m = (found.more || []).length;
+    if (!n && !m) { list.append(el('p', 'view-sub', T('لا نتائج. جرّب كلمة أخرى.'))); return; }
     const texts = await data('uthmani');
     const en = I.foreign ? await data('en') : null;
-    found.results.forEach((i) => list.append(resultRow(i, texts, en)));
+    // A group of results, sixty at a time.
+    const group = (title, ids) => {
+      if (!ids.length) return;
+      const k = ids.length % 100;
+      list.append(el('p', 'view-sub q-found-h', `${T(title)} · ${I.num(ids.length)} ${T(k >= 3 && k <= 10 ? 'نتائج' : 'نتيجة')}`));
+      let shown = 0;
+      const more = button('btn btn-quiet q-more', T('عرض المزيد'), () => page());
+      const page = () => {
+        ids.slice(shown, shown + 60).forEach((i) => more.before(resultRow(i, texts, en)));
+        shown += 60;
+        more.hidden = shown >= ids.length;
+      };
+      list.append(more);
+      page();
+    };
+    group('بالنص كما كتبته', found.results);
+    group('فيها كل الكلمات بصيغها', found.more || []);
   }
   function resultRow(i, texts, en) {
     const b = button('q-result', '', () => open(i));

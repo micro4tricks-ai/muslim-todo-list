@@ -1749,5 +1749,9 @@ window.noonI18n.use({
   'ابحث عن كتاب بالاسم أو المؤلف': "Cari buku menurut judul atau penulis",
   'كتب الحديث': "Kitab hadis",
   'لا كتاب بهذا الاسم هنا.': "Tidak ada buku dengan nama itu di sini.",
-  'أقسام المكتبة': "Bagian perpustakaan"
+  'أقسام المكتبة': "Bagian perpustakaan",
+  'عرض المزيد': "Tampilkan lebih banyak",
+  'نتائج': "hasil",
+  'بالنص كما كتبته': "Persis seperti yang Anda tulis",
+  'فيها كل الكلمات بصيغها': "Memuat semua kata, dalam bentuk apa pun"
 });
