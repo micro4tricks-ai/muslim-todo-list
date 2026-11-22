@@ -154,10 +154,8 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
       const n = document.elementFromPoint(x, y); return [Math.round(x), Math.round(y), n ? (n.className || n.tagName) + '' : null, (getSelection() + '').slice(0, 20), document.activeElement && document.activeElement.tagName]; })()`);
     adb(`exec-out screencap -p > ${out}/3-mushaf-before-drag.png`);
     const p0 = await pageNow();
-    await js("window.__ptr = []; ['pointerdown','pointermove','pointerup','pointercancel','lostpointercapture','touchcancel'].forEach((n) => document.getElementById('mushafBook').addEventListener(n, (e) => { const l = window.__ptr, k = n + ' ' + Math.round(e.clientX || 0) + ',' + Math.round(e.clientY || 0); if (n === 'pointermove' && l.length && l[l.length - 1].indexOf('pointermove') === 0) l[l.length - 1] = 'pointermove x' + ((parseInt(l[l.length - 1].split(' x')[1] || '1', 10)) + 1) + ' last ' + k.slice(12); else l.push(k); }, true)); true");
     adb(`shell input swipe ${Math.round(w * 0.15)} ${Math.round(h * 0.5)} ${Math.round(w * 0.85)} ${Math.round(h * 0.5)} 350`); await sleep(1500);
     t.steps.push(['drag right', await pageNow()]);
-    t.ptr = await js('window.__ptr.join(" | ")');
     if (String(await pageNow()) === String(p0)) t.dragAgain = await (async () => { adb(`shell input swipe ${Math.round(w * 0.2)} ${Math.round(h * 0.45)} ${Math.round(w * 0.8)} ${Math.round(h * 0.45)} 500`); await sleep(1500); return pageNow(); })();
     const next = await at('#mushafBook .mb-bar button', 'التالية');
     if (next) { tap(next); await sleep(1500); }
