@@ -141,9 +141,9 @@ console.log('page-turning Mushaf:', JSON.stringify(report.mushafBook));
   await js("window.__noCards = setInterval(() => { if (window.noonCard && document.querySelector('.rc:not([hidden])')) window.noonCard.close(); }, 250); true");
   try {
     await js("window.noonUI.go('quran'); true"); await sleep(1500);
-    const mode = await at('.q-mode', 'تقليب الصفحات');
+    const mode = await at('.q-mode.is-main');
     t.modeAt = mode;
-    if (mode) { await sleep(600); tap(await at('.q-mode', 'تقليب الصفحات')); await sleep(3000); }
+    if (mode) { await sleep(600); tap(await at('.q-mode.is-main')); await sleep(3000); }
     t.opened = await pageNow();
     t.layout = await js(`(() => { const s = document.querySelector('#mushafBook .mb-stage'); const p = document.querySelector('#mushafBook .mb-slot .mb-page:last-child'); const b = document.querySelector('#mushafBook .mb-bar');
       const r = (n) => n ? [Math.round(n.getBoundingClientRect().left), Math.round(n.getBoundingClientRect().top), Math.round(n.getBoundingClientRect().width), Math.round(n.getBoundingClientRect().height)] : null;
