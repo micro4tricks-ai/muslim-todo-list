@@ -2,7 +2,8 @@
 // Each page is drawn from the Uthmani text (quran/uthmani.json, Tanzil) with the Madinah page split,
 // at the largest text size that shows it whole, so no verse is ever cut at the top or bottom.
 // On a wide screen two pages face each other and a page turns over the spine (CSS 3D transform);
-// on a phone one page fills the screen and slides away under the finger (2D transform only).
+// on a phone one page fills the screen and turns over on its right edge under the finger, as a leaf
+// of the Mushaf does (one 3D transform on the page itself: nothing is copied or laid out again).
 // The next page lies to the left: drag a page to the right, or press ←, to turn forward.
 // Pages and the rules for them are in js/mushaf-core.js; texts and reading progress in js/quran.js.
 // The toolbar above the pages: listen (the verse being recited is lit, and the page turns with it),
@@ -15,10 +16,10 @@
   const { T, I, el, button, toast, skeleton } = window.noonUI;
   const C = window.noonMushafCore, M = window.NOON_QURAN_META;
   const PAGES = 604, TOTAL = 6236;
-  const LITE = matchMedia('(pointer: coarse)').matches || !!window.Capacitor;
   const Q = () => window.noonQuran.book;
   let B = null; // the overlay's parts
   let page = 1, zoom = 1, two = false, busy = false, lock = null;
+  let lastFit = 0; // the text size the last page laid out took: the first guess for the next
   const made = new Map(); // `${p}|${w}x${h}|${zoom}` → page element, the few around the open one
 
   // ---- one page ----
@@ -68,7 +69,8 @@
     const lh = 1.95;
     const short = b - a < 8 && (p <= 2); // al-Fatiha and the opening of al-Baqara: few lines, centred
     const cap = Math.min(54, text.clientHeight / (short ? 9 : 12.5) / lh);
-    const fit = C.fitSize((px) => { flow.style.fontSize = `${px}px`; return flow.offsetHeight <= text.clientHeight && text.scrollHeight <= text.clientHeight; }, 11, cap);
+    const fit = C.fitSize((px) => { flow.style.fontSize = `${px}px`; return flow.offsetHeight <= text.clientHeight && text.scrollHeight <= text.clientHeight; }, 11, cap, short ? 0 : lastFit);
+    if (!short) lastFit = fit;
     const px = fit * zoom;
     flow.style.fontSize = `${px}px`;
     pg.classList.toggle('is-short', short);
@@ -138,9 +140,20 @@
     q.setPage(page);
     q.setLast(first);
     dwell = {};
-    // Get the neighbours ready, so a turn shows them at once.
-    setTimeout(() => { if (!B.box.hidden) [C.step(page, 1, two, PAGES), C.step(page, -1, two, PAGES)].forEach((n) => { if (two) C.spread(n, PAGES).forEach((x) => pageEl(x, w, h)); else pageEl(n, w, h); B.measure.replaceChildren(); }); }, 120);
+    // Get the neighbours ready, so a turn shows them at once: one page at a time, when the phone is idle,
+    // so laying them out never holds up the hand.
+    const warm = [C.step(page, 1, two, PAGES), C.step(page, -1, two, PAGES)].flatMap((n) => (two ? C.spread(n, PAGES) : [n]));
+    const idle = window.requestIdleCallback || ((f) => setTimeout(f, 50));
+    const ready = () => {
+      if (B.box.hidden || !warm.length) return;
+      pageEl(warm.shift(), w, h);
+      B.measure.replaceChildren();
+      idle(ready, { timeout: 500 });
+    };
+    clearTimeout(warmT);
+    warmT = setTimeout(() => idle(ready, { timeout: 500 }), 60);
   }
+  let warmT = 0;
 
   // Turn once: +1 forward (to the left), -1 back.
   // angle: where a leaf the hand was turning already is.
@@ -151,25 +164,57 @@
     if ((matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-calm'))) { show(to); return; }
     busy = true;
     const done = () => { busy = false; show(to); };
-    if (two && !LITE) return flip(dir, to, done, angle || 0);
-    slide(dir, done);
+    if (two) return flip(dir, to, done, angle || 0);
+    const t = leafStart(dir);
+    if (!t) { busy = false; show(to); return; }
+    leafEnd(t, true, () => done());
   }
-  // A phone: the page slides off to the side it turns to, over the next one.
-  function slide(dir, done) {
+  // A phone: the page turns over on its right edge. Forward, the open page lifts from its left edge and
+  // folds away to the right, uncovering the next; back, the page before unfolds over the open one.
+  // Its angle is set so the edge stays under the finger; past 90 degrees it is edge-on and out of sight.
+  function leafStart(dir) {
     const slot = B.book.querySelector('.mb-slot');
     const cur = slot && slot.lastChild;
-    if (!cur) return done();
+    const to = C.step(page, dir, false, PAGES);
+    if (!cur || to === page) return null;
     const { w, h } = sizes();
-    const next = pageEl(C.step(page, dir, false, PAGES), w, h);
-    next.classList.add('is-under');
-    slot.prepend(next);
-    cur.classList.add('is-moving');
-    const x = (dir > 0 ? 1 : -1) * (w + 40);
-    requestAnimationFrame(() => {
-      cur.style.transition = 'transform 0.28s cubic-bezier(.3,.7,.4,1)';
-      cur.style.transform = `translateX(${x}px)`;
-    });
-    setTimeout(() => { cur.style.transition = cur.style.transform = ''; cur.classList.remove('is-moving'); next.classList.remove('is-under'); done(); }, 300);
+    const other = pageEl(to, w, h);
+    if (dir > 0) slot.prepend(other); else slot.append(other);
+    B.measure.replaceChildren();
+    slot.classList.add('is-turning');
+    const leaf = dir > 0 ? cur : other;
+    const shade = el('div', 'mb-shade');
+    leaf.append(shade);
+    leaf.classList.add('is-leaf');
+    const t = { dir, slot, leaf, other, shade, w };
+    setLeaf(t, dir > 0 ? 0 : 90);
+    return t;
+  }
+  function setLeaf(t, a) {
+    t.a = a;
+    t.leaf.style.transform = `rotateY(${a}deg)`;
+    t.shade.style.opacity = String(Math.min(1, a / 90) * 0.55);
+  }
+  // The angle for a finger dx from where it started: forward 0 to 90, back 90 to 0.
+  function leafAngle(t, dx) {
+    const f = t.dir > 0 ? 1 - Math.max(0, dx) / t.w : Math.max(0, -dx) / t.w;
+    return (Math.acos(Math.min(1, Math.max(0, f))) * 180) / Math.PI;
+  }
+  // Let it go: on to the end of the turn (go) or back to where it was.
+  function leafEnd(t, go, done) {
+    const end = go === (t.dir > 0) ? 92 : 0;
+    const ms = Math.round(Math.max(150, (Math.abs(end - t.a) / 90) * 340));
+    t.leaf.style.transition = `transform ${ms}ms cubic-bezier(.25,.6,.35,1)`;
+    t.shade.style.transition = `opacity ${ms}ms`;
+    requestAnimationFrame(() => setLeaf(t, end));
+    setTimeout(() => {
+      t.leaf.style.transition = t.leaf.style.transform = '';
+      t.leaf.classList.remove('is-leaf');
+      t.shade.remove();
+      t.slot.classList.remove('is-turning');
+      if (!go) t.other.remove();
+      done(go);
+    }, ms + 30);
   }
   // A wide screen: a leaf turns over the spine; its back is the page that lands on the other side.
   function flip(dir, to, done, angle) {
@@ -211,31 +256,19 @@
       try { B.stage.setPointerCapture(ev.pointerId); } catch (_) {}
     }
     drag.dx = dx;
+    if (!two) {
+      // One page: it turns the way the hand first went; at most one change per frame.
+      if (!drag.lt) { drag.lt = leafStart(dx > 0 ? 1 : -1); if (!drag.lt) { drag = null; return; } }
+      if (!drag.raf) drag.raf = requestAnimationFrame(() => { if (drag && drag.lt) { drag.raf = 0; setLeaf(drag.lt, leafAngle(drag.lt, drag.dx)); } });
+      return;
+    }
     const { w } = sizes();
-    if (two && !LITE) {
+    {
       // The leaf follows the hand over the spine.
       if (!drag.leaf) { drag.leafDir = dx > 0 ? 1 : -1; drag.leaf = startLeaf(drag.leafDir); }
       const ang = (dx / w) * 180; // a leaf lifted to turn forward only turns that way, and back the same
       if (drag.leaf) drag.leaf.style.transform = `rotateY(${drag.leafDir > 0 ? Math.max(0, Math.min(180, ang)) : Math.max(-180, Math.min(0, ang))}deg)`;
-      return;
     }
-    const slot = B.book.querySelector('.mb-slot'), cur = slot && slot.lastChild;
-    if (!cur) return;
-    // The page it turns to waits underneath: forward when dragged right, back when dragged left.
-    const want = C.step(page, dx > 0 ? 1 : -1, false, PAGES);
-    if (drag.under !== want) {
-      if (drag.underEl) drag.underEl.remove();
-      drag.under = want;
-      drag.underEl = null;
-      if (want !== page) {
-        const { h } = sizes();
-        drag.underEl = pageEl(want, w, h);
-        drag.underEl.classList.add('is-under');
-        slot.prepend(drag.underEl);
-      }
-    }
-    cur.classList.add('is-moving');
-    cur.style.transform = `translateX(${dx}px)`;
   }
   function onUp(ev) {
     if (!drag || ev.pointerId !== drag.id) return;
@@ -243,16 +276,17 @@
     if (!d.on) return tapTurn(ev);
     const { w } = sizes();
     let dir = C.swipeDir(d.dx, w, Math.abs(d.dx) / Math.max(1, performance.now() - d.t));
-    if (d.leaf && dir !== d.leafDir) dir = 0;
-    if (d.leaf) { d.leaf.remove(); show(page); }
-    const cur = B.book.querySelector('.mb-slot > .mb-page:last-child');
-    if (!dir || C.step(page, dir, two, PAGES) === page) {
-      if (d.underEl) setTimeout(() => { d.underEl.remove(); d.underEl.classList.remove('is-under'); }, 220);
-      if (cur) { cur.style.transition = 'transform 0.2s'; cur.style.transform = ''; setTimeout(() => { cur.style.transition = ''; cur.classList.remove('is-moving'); }, 220); }
+    if (d.raf) cancelAnimationFrame(d.raf);
+    if (d.lt) {
+      const t = d.lt;
+      busy = true;
+      leafEnd(t, dir === t.dir, (go) => { busy = false; if (go) show(C.step(page, t.dir, false, PAGES)); });
       return;
     }
-    if (two && !LITE) { turn(dir, Math.max(-180, Math.min(180, (d.dx / w) * 180))); return; }
-    turn(dir);
+    if (d.leaf && dir !== d.leafDir) dir = 0;
+    if (d.leaf) { d.leaf.remove(); show(page); }
+    if (!dir || C.step(page, dir, two, PAGES) === page) return;
+    turn(dir, Math.max(-180, Math.min(180, (d.dx / w) * 180)));
   }
   // While dragging on a wide screen: a leaf like the one flip() turns, over the page being lifted.
   function startLeaf(dir) {
@@ -406,7 +440,11 @@
     stage.addEventListener('pointerdown', onDown);
     stage.addEventListener('pointermove', onMove);
     stage.addEventListener('pointerup', onUp);
-    stage.addEventListener('pointercancel', () => { if (drag && drag.leaf) { drag.leaf.remove(); show(page); } drag = null; });
+    stage.addEventListener('pointercancel', () => {
+      if (drag && drag.leaf) { drag.leaf.remove(); show(page); }
+      if (drag && drag.lt) { const t = drag.lt; busy = true; leafEnd(t, false, () => { busy = false; }); }
+      drag = null;
+    });
     box.addEventListener('keydown', (ev) => {
       if (ev.target.closest('input, select, .mb-sheet') && ev.key !== 'Escape') return;
       if (ev.key === 'ArrowLeft' || ev.key === 'PageDown') { ev.preventDefault(); turn(1); }

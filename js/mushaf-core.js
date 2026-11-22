@@ -35,10 +35,22 @@
   }
 
   // The largest size (to half a pixel) for which fits(size) holds, between lo and hi.
-  function fitSize(fits, lo, hi) {
+  // guess: a size likely to be close (the page before's); each try lays the page out again, and with a
+  // good guess two or three tries do instead of eight.
+  function fitSize(fits, lo, hi, guess) {
     if (fits(hi)) return hi;
-    if (!fits(lo)) return lo;
     let a = lo, b = hi; // fits(a), not fits(b)
+    if (guess > lo + 0.5 && guess < hi - 0.5) {
+      const g = Math.round(guess * 2) / 2;
+      if (fits(g)) {
+        if (!fits(g + 0.5)) return g;
+        a = g + 0.5;
+      } else {
+        if (fits(g - 0.5)) return g - 0.5;
+        b = g - 0.5;
+      }
+    }
+    if (a === lo && !fits(lo)) return lo;
     while (b - a > 0.5) { const m = Math.round((a + b)) / 2; if (fits(m)) a = m; else b = m; }
     return a;
   }

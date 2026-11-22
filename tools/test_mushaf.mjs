@@ -44,6 +44,13 @@ test('the text size is the largest that fits the whole page', () => {
   assert.equal(C.fitSize(fits, 12, 48), 30);
   assert.equal(C.fitSize(() => true, 12, 48), 48);
   assert.equal(C.fitSize(() => false, 12, 48), 12); // nothing fits: the smallest, then the page scrolls
+  // A guess gives the same answer, from any side, with fewer tries.
+  for (const g of [12, 20, 29.5, 30, 30.5, 31, 40, 47.5]) assert.equal(C.fitSize(fits, 12, 48, g), 30, `guess ${g}`);
+  let tries = 0;
+  assert.equal(C.fitSize((x) => { tries++; return fits(x); }, 12, 48, 30), 30);
+  assert.ok(tries <= 3, `tries ${tries}`);
+  assert.equal(C.fitSize(() => false, 12, 48, 30), 12);
+  assert.equal(C.fitSize(() => true, 12, 48, 30), 48);
 });
 
 test('a zoomed page shows whole lines only', () => {

@@ -226,11 +226,13 @@
       pages.push(d);
     }
     const quiet = calm();
+    const one = stage.clientWidth < 700 || stage.clientWidth < stage.clientHeight;
     pf = new window.St.PageFlip(book, {
       width: B.width, height: B.height, size: 'stretch',
       minWidth: 260, maxWidth: B.width, minHeight: 200, maxHeight: B.height * 2,
       showCover: true, usePortrait: true, mobileScrollSupport: false,
-      flippingTime: quiet ? 250 : 750, drawShadow: !quiet, maxShadowOpacity: 0.45,
+      // One page on a phone: a quicker turn, and a lighter shadow to paint over the page under it.
+      flippingTime: quiet ? 250 : one ? 480 : 750, drawShadow: !quiet, maxShadowOpacity: one ? 0.3 : 0.45,
       startPage: Math.max(0, Math.min(L - 1, idxOf(at))), swipeDistance: 20
     });
     pf.loadFromHTML(pages);
