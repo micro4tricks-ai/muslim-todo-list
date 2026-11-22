@@ -30,6 +30,30 @@
       },
       "official": "https://aloula.sba.sa/ar/live/sunna",
       "aloula": 6
+    },
+    {
+      "id": "qatar-quran",
+      "ar": "قناة القرآن الكريم — تلفزيون قطر",
+      "en": "Qatar TV — The Holy Quran",
+      "urls": [
+        "https://qatartv.akamaized.net/hls/live/20000612/qtvquran/master.m3u8"
+      ]
+    },
+    {
+      "id": "saudi-quran-radio",
+      "ar": "إذاعة القرآن الكريم السعودية (بث مرئي)",
+      "en": "Saudi Holy Quran Radio (video)",
+      "urls": [
+        "https://live.kwikmotion.com/sbrksaquranradiolive/srpksaquranradio/playlist.m3u8"
+      ]
+    },
+    {
+      "id": "sharjah-quran-radio",
+      "ar": "إذاعة الشارقة للقرآن الكريم (بث مرئي)",
+      "en": "Sharjah Holy Quran Radio (video)",
+      "urls": [
+        "https://live.kwikmotion.com/smcquranlive/quranradiolive/playlist.m3u8"
+      ]
     }
   ],
   "radios": [

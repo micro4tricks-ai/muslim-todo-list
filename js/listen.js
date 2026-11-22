@@ -574,7 +574,7 @@
     });
   }
 
-  // ---- live TV: the Quran channel (Makkah) and the Sunnah channel (Madinah) ----
+  // ---- live TV: the Quran channel (Makkah), the Sunnah channel (Madinah), and the other official Quran channels in live.json ----
   // First choice: the channel's official live broadcast on YouTube (up to 1080p), shown through
   // tv.html on the website, because YouTube's player asks for a real web address and the app's
   // pages come from https://localhost. Backup: the lower-quality HLS links, played by hls.js
