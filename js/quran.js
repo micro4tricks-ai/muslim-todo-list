@@ -57,6 +57,31 @@
     ['bn.bengali', 'বাংলা — Muhiuddin Khan'], ['es.cortes', 'Español — Cortés'], ['de.aburida', 'Deutsch — Abu Rida'], ['ru.kuliev', 'Русский — Кулиев']
   ];
   const transCache = {};
+  // Translations that are also recited verse by verse (cdn.islamic.network), for listening to the
+  // meaning after each verse: [key, name, audio folder, the text edition shown with it (null: none)].
+  const AUD = 'https://cdn.islamic.network/quran/audio/';
+  const TRANS_AUDIO = [
+    ['en', 'English — Saheeh International (Ibrahim Walk)', `${AUD}192/en.walk/`, 'en.sahih'],
+    ['ur', 'اردو — شمشاد علی خان', `${AUD}64/ur.khan/`, 'ur.jalandhry'],
+    ['tr', 'Türkçe — Diyanet Vakfı', `${AUD}128/tr.vakfi-audio/`, 'tr.vakfi'],
+    ['fr', 'Français — Youssouf Leclerc', `${AUD}128/fr.leclerc/`, 'fr.hamidullah'],
+    ['ru', 'Русский — Эльмир Кулиев', `${AUD}128/ru.kuliev-audio/`, 'ru.kuliev'],
+    ['zh', '中文 — 马坚', `${AUD}128/zh.chinese/`, 'zh.majian'],
+    ['uz', 'Oʻzbek — Muhammad Sodik', `${AUD}128/uz.sodik-audio/`, 'uz.sodik'],
+    ['kk', 'Қазақ — Khalifah Altai', `${AUD}128/kk.khalifahaltai-audio/`, null]
+  ];
+  // One verse of a translation (an alquran.cloud edition), a surah fetched at a time and kept.
+  const lineCache = {};
+  async function transLine(i, ed) {
+    if (!ed) return '';
+    if (ed === 'en' || ed === 'en.sahih') return (await data('en'))[i];
+    const s = surahOf(i), k = `${ed}:${s}`;
+    if (!lineCache[k]) {
+      lineCache[k] = fetch(`https://api.alquran.cloud/v1/surah/${s + 1}/${ed}`).then((r) => r.json()).then((j) => j.data.ayahs.map((a) => a.text));
+      lineCache[k].catch(() => { delete lineCache[k]; });
+    }
+    return (await lineCache[k])[i - starts[s]] || '';
+  }
   const transLang = () => (TRANS.some((t) => t[0] === S.transLang) ? S.transLang : 'en');
   function transText(s, i) {
     if (transLang() === 'en') return txt.en ? txt.en[i] : '';
@@ -933,6 +958,14 @@
     if (!r.ok) throw new Error(r.status);
     return (await r.json()).text || '';
   }
+  // A tafsir's words on verse i. Some tafsirs explain a group of verses once, under its first verse:
+  // then it is that one's (k = the verse it starts at).
+  async function tafsirFor(t, i) {
+    let k = i, text = await tafsirText(t, k);
+    const s0 = starts[surahOf(i)];
+    while (!text.trim() && k > s0 && i - k < 12) { k--; text = await tafsirText(t, k); }
+    return { k, text };
+  }
   async function tafsirOf(i) {
     R.sheet.classList.add('is-tall');
     R.tafsir.hidden = false;
@@ -944,10 +977,7 @@
     pickT.addEventListener('change', () => { S.tafsir = pickT.value; save(); tafsirOf(i); });
     R.tafsir.replaceChildren(pickT, skeleton(T('جارٍ تحميل التفسير…'), 3));
     try {
-      // Some tafsirs explain a group of verses once, under its first verse.
-      let k = i, text = await tafsirText(t, k);
-      const s0 = starts[surahOf(i)];
-      while (!text.trim() && k > s0 && i - k < 12) { k--; text = await tafsirText(t, k); }
+      const { k, text } = await tafsirFor(t, i);
       if (sel !== i) return;
       const p = el('div', 'qr-tafsir-text');
       p.lang = tafLang(t[0]);
@@ -971,14 +1001,17 @@
   const nextAudio = new Audio();
   nextAudio.preload = 'auto';
   // Which verse is being recited, for the page-turning Mushaf: {i, on} (i = -1 when it stopped).
-  const say = (i, on) => window.dispatchEvent(new CustomEvent('noon-ayah', { detail: { i, on } }));
+  const say = (i, on, trans) => window.dispatchEvent(new CustomEvent('noon-ayah', { detail: { i, on, trans: !!trans } }));
   // In the page-turning Mushaf the recitation carries on into the next surah; the reader stops at its end.
   const through = () => !!(window.noonMushafBook && window.noonMushafBook.isOpen());
   const reciter = () => RECITERS.find((r) => r[0] === S.reciter) || RECITERS[0];
   const src = (i) => (reciter()[4] ? reciter()[4](i) : `https://cdn.islamic.network/quran/audio/${reciter()[1]}/${reciter()[0]}/${i + 1}.mp3`);
   let left = 0, gapTimer = 0; // repeats still to play; the pause before the next one
+  let inTrans = false; // the translation of the verse is being recited
+  const transAudio = () => (through() && TRANS_AUDIO.find((x) => x[0] === S.transAudio)) || null;
   function play(i, again) {
     clearTimeout(gapTimer);
+    inTrans = false;
     if (!again) left = Math.max(1, S.repeat || 1);
     playing = i;
     audio.src = src(i);
@@ -1011,11 +1044,22 @@
   function stopped() { playing = -1; setPlayIcon(false); say(-1, false); if (R) R.page.querySelectorAll('.is-play').forEach((n) => n.classList.remove('is-play')); }
   audio.addEventListener('ended', () => {
     const s = surahOf(playing), end = starts[s] + M.surahs[s][4];
+    const advance = () => {
+      if (playing + 1 < (through() ? TOTAL : end)) play(playing + 1);
+      else stopped();
+    };
+    if (inTrans) { inTrans = false; advance(); return; }
     const wait = (S.gap || 0) * (audio.duration || 0) * 1000 / (S.rate || 1);
     const next = () => {
       if (--left > 0) play(playing, true);
-      else if (playing + 1 < (through() ? TOTAL : end)) play(playing + 1);
-      else stopped();
+      else if (transAudio()) {
+        // The meaning, in the chosen language, straight after the verse.
+        inTrans = true;
+        audio.src = `${transAudio()[2]}${playing + 1}.mp3`;
+        audio.playbackRate = 1;
+        say(playing, true, true);
+        audio.play().catch(() => { inTrans = false; advance(); });
+      } else advance();
     };
     if (wait > 0) gapTimer = setTimeout(next, wait); else next();
   });
@@ -1099,6 +1143,15 @@
     setTajweed: async (on) => { if (on) await data('tajweed'); S.tajweed = on; save(); },
     muallim: () => S.reciter === 'muallim',
     setMuallim: (on) => { Object.assign(S, on ? { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 } : { reciter: 'ar.alafasy', repeat: 1, gap: 0 }); save(); },
+    // The verse sheet: tafsir and translation of one verse.
+    ref: (i) => refText(i), text: (i) => txt.uthmani[i], tafsirs: TAFSIRS, trans: TRANS,
+    tafsir: () => (TAFSIRS.find((x) => x[0] === S.tafsir) || TAFSIRS[0])[0], setTafsir: (k) => { S.tafsir = k; save(); },
+    tafsirOf: (i) => tafsirFor(TAFSIRS.find((x) => x[0] === S.tafsir) || TAFSIRS[0], i),
+    tafLang: () => tafLang((TAFSIRS.find((x) => x[0] === S.tafsir) || TAFSIRS[0])[0]),
+    transLang: () => transLang(), setTransLang: (k) => { S.transLang = k; save(); },
+    line: (i, ed) => transLine(i, ed === 'en' ? 'en.sahih' : ed),
+    // Listening to the meaning after each verse.
+    transAudios: TRANS_AUDIO, transAudio: () => S.transAudio || '', setTransAudio: (k) => { S.transAudio = k; save(); },
     play: (i) => play(i), pause: () => pause(), playing: () => (playing >= 0 && !audio.paused ? playing : -1), paused: () => (playing >= 0 && audio.paused ? playing : -1)
   };
   // Back to where reading stopped, the way it was read: the page-turning Mushaf or the reader.

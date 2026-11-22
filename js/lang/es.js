@@ -1735,5 +1735,12 @@ window.noonI18n.use({
   'استمع للتلاوة من هذه الصفحة': "Escuchar la recitación desde esta página",
   'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Mushaf didáctico: escucha la aleya y repítela en la pausa que le sigue.",
   'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Mushaf didáctico: pulsa «Escuchar» y cada aleya se recita tres veces, con una pausa para repetirla.",
-  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 páginas como el Mushaf de Medina, que pasas a mano, con tajwid en colores, la recitación didáctica y escucha"
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 páginas como el Mushaf de Medina, que pasas a mano, con tajwid en colores, la recitación didáctica y escucha",
+  'الترجمة الصوتية بعد كل آية': "Traducción recitada tras cada aleya",
+  'بلا ترجمة صوتية': "Sin traducción recitada",
+  'الآية': "La aleya",
+  'جارٍ تحميل الترجمة…': "Cargando la traducción…",
+  'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "La traducción necesita conexión a internet. Inténtalo de nuevo.",
+  'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "La traducción se recita tras cada aleya y su texto aparece bajo la página.",
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Pulsa «Escuchar»: se recita cada aleya y luego su traducción, y su texto aparece bajo la página."
 });

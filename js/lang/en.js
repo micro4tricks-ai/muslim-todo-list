@@ -1596,5 +1596,12 @@ window.noonI18n.use({
   'استمع للتلاوة من هذه الصفحة': "Listen to the recitation from this page",
   'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Teaching Mushaf: listen to the verse, then repeat it in the pause after it.",
   'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Teaching Mushaf: press «Listen» and each verse is recited three times, with a pause to repeat it.",
-  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 pages like the Madinah Mushaf, turned by hand, with colour-coded tajweed, the teaching recitation and listening"
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 pages like the Madinah Mushaf, turned by hand, with colour-coded tajweed, the teaching recitation and listening",
+  'الترجمة الصوتية بعد كل آية': "Recited translation after each verse",
+  'بلا ترجمة صوتية': "No recited translation",
+  'الآية': "The verse",
+  'جارٍ تحميل الترجمة…': "Loading the translation…",
+  'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "The translation needs an internet connection. Try again.",
+  'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "The translation is recited after each verse, and its words show under the page.",
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Press «Listen»: each verse is recited, then its translation, and its words show under the page."
 });

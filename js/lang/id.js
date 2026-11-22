@@ -1735,5 +1735,12 @@ window.noonI18n.use({
   'استمع للتلاوة من هذه الصفحة': "Dengarkan bacaan dari halaman ini",
   'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Mushaf Muallim: dengarkan ayatnya, lalu tirukan pada jeda setelahnya.",
   'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Mushaf Muallim: tekan «Dengarkan», setiap ayat dibaca 3 kali dengan jeda untuk menirukannya.",
-  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 halaman seperti Mushaf Madinah yang dibalik dengan tangan, dengan tajwid berwarna, Mushaf Muallim, dan fitur mendengarkan"
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "604 halaman seperti Mushaf Madinah yang dibalik dengan tangan, dengan tajwid berwarna, Mushaf Muallim, dan fitur mendengarkan",
+  'الترجمة الصوتية بعد كل آية': "Terjemahan audio setelah setiap ayat",
+  'بلا ترجمة صوتية': "Tanpa terjemahan audio",
+  'الآية': "Ayat",
+  'جارٍ تحميل الترجمة…': "Memuat terjemahan…",
+  'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "Terjemahan memerlukan koneksi internet. Coba lagi.",
+  'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "Terjemahan dibacakan setelah setiap ayat, dan teksnya tampil di bawah halaman.",
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Tekan «Dengarkan»: setiap ayat dibacakan lalu terjemahannya, dan teksnya tampil di bawah halaman."
 });

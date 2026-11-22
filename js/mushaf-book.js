@@ -7,7 +7,9 @@
 // Pages and the rules for them are in js/mushaf-core.js; texts and reading progress in js/quran.js.
 // The toolbar above the pages: listen (the verse being recited is lit, and the page turns with it),
 // the teaching Mushaf (al-Husary al-Mu'allim, each verse three times with a pause to repeat it),
-// the tajweed colours with their key, the page colour, the text size, and «go to».
+// the tajweed colours with their key, the page colour, the text size, and «go to»; and the meaning
+// after each verse, recited in a chosen language, its words on a line under the page.
+// A tap on a verse (in the middle of the page) opens its sheet: tafsir, translation, play from here.
 (() => {
   'use strict';
   const { T, I, el, button, toast, skeleton } = window.noonUI;
@@ -277,6 +279,10 @@
     const x = (ev.clientX - r.left) / r.width;
     if (x < 0.25) turn(1);
     else if (x > 0.75) turn(-1);
+    else {
+      const v = ev.target.closest && ev.target.closest('.ay');
+      if (v) openVerse(Number(v.dataset.i));
+    }
   }
 
   // ---- pages read count toward the daily wird and the khatma (20 seconds on screen each) ----
@@ -323,6 +329,23 @@
       T('الحصري المعلّم: تُكرَّر الآية ٣ مرات مع مهلة لترديدها'));
     const tajweed = tool('mb-tajweed', icon('M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01'), 'التجويد', () => tajweedClick(),
       T('أحكام التجويد ملوّنة في النص'));
+    // The meaning after each verse: off, or one of the recited translations.
+    const tWrap = el('label', 'mb-tool mb-tsel');
+    tWrap.innerHTML = icon('M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18');
+    const tSel = el('select');
+    tSel.setAttribute('aria-label', T('الترجمة الصوتية بعد كل آية'));
+    tSel.title = T('الترجمة الصوتية بعد كل آية');
+    tSel.append(new Option(T('بلا ترجمة صوتية'), ''));
+    // The language alone in the list (the reader's name is in the option's tooltip).
+    Q().transAudios.forEach(([k, name]) => { const o = new Option(name.split(' — ')[0], k); o.title = name; tSel.append(o); });
+    tSel.addEventListener('change', () => {
+      Q().setTransAudio(tSel.value);
+      syncTools();
+      caption(reciting);
+      if (tSel.value) toast(T(Q().playing() >= 0 ? 'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.' : 'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.'));
+    });
+    tWrap.append(tSel);
+    tools.append(tWrap);
     const themeBtn = tool('mb-theme', icon('M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z'), 'لون الصفحة', () => themeClick());
     tools.append(el('span', 'mb-tools-gap'));
     tool('mb-aa', '', 'A−', () => setZoom(-0.25), T('تصغير الخط'));
@@ -368,7 +391,16 @@
     next.dir = prev.dir = I.dir;
     bar.dir = 'ltr';
     bar.append(next, el('span', 'hint mb-hint', T('اسحب الصفحة أو اضغط على طرفها لتقليبها')), prev);
-    box.append(top, tools, legend, go, stage, bar, measure);
+    // The meaning of the verse being recited, under the page, while a recited translation is chosen.
+    const cap = el('div', 'mb-cap');
+    cap.hidden = true;
+    cap.setAttribute('aria-live', 'polite');
+    // The sheet of one verse.
+    const sheet = el('section', 'mb-sheet');
+    sheet.hidden = true;
+    sheet.setAttribute('role', 'dialog');
+    sheet.setAttribute('aria-label', T('الآية'));
+    box.append(top, tools, legend, go, stage, cap, bar, sheet, measure);
     document.body.append(box);
 
     stage.addEventListener('pointerdown', onDown);
@@ -376,14 +408,15 @@
     stage.addEventListener('pointerup', onUp);
     stage.addEventListener('pointercancel', () => { if (drag && drag.leaf) { drag.leaf.remove(); show(page); } drag = null; });
     box.addEventListener('keydown', (ev) => {
-      if (ev.target.closest('input, select')) return;
+      if (ev.target.closest('input, select, .mb-sheet') && ev.key !== 'Escape') return;
       if (ev.key === 'ArrowLeft' || ev.key === 'PageDown') { ev.preventDefault(); turn(1); }
       else if (ev.key === 'ArrowRight' || ev.key === 'PageUp') { ev.preventDefault(); turn(-1); }
+      else if (ev.key === 'Escape' && !sheet.hidden) closeVerse();
       else if (ev.key === 'Escape') { if (!go.hidden) { go.hidden = true; goBtn.setAttribute('aria-pressed', 'false'); } else close.click(); }
     });
     let rz = 0;
     addEventListener('resize', () => { if (B.box.hidden) return; clearTimeout(rz); rz = setTimeout(() => { made.clear(); show(page); }, 150); });
-    B = { box, stage, book, measure, title, meta, go, prev, next, listen, muallim, tajweed, themeBtn, legend, goBtn };
+    B = { box, stage, book, measure, title, meta, go, prev, next, listen, muallim, tajweed, themeBtn, legend, goBtn, tSel, cap, sheet };
   }
 
   // ---- the toolbar ----
@@ -391,7 +424,7 @@
   const ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
   const THEMES = [['paper', 'فاتح'], ['sepia', 'ورقي'], ['night', 'ليلي']];
   let reciting = -1; // the verse being recited, lit on the page
-  function tools() {
+  function syncTools() {
     const q = Q(), on = q.playing() >= 0;
     B.listen.innerHTML = on ? ICON_PAUSE : ICON_PLAY;
     B.listen.append(el('span', '', T(on ? 'إيقاف' : 'استمع')));
@@ -400,6 +433,8 @@
     B.muallim.setAttribute('aria-pressed', String(q.muallim()));
     B.tajweed.setAttribute('aria-pressed', String(q.tajweed()));
     B.legend.hidden = !q.tajweed();
+    B.tSel.value = q.transAudio();
+    B.tSel.parentNode.setAttribute('aria-pressed', String(!!q.transAudio()));
     const t = THEMES.find((x) => x[0] === q.theme()) || THEMES[0];
     B.themeBtn.querySelector('span').textContent = T(t[1]);
     B.themeBtn.title = `${T('لون الصفحة')}: ${T(t[1])}`;
@@ -418,7 +453,7 @@
     q.setMuallim(on);
     const at = q.playing();
     if (at >= 0) q.play(at); // the same verse again, in the other recitation
-    tools();
+    syncTools();
     if (on) toast(T(at >= 0 ? 'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.' : 'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.'));
   }
   async function tajweedClick() {
@@ -426,7 +461,7 @@
     B.tajweed.disabled = true;
     try { await q.setTajweed(on); } catch (_) { toast(T('تعذّر تحميل التجويد. تحقّق من الاتصال ثم حاول مرة أخرى.')); }
     B.tajweed.disabled = false;
-    tools(); // the colour key shows first, so the pages are sized to the room left
+    syncTools(); // the colour key shows first, so the pages are sized to the room left
     made.clear();
     show(page);
   }
@@ -435,19 +470,116 @@
     const k = THEMES[(THEMES.findIndex((x) => x[0] === q.theme()) + 1) % THEMES.length][0];
     q.setTheme(k);
     B.box.dataset.theme = k;
-    tools();
+    syncTools();
   }
+  // The caption: the meaning of the verse being recited, in the language chosen to listen to.
+  let capFor = -2;
+  async function caption(i) {
+    const q = Q(), k = q.transAudio();
+    const a = q.transAudios.find((x) => x[0] === k);
+    if (!a || i < 0) { B.cap.hidden = true; capFor = -2; return; }
+    if (capFor === `${k}:${i}`) return;
+    capFor = `${k}:${i}`;
+    B.cap.hidden = false;
+    B.cap.dir = ['ur'].includes(k) ? 'rtl' : 'ltr';
+    B.cap.lang = k;
+    const ref = el('b', '', q.ar(q.ayahOf(i)));
+    if (!a[3]) { B.cap.replaceChildren(ref, el('span', '', a[1])); return; }
+    try {
+      const line = await q.line(i, a[3]);
+      if (capFor === `${k}:${i}`) B.cap.replaceChildren(ref, el('span', '', line));
+    } catch (_) { if (capFor === `${k}:${i}`) B.cap.replaceChildren(ref, el('span', '', a[1])); }
+  }
+
+  // ---- the sheet of one verse: its tafsir, its translation, play from here ----
+  let sheetAt = -1, sheetTab = 'tafsir';
+  function openVerse(i) {
+    sheetAt = i;
+    B.book.querySelectorAll('.ay.is-sel').forEach((n) => n.classList.remove('is-sel'));
+    B.book.querySelectorAll(`.ay[data-i="${i}"]`).forEach((n) => n.classList.add('is-sel'));
+    renderSheet();
+  }
+  function closeVerse() {
+    sheetAt = -1;
+    B.sheet.hidden = true;
+    B.book.querySelectorAll('.ay.is-sel').forEach((n) => n.classList.remove('is-sel'));
+    B.box.focus({ preventScroll: true });
+  }
+  async function renderSheet() {
+    const q = Q(), i = sheetAt;
+    if (i < 0) return;
+    const sh = B.sheet;
+    sh.hidden = false;
+    const head = el('header', 'mb-sheet-head');
+    const x = button('mb-sheet-x', '×', closeVerse, T('إغلاق'));
+    head.append(el('b', '', q.ref(i)), x);
+    const tabs = el('div', 'filter mb-sheet-tabs');
+    tabs.setAttribute('role', 'group');
+    [['tafsir', 'التفسير'], ['trans', 'الترجمة']].forEach(([k, label]) => {
+      const b = button('', T(label), () => { sheetTab = k; renderSheet(); });
+      b.setAttribute('aria-pressed', String(sheetTab === k));
+      tabs.append(b);
+    });
+    const verse = el('p', 'mb-sheet-ayah', `${q.text(i)} ﴿${q.ar(q.ayahOf(i))}﴾`);
+    verse.lang = 'ar'; verse.dir = 'rtl';
+    const pick = el('select', 'mb-sheet-pick');
+    const body = el('div', 'mb-sheet-body');
+    body.append(skeleton(T(sheetTab === 'tafsir' ? 'جارٍ تحميل التفسير…' : 'جارٍ تحميل الترجمة…'), 3));
+    const acts = el('div', 'mb-sheet-acts');
+    const share = `${q.text(i)} ﴿${q.ref(i)}﴾`;
+    acts.append(
+      button('btn btn-primary', `▶ ${T('تشغيل من هنا')}`, () => { closeVerse(); q.play(i); }),
+      button('btn btn-quiet', T('نسخ'), async () => { try { await navigator.clipboard.writeText(share); toast(T('نُسخت الآية.')); } catch (_) { toast(T('تعذّر النسخ.')); } })
+    );
+    if (sheetTab === 'tafsir') {
+      pick.setAttribute('aria-label', T('اختر التفسير'));
+      q.tafsirs.forEach((t) => pick.append(new Option(I.latin ? t[2] : t[1], t[0])));
+      pick.value = q.tafsir();
+      pick.addEventListener('change', () => { q.setTafsir(pick.value); renderSheet(); });
+    } else {
+      pick.setAttribute('aria-label', T('لغة الترجمة'));
+      q.trans.forEach(([k, name]) => pick.append(new Option(name, k)));
+      pick.value = q.transLang();
+      pick.addEventListener('change', () => { q.setTransLang(pick.value); renderSheet(); });
+    }
+    sh.replaceChildren(head, verse, tabs, pick, body, acts);
+    try {
+      if (sheetTab === 'tafsir') {
+        const { k, text } = await q.tafsirOf(i);
+        if (sheetAt !== i) return;
+        const box = el('div', 'mb-sheet-text');
+        box.lang = q.tafLang(); box.dir = ['ar', 'ur'].includes(box.lang) ? 'rtl' : 'ltr';
+        if (k !== i) box.append(el('p', 'hint', `${T('تفسير هذه الآية مع ما قبلها، من الآية')} ${I.num(q.ayahOf(k))}`));
+        text.split(/\n+/).filter((t) => t.trim()).forEach((t) => box.append(el('p', '', t.trim())));
+        body.replaceChildren(box);
+      } else {
+        const lang = q.transLang();
+        const line = await q.line(i, lang);
+        if (sheetAt !== i) return;
+        const box = el('div', 'mb-sheet-text');
+        box.lang = lang.split('.')[0]; box.dir = /^(ur|fa)/.test(lang) ? 'rtl' : 'ltr';
+        box.append(el('p', '', line));
+        body.replaceChildren(box);
+      }
+    } catch (_) {
+      if (sheetAt === i) body.replaceChildren(el('p', 'hint', T(sheetTab === 'tafsir' ? 'التفسير يحتاج اتصالاً بالإنترنت. حاول مرة أخرى.' : 'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.')));
+    }
+  }
+
   // Light the verse being recited.
   function paint() {
     B.book.querySelectorAll('.ay.is-play').forEach((n) => n.classList.remove('is-play'));
     if (reciting >= 0) B.book.querySelectorAll(`.ay[data-i="${reciting}"]`).forEach((n) => n.classList.add('is-play'));
+    B.book.querySelectorAll('.ay.is-sel').forEach((n) => n.classList.remove('is-sel'));
+    if (sheetAt >= 0) B.book.querySelectorAll(`.ay[data-i="${sheetAt}"]`).forEach((n) => n.classList.add('is-sel'));
   }
   // The recitation moved on: light its verse, and turn to its page when it is not open.
   window.addEventListener('noon-ayah', (ev) => {
     if (!B || B.box.hidden) return;
     const { i, on } = ev.detail;
     reciting = on ? i : -1;
-    tools();
+    syncTools();
+    caption(on ? i : -1);
     if (on && !busy && !drag) {
       const p = Q().pageOf(i);
       if (!shown().includes(p)) {
@@ -476,7 +608,7 @@
       B.book.replaceChildren(el('p', 'qr-loading', T('تعذّر تحميل نص المصحف. تحقّق من الاتصال ثم حاول مرة أخرى.')));
       return;
     }
-    tools();
+    syncTools();
     made.clear();
     show(p || Q().page());
     B.box.tabIndex = -1;
@@ -488,6 +620,8 @@
     B.box.hidden = true;
     if (Q().playing() >= 0) Q().pause(); // the recitation follows the pages, so it stops with them
     reciting = -1;
+    B.sheet.hidden = true; sheetAt = -1;
+    B.cap.hidden = true; capFor = -2;
     if (!keepBody) document.body.classList.remove('qr-open');
     if (lock) { lock.release().catch(() => {}); lock = null; }
     if (history.state && history.state.mb) history.replaceState(null, '');

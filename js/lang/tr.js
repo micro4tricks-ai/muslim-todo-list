@@ -1735,5 +1735,12 @@ window.noonI18n.use({
   'استمع للتلاوة من هذه الصفحة': "Bu sayfadan itibaren tilaveti dinle",
   'المصحف المعلّم: استمع للآية ثم ردّدها في المهلة بعدها.': "Muallim Mushaf: ayeti dinleyin, ardından gelen arada tekrar edin.",
   'المصحف المعلّم: اضغط «استمع» لتُتلى كل آية ٣ مرات مع مهلة لترديدها.': "Muallim Mushaf: «Dinle»ye basın; her ayet 3 kez okunur ve tekrar etmeniz için ara verilir.",
-  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "Medine Mushafı gibi elle çevrilen 604 sayfa; renkli tecvid, Muallim Mushaf ve dinleme ile"
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع': "Medine Mushafı gibi elle çevrilen 604 sayfa; renkli tecvid, Muallim Mushaf ve dinleme ile",
+  'الترجمة الصوتية بعد كل آية': "Her ayetten sonra sesli meal",
+  'بلا ترجمة صوتية': "Sesli meal yok",
+  'الآية': "Ayet",
+  'جارٍ تحميل الترجمة…': "Meal yükleniyor…",
+  'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "Meal için internet bağlantısı gerekir. Tekrar deneyin.",
+  'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "Meal her ayetten sonra okunur ve metni sayfanın altında görünür.",
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "«Dinle»ye basın: her ayet ve ardından meali okunur, metni sayfanın altında görünür."
 });
