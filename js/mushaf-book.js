@@ -274,6 +274,8 @@
     if (!drag || ev.pointerId !== drag.id) return;
     const d = drag; drag = null;
     if (!d.on) return tapTurn(ev);
+    // The finger can lift a long way from its last move (a quick flick): the end of the swipe is where it lifted.
+    d.dx = ev.clientX - d.x;
     const { w } = sizes();
     let dir = C.swipeDir(d.dx, w, Math.abs(d.dx) / Math.max(1, performance.now() - d.t));
     if (d.raf) cancelAnimationFrame(d.raf);
