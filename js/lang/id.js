@@ -1742,5 +1742,12 @@ window.noonI18n.use({
   'جارٍ تحميل الترجمة…': "Memuat terjemahan…",
   'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "Terjemahan memerlukan koneksi internet. Coba lagi.",
   'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "Terjemahan dibacakan setelah setiap ayat, dan teksnya tampil di bawah halaman.",
-  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Tekan «Dengarkan»: setiap ayat dibacakan lalu terjemahannya, dan teksnya tampil di bawah halaman."
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Tekan «Dengarkan»: setiap ayat dibacakan lalu terjemahannya, dan teksnya tampil di bawah halaman.",
+  'كتاب واحد': "1 buku",
+  'كتابان': "2 buku",
+  'كتب': "buku",
+  'ابحث عن كتاب بالاسم أو المؤلف': "Cari buku menurut judul atau penulis",
+  'كتب الحديث': "Kitab hadis",
+  'لا كتاب بهذا الاسم هنا.': "Tidak ada buku dengan nama itu di sini.",
+  'أقسام المكتبة': "Bagian perpustakaan"
 });

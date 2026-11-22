@@ -1742,5 +1742,12 @@ window.noonI18n.use({
   'جارٍ تحميل الترجمة…': "Meal yükleniyor…",
   'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "Meal için internet bağlantısı gerekir. Tekrar deneyin.",
   'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "Meal her ayetten sonra okunur ve metni sayfanın altında görünür.",
-  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "«Dinle»ye basın: her ayet ve ardından meali okunur, metni sayfanın altında görünür."
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "«Dinle»ye basın: her ayet ve ardından meali okunur, metni sayfanın altında görünür.",
+  'كتاب واحد': "1 kitap",
+  'كتابان': "2 kitap",
+  'كتب': "kitap",
+  'ابحث عن كتاب بالاسم أو المؤلف': "Adına veya yazarına göre kitap ara",
+  'كتب الحديث': "Hadis kitapları",
+  'لا كتاب بهذا الاسم هنا.': "Burada bu adda bir kitap yok.",
+  'أقسام المكتبة': "Kütüphane bölümleri"
 });

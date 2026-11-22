@@ -158,6 +158,7 @@
     const head = el('div', 'view-head');
     head.append(el('h2', '', T('المكتبة')), el('span', 'view-sub', SHELF.books.length ? `${T('الكتب الستة وموطأ مالك')} · ${I.num(SHELF.books.length)} ${T('كتاباً كاملاً')}` : T('الكتب الستة وموطأ مالك')));
     root.append(head);
+    renderFinder();
     const salah = button('lib-salah', '', () => go({ name: 'salah' }));
     salah.append(el('span', 'lib-salah-kicker', T('من التكبير إلى التسليم')), el('b', '', T('صفة صلاة النبي ﷺ')),
       el('span', '', `${I.num(SALAH.steps.length)} ${T('خطوة، كل خطوة بدليلها من الصحاح — على ترتيب كتاب الشيخ الألباني')}`));
@@ -174,7 +175,9 @@
       card.append(el('span', 'hint', ref), button('link-btn', T('مشاركة ككارت'), () => window.noonCard && window.noonCard.shareImage({ kicker: T('حديث اليوم'), title: ref, body: matn(tidy(h.ar)) })));
       root.append(card);
     }
-    root.append(el('h3', 'lib-h', T('الكتب الستة وموطأ مالك')));
+    const h6 = el('h3', 'lib-h', T('الكتب الستة وموطأ مالك'));
+    h6.id = 'lib-hadith';
+    root.append(h6);
     let grid = el('div', 'lib-grid');
     LIB.books.forEach((b, k) => {
       if (b.src === 'ab' && !LIB.books[k - 1].src) { root.append(grid, el('h3', 'lib-h', T('كتب أخرى'))); grid = el('div', 'lib-grid'); }
@@ -516,8 +519,9 @@
       const list = SHELF.books.filter((b) => b.cat === c);
       if (!list.length) return;
       const box = el('details', 'lib-shelf');
+      box.id = `lib-shelf-${c}`;
       const sum = el('summary');
-      sum.append(el('b', '', catName(c)), el('span', 'hint', `${I.num(list.length)} ${T('كتاباً')}`));
+      sum.append(el('b', '', catName(c)), el('span', 'hint', booksN(list.length)));
       box.append(sum);
       const grid = el('div', 'lib-grid');
       list.forEach((b) => grid.append(bookCard(b)));
@@ -525,6 +529,58 @@
       root.append(box);
     });
     root.append(el('p', 'hint', T('نصوص هذه الكتب من المكتبة الشاملة، لمؤلفين توفّوا قبل أكثر من سبعين سنة، بنصّ المؤلف وحده دون حواشي المحققين ومقدماتهم. يُحمَّل كل جزء عند فتحه أول مرة ثم يبقى للقراءة دون إنترنت.')));
+  }
+  // «n books», the Arabic way: كتابان، ٣–١٠ كتب، ١١ فما فوق كتاباً.
+  const booksN = (n) => (n === 1 ? T('كتاب واحد') : n === 2 ? T('كتابان') : `${I.num(n)} ${T(n % 100 >= 3 && n % 100 <= 10 ? 'كتب' : 'كتاباً')}`);
+  // The top of the library: find a book by its title or author, and the sections, one tap from each.
+  function renderFinder() {
+    const form = el('form', 'lib-find');
+    const q = el('input');
+    q.type = 'search';
+    q.placeholder = T('ابحث عن كتاب بالاسم أو المؤلف');
+    q.setAttribute('aria-label', T('ابحث عن كتاب بالاسم أو المؤلف'));
+    form.append(q);
+    form.addEventListener('submit', (ev) => ev.preventDefault());
+    const found = el('div', 'lib-grid lib-found');
+    found.hidden = true;
+    let t = 0;
+    q.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        const n = norm(q.value.trim()).toLowerCase();
+        found.replaceChildren();
+        found.hidden = n.length < 2;
+        if (found.hidden) return;
+        const has = (...xs) => xs.some((x) => x && norm(x).toLowerCase().includes(n));
+        LIB.books.filter((b) => has(b.ar, b.en, b.authorAr, b.authorEn)).forEach((b) => {
+          const c = button('lib-book', '', () => go({ name: 'book', book: b.id }));
+          c.append(el('b', '', bookName(b)), el('span', '', I.ref(b, 'authorAr', 'authorEn')), el('small', '', T('كتب الحديث')));
+          found.append(c);
+        });
+        SHELF.books.filter((b) => has(b.ar, b.en, b.author, b.authorEn)).slice(0, 40).forEach((b) => found.append(bookCard(b)));
+        if (!found.children.length) found.append(el('p', 'hint', T('لا كتاب بهذا الاسم هنا.')));
+      }, 200);
+    });
+    const nav = el('nav', 'lib-nav');
+    nav.setAttribute('aria-label', T('أقسام المكتبة'));
+    const tile = (name, count, id) => {
+      const b = button('lib-tile', '', () => {
+        const to = document.getElementById(id);
+        if (!to) return;
+        if (to.tagName === 'DETAILS') to.open = true;
+        to.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      b.append(el('b', '', name), el('span', '', count));
+      nav.append(b);
+    };
+    tile(T('الكتب الستة وموطأ مالك'), booksN(LIB.books.length), 'lib-hadith');
+    if (!window.noonShamela) {
+      SHELF.cats.forEach(([c]) => {
+        const k = SHELF.books.filter((b) => b.cat === c).length;
+        if (k) tile(catName(c), booksN(k), `lib-shelf-${c}`);
+      });
+    }
+    root.append(form, found, nav);
   }
   function bookCard(b, withPlace) {
     // In «تابع القراءة» a book opens where it was left; elsewhere on its page (contents, search).

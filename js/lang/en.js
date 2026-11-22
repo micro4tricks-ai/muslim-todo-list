@@ -1603,5 +1603,12 @@ window.noonI18n.use({
   'جارٍ تحميل الترجمة…': "Loading the translation…",
   'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "The translation needs an internet connection. Try again.",
   'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "The translation is recited after each verse, and its words show under the page.",
-  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Press «Listen»: each verse is recited, then its translation, and its words show under the page."
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Press «Listen»: each verse is recited, then its translation, and its words show under the page.",
+  'كتاب واحد': "1 book",
+  'كتابان': "2 books",
+  'كتب': "books",
+  'ابحث عن كتاب بالاسم أو المؤلف': "Find a book by title or author",
+  'كتب الحديث': "Hadith collections",
+  'لا كتاب بهذا الاسم هنا.': "No book by that name here.",
+  'أقسام المكتبة': "Library sections"
 });

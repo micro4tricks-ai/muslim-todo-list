@@ -1742,5 +1742,12 @@ window.noonI18n.use({
   'جارٍ تحميل الترجمة…': "Cargando la traducción…",
   'الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.': "La traducción necesita conexión a internet. Inténtalo de nuevo.",
   'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.': "La traducción se recita tras cada aleya y su texto aparece bajo la página.",
-  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Pulsa «Escuchar»: se recita cada aleya y luego su traducción, y su texto aparece bajo la página."
+  'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.': "Pulsa «Escuchar»: se recita cada aleya y luego su traducción, y su texto aparece bajo la página.",
+  'كتاب واحد': "1 libro",
+  'كتابان': "2 libros",
+  'كتب': "libros",
+  'ابحث عن كتاب بالاسم أو المؤلف': "Busca un libro por título o autor",
+  'كتب الحديث': "Colecciones de hadices",
+  'لا كتاب بهذا الاسم هنا.': "No hay ningún libro con ese nombre aquí.",
+  'أقسام المكتبة': "Secciones de la biblioteca"
 });

@@ -1,0 +1,39 @@
+[
+ {"id": 9200, "shelf": 6, "slug": "sharh-usul-itiqad-al-lalakai", "cat": "aqeedah", "en": "Sharh Usul I'tiqad Ahl as-Sunnah", "authorEn": "Al-Lalaka'i"},
+ {"id": 13011, "slug": "at-tawhid-ibn-khuzaymah", "shelf": 6, "cat": "aqeedah", "en": "Kitab at-Tawhid", "authorEn": "Ibn Khuzaymah"},
+ {"id": 7623, "shelf": 1, "slug": "ar-radd-ala-al-jahmiyyah-ahmad", "cat": "aqeedah", "en": "Ar-Radd ala al-Jahmiyyah wa az-Zanadiqah", "authorEn": "Ahmad ibn Hanbal"},
+ {"id": 18632, "shelf": 2, "slug": "ijtima-al-juyush", "cat": "aqeedah", "en": "Ijtima' al-Juyush al-Islamiyyah", "authorEn": "Ibn al-Qayyim"},
+ {"id": 390, "shelf": 1, "slug": "ar-ruh", "cat": "aqeedah", "en": "Kitab ar-Ruh", "authorEn": "Ibn al-Qayyim"},
+
+ {"id": 23619, "shelf": 3, "slug": "zad-al-masir", "cat": "tafsir", "en": "Zad al-Masir fi Ilm at-Tafsir", "authorEn": "Ibn al-Jawzi"},
+ {"id": 8658, "shelf": 3, "slug": "tafsir-ibn-abi-hatim", "cat": "tafsir", "en": "Tafsir Ibn Abi Hatim", "authorEn": "Ibn Abi Hatim"},
+
+ {"id": 61, "shelf": 6, "slug": "majma-az-zawaid", "cat": "hadith", "en": "Majma' az-Zawa'id", "authorEn": "Nur ad-Din al-Haythami"},
+ {"id": 17616, "shelf": 6, "slug": "mukhtasar-sahih-muslim", "cat": "hadith", "en": "Mukhtasar Sahih Muslim", "authorEn": "Al-Mundhiri"},
+
+ {"id": 10908, "shelf": 17, "slug": "al-uddah-sharh-al-umdah", "cat": "fiqh", "en": "Al-Uddah Sharh al-Umdah", "authorEn": "Baha' ad-Din al-Maqdisi"},
+ {"id": 229, "shelf": 19, "slug": "tuhfat-al-mawdud", "cat": "fiqh", "en": "Tuhfat al-Mawdud bi Ahkam al-Mawlud (rulings on the newborn)", "authorEn": "Ibn al-Qayyim"},
+
+ {"id": 1036, "shelf": 24, "slug": "jawami-as-sirah", "cat": "sira", "en": "Jawami' as-Sirah", "authorEn": "Ibn Hazm"},
+ {"id": 31465, "shelf": 24, "slug": "mukhtasar-sirat-ar-rasul", "cat": "sira", "en": "Mukhtasar Sirat ar-Rasul", "authorEn": "Muhammad ibn Abd al-Wahhab"},
+ {"id": 31457, "shelf": 24, "slug": "mukhtasar-zad-al-maad", "cat": "sira", "en": "Mukhtasar Zad al-Ma'ad", "authorEn": "Muhammad ibn Abd al-Wahhab"},
+
+ {"id": 1144, "shelf": 23, "slug": "lataif-al-maarif", "cat": "raqaiq", "en": "Lata'if al-Ma'arif (the seasons of the year)", "authorEn": "Ibn Rajab al-Hanbali"},
+ {"id": 4033, "shelf": 23, "slug": "at-takhwif-min-an-nar", "cat": "raqaiq", "en": "At-Takhwif min an-Nar", "authorEn": "Ibn Rajab al-Hanbali"},
+ {"id": 417, "shelf": 23, "slug": "rawdat-al-muhibbin", "cat": "raqaiq", "en": "Rawdat al-Muhibbin", "authorEn": "Ibn al-Qayyim"},
+ {"id": 12719, "shelf": 23, "slug": "bustan-al-arifin", "cat": "raqaiq", "en": "Bustan al-Arifin", "authorEn": "An-Nawawi"},
+ {"id": 25791, "shelf": 23, "slug": "ghidha-al-albab", "cat": "raqaiq", "en": "Ghidha' al-Albab (a commentary on the poem of manners)", "authorEn": "As-Saffarini"},
+ {"id": 1562, "shelf": 23, "slug": "adab-at-talab", "cat": "raqaiq", "en": "Adab at-Talab (the manners of seeking knowledge)", "authorEn": "Ash-Shawkani"},
+ {"id": 6850, "shelf": 23, "slug": "mukhtasar-shuab-al-iman", "cat": "raqaiq", "en": "Mukhtasar Shu'ab al-Iman", "authorEn": "Al-Qazwini"},
+ {"id": 558, "shelf": 23, "slug": "bahjat-al-majalis", "cat": "raqaiq", "en": "Bahjat al-Majalis", "authorEn": "Ibn Abd al-Barr"},
+ {"id": 6899, "shelf": 6, "slug": "qasr-al-amal", "cat": "raqaiq", "en": "Qasr al-Amal (short hopes)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 8253, "shelf": 6, "slug": "at-tawbah-ibn-abi-ad-dunya", "cat": "raqaiq", "en": "At-Tawbah (repentance)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 12739, "shelf": 6, "slug": "muhasabat-an-nafs", "cat": "raqaiq", "en": "Muhasabat an-Nafs (taking oneself to account)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 13024, "shelf": 6, "slug": "ar-rida-an-allah", "cat": "raqaiq", "en": "Ar-Rida an Allah bi Qada'ih (contentment)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 13036, "shelf": 6, "slug": "ash-shukr", "cat": "raqaiq", "en": "Ash-Shukr (gratitude)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 13039, "shelf": 6, "slug": "as-samt", "cat": "raqaiq", "en": "As-Samt wa Adab al-Lisan (silence and the tongue)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 13113, "shelf": 6, "slug": "husn-az-zann-billah", "cat": "raqaiq", "en": "Husn az-Zann billah (thinking well of Allah)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 13180, "shelf": 6, "slug": "makarim-al-akhlaq", "cat": "raqaiq", "en": "Makarim al-Akhlaq (noble character)", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 21546, "shelf": 6, "slug": "dhamm-ad-dunya", "cat": "raqaiq", "en": "Dhamm ad-Dunya", "authorEn": "Ibn Abi ad-Dunya"},
+ {"id": 13187, "shelf": 6, "slug": "islah-al-mal", "cat": "raqaiq", "en": "Islah al-Mal (managing wealth)", "authorEn": "Ibn Abi ad-Dunya"}
+]
