@@ -11,6 +11,8 @@
 // the tajweed colours with their key, the page colour, the text size, and «go to»; and the meaning
 // after each verse, recited in a chosen language, its words on a line under the page.
 // A tap on a verse (in the middle of the page) opens its sheet: tafsir, translation, play from here.
+// On a wide screen the room beside the two pages holds each page's tafsir, with a translation under
+// each verse if one is chosen; a tap on a verse then finds it there.
 (() => {
   'use strict';
   const { T, I, el, button, toast, skeleton } = window.noonUI;
@@ -104,11 +106,32 @@
   }
 
   // ---- the book: sizes, slots and turning ----
+  // What goes beside the pages (kept on this device): the tafsir, and a translation under each verse.
+  const SKEY = 'noon-mb-side';
+  const SP = (() => { try { return Object.assign({ taf: true, tr: '' }, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { return { taf: true, tr: '' }; } })();
+  const saveSP = () => { try { localStorage.setItem(SKEY, JSON.stringify(SP)); } catch (_) {} };
+  // The translation beside the verses: the one chosen there, else the text of the one being recited.
+  const sideEd = () => {
+    if (SP.tr) return SP.tr;
+    const a = Q().transAudios.find((x) => x[0] === Q().transAudio());
+    return a && a[3] ? a[3] : '';
+  };
+  const RTL = /^(ur|fa|ug|ku|sd|ps|dv)/;
+  let side = 0; // the width of the panel beside each page while there is room for it, else 0
   function sizes() {
     const r = B.stage.getBoundingClientRect();
     two = r.width >= 860 && r.width > r.height * 1.15;
     const ratio = 0.66; // a Mushaf page, width / height
     let h = r.height - 8, w = two ? Math.min(h * ratio, (r.width - 24) / 2) : Math.min(r.width - 8, h * 0.9);
+    side = 0;
+    const roomy = two && r.width >= 1000;
+    B.box.classList.toggle('mb-roomy', roomy);
+    if (roomy && (SP.taf || sideEd())) {
+      // The pages keep their size if they can; the panels take the room left beside them.
+      const P = Math.min(480, Math.max(280, (r.width - 2 * h * ratio - 56) / 2));
+      const w2 = Math.min(h * ratio, (r.width - 2 * P - 56) / 2);
+      if (w2 >= 330) { side = P; w = w2; }
+    }
     if (two) h = Math.min(h, w / ratio);
     return { w, h };
   }
@@ -135,6 +158,7 @@
     B.title.textContent = I.surah(q.surahOf(first)) || (I.latin ? M.surahs[q.surahOf(first)][1] : M.surahs[q.surahOf(first)][0].replace(/^سُورَةُ\s*/, ''));
     B.meta.textContent = `${T('الجزء')} ${I.num(q.juzOf(first))} · ${T('صفحة')} ${I.num(pages[0])}${pages[1] && pages[1] !== pages[0] ? `–${I.num(pages[1])}` : ''}`;
     paint();
+    placeSides(w, h);
     B.prev.disabled = page <= 1;
     B.next.disabled = two ? C.spread(page, PAGES)[1] >= PAGES : page >= PAGES;
     q.setPage(page);
@@ -241,10 +265,91 @@
     setTimeout(done, 620);
   }
 
+  // ---- beside the pages: each page's tafsir, and the translation under each verse ----
+  let sideGen = 0, sideFor = '', noteAt = -1;
+  function placeSides(w, h) {
+    if (!side) { B.sideL.hidden = B.sideR.hidden = true; sideFor = ''; return; }
+    const r = B.stage.getBoundingClientRect();
+    const cx = r.width / 2, top = Math.max(4, (r.height - h) / 2);
+    const at = (box, left) => { box.hidden = false; Object.assign(box.style, { left: `${left}px`, top: `${top}px`, width: `${side}px`, height: `${h}px` }); };
+    const [rp, lp] = C.spread(page, PAGES);
+    at(B.sideR, cx + w + 16);
+    at(B.sideL, cx - w - 16 - side);
+    const key = `${rp}|${lp}|${SP.taf ? Q().tafsir() : ''}|${sideEd()}`;
+    if (key === sideFor) return;
+    sideFor = key;
+    const gen = ++sideGen;
+    fillSide(B.sideR, rp, gen);
+    if (lp !== rp) fillSide(B.sideL, lp, gen); else B.sideL.hidden = true;
+  }
+  async function fillSide(box, p, gen) {
+    const q = Q(), ed = sideEd();
+    const [a, b] = C.pageRange(M.pages, TOTAL, p);
+    const head = el('header', 'mb-side-head');
+    const taf = q.tafsirs.find((t) => t[0] === q.tafsir());
+    head.append(el('b', '', `${T('صفحة')} ${I.num(p)}`), el('span', '', SP.taf && taf ? (I.latin ? taf[2] : taf[1]) : ''));
+    const list = el('div', 'mb-side-list');
+    box.replaceChildren(head, list);
+    const notes = [];
+    for (let i = a; i < b; i++) {
+      const s = q.surahOf(i);
+      if (i === q.starts[s]) { const h = el('h4', 'mb-side-sura', M.surahs[s][0]); h.lang = 'ar'; list.append(h); }
+      const n = el('article', 'mb-note');
+      n.dataset.i = String(i);
+      n.append(button('mb-note-n', `﴿${q.ar(q.ayahOf(i))}﴾`, () => q.play(i), T('تشغيل من هنا')));
+      list.append(n);
+      notes.push([i, n, Promise.all([
+        // One more try each, for a request lost on the way.
+        ed ? q.line(i, ed).catch(() => q.line(i, ed)).catch(() => null) : null,
+        SP.taf ? q.tafsirOf(i).catch(() => q.tafsirOf(i)).catch(() => null) : null
+      ])]);
+    }
+    paintSide();
+    let lastK = -1;
+    for (const [i, n, job] of notes) {
+      const [line, tf] = await job;
+      if (gen !== sideGen) return;
+      if (ed) {
+        const t = el('p', 'mb-note-tr', line || T('الترجمة تحتاج اتصالاً بالإنترنت. حاول مرة أخرى.'));
+        t.lang = ed.split('.')[0]; t.dir = RTL.test(ed) ? 'rtl' : 'ltr';
+        n.append(t);
+      }
+      if (!SP.taf) continue;
+      if (!tf) { n.append(el('p', 'hint', T('التفسير يحتاج اتصالاً بالإنترنت. حاول مرة أخرى.'))); continue; }
+      if (tf.k !== i) n.append(el('p', 'hint', `${T('تفسير هذه الآية مع ما قبلها، من الآية')} ${I.num(q.ayahOf(tf.k))}`));
+      if (tf.k !== lastK) {
+        const tx = el('div', 'mb-note-tf');
+        tx.lang = q.tafLang(); tx.dir = ['ar', 'ur'].includes(tx.lang) ? 'rtl' : 'ltr';
+        tf.text.split(/\n+/).filter((t) => t.trim()).forEach((t) => tx.append(el('p', '', t.trim())));
+        n.append(tx);
+      }
+      lastK = tf.k;
+    }
+  }
+  function paintSide() {
+    if (!side) return;
+    B.stage.querySelectorAll('.mb-note').forEach((n) => {
+      const i = Number(n.dataset.i);
+      n.classList.toggle('is-play', i === reciting);
+      n.classList.toggle('is-sel', i === noteAt);
+    });
+  }
+  // Bring a verse's note into sight, in its own panel only.
+  function scrollNote(i) {
+    const n = B.stage.querySelector(`.mb-note[data-i="${i}"]`);
+    const list = n && n.closest('.mb-side-list');
+    if (list) list.scrollTo({ top: Math.max(0, n.offsetTop - 6), behavior: 'smooth' });
+  }
+  function focusNote(i) {
+    noteAt = i;
+    paint();
+    scrollNote(i);
+  }
+
   // ---- dragging a page ----
   let drag = null;
   function onDown(ev) {
-    if (busy || ev.button > 0 || ev.target.closest('button, a, input, select')) return;
+    if (busy || ev.button > 0 || ev.target.closest('button, a, input, select, .mb-side')) return;
     drag = { x: ev.clientX, y: ev.clientY, t: performance.now(), dx: 0, on: false, id: ev.pointerId };
   }
   function onMove(ev) {
@@ -311,13 +416,15 @@
   // A tap on the left quarter turns forward, on the right quarter back (wide enough to stay clear of
   // the phone's own back gesture at the very edge); the middle does nothing.
   function tapTurn(ev) {
-    const r = B.stage.getBoundingClientRect();
+    if (ev.target.closest && ev.target.closest('.mb-side')) return;
+    // Two pages: the outer edge of each page; one page: a quarter of the screen.
+    const r = (two ? B.book : B.stage).getBoundingClientRect(), edge = two ? 0.1 : 0.25;
     const x = (ev.clientX - r.left) / r.width;
-    if (x < 0.25) turn(1);
-    else if (x > 0.75) turn(-1);
+    if (x < edge) turn(1);
+    else if (x > 1 - edge) turn(-1);
     else {
       const v = ev.target.closest && ev.target.closest('.ay');
-      if (v) openVerse(Number(v.dataset.i));
+      if (v) (side ? focusNote : openVerse)(Number(v.dataset.i));
     }
   }
 
@@ -337,7 +444,7 @@
     box.id = 'mushafBook';
     box.setAttribute('role', 'dialog');
     box.setAttribute('aria-modal', 'true');
-    box.setAttribute('aria-label', T('المصحف'));
+    box.setAttribute('aria-label', T('المصحف المعلّم'));
     box.dir = I.dir;
     box.hidden = true;
     const icon = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -361,10 +468,39 @@
       return b;
     };
     const listen = tool('mb-listen', '', 'استمع', () => listenClick());
-    const muallim = tool('mb-muallim', icon('M4 19V6a2 2 0 0 1 2-2h12v13H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h12M9 8h6M9 11h4'), 'المصحف المعلّم', () => muallimClick(),
+    // The reciter, next to «listen».
+    const pick = (cls, svg, label) => {
+      const w = el('label', `mb-tool mb-tsel ${cls}`);
+      w.innerHTML = svg;
+      const sel = el('select');
+      sel.setAttribute('aria-label', T(label));
+      sel.title = T(label);
+      w.append(sel);
+      tools.append(w);
+      return sel;
+    };
+    const rSel = pick('mb-rsel', icon('M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3'), 'القارئ');
+    Q().reciters.forEach((r) => rSel.append(new Option(I.latin ? r[3] : r[2], r[0])));
+    rSel.addEventListener('change', () => {
+      const q = Q();
+      q.setReciter(rSel.value);
+      const at = q.playing();
+      if (at >= 0) q.play(at); // the same verse again, in the new voice
+      syncTools();
+    });
+    const muallim = tool('mb-muallim', icon('M4 19V6a2 2 0 0 1 2-2h12v13H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h12M9 8h6M9 11h4'), 'التلقين', () => muallimClick(),
       T('الحصري المعلّم: تُكرَّر الآية ٣ مرات مع مهلة لترديدها'));
     const tajweed = tool('mb-tajweed', icon('M12 3a9 9 0 1 0 0 18c1 0 1.6-.7 1.6-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01'), 'التجويد', () => tajweedClick(),
       T('أحكام التجويد ملوّنة في النص'));
+    // Beside the pages, on a wide screen: the tafsir of each page, and a translation under each verse.
+    const sTaf = pick('mb-wide', icon('M4 5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6z'), 'التفسير بجانب الصفحات');
+    sTaf.append(new Option(T('بلا تفسير'), ''));
+    Q().tafsirs.forEach((t) => sTaf.append(new Option(I.latin ? t[2] : t[1], t[0])));
+    sTaf.addEventListener('change', () => { SP.taf = !!sTaf.value; if (sTaf.value) Q().setTafsir(sTaf.value); saveSP(); syncTools(); made.clear(); show(page); });
+    const sTr = pick('mb-wide', icon('M4 6h16M4 10h16M4 14h10M4 18h7'), 'الترجمة تحت كل آية');
+    sTr.append(new Option(T('بلا ترجمة'), ''));
+    Q().trans.forEach(([k, name]) => sTr.append(new Option(name, k)));
+    sTr.addEventListener('change', () => { SP.tr = sTr.value; saveSP(); syncTools(); made.clear(); show(page); caption(reciting); });
     // The meaning after each verse: off, or one of the recited translations.
     const tWrap = el('label', 'mb-tool mb-tsel');
     tWrap.innerHTML = icon('M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18');
@@ -377,6 +513,7 @@
     tSel.addEventListener('change', () => {
       Q().setTransAudio(tSel.value);
       syncTools();
+      if (side || (!SP.taf && !SP.tr)) { made.clear(); show(page); } // its text goes beside the verses
       caption(reciting);
       if (tSel.value) toast(T(Q().playing() >= 0 ? 'تُتلى الترجمة بعد كل آية، ويظهر نصّها تحت الصفحة.' : 'اضغط «استمع»: تُتلى كل آية ثم ترجمتها، ويظهر نصّها تحت الصفحة.'));
     });
@@ -417,7 +554,9 @@
 
     const stage = el('div', 'mb-stage');
     const book = el('div', 'mb-book');
-    stage.append(book);
+    const sideL = el('aside', 'mb-side'), sideR = el('aside', 'mb-side');
+    [sideL, sideR].forEach((x) => { x.hidden = true; x.setAttribute('aria-label', T('التفسير')); });
+    stage.append(sideL, book, sideR);
     const measure = el('div', 'mb-measure');
     measure.setAttribute('aria-hidden', 'true');
     const bar = el('div', 'mb-bar');
@@ -456,7 +595,7 @@
     });
     let rz = 0;
     addEventListener('resize', () => { if (B.box.hidden) return; clearTimeout(rz); rz = setTimeout(() => { made.clear(); show(page); }, 150); });
-    B = { box, stage, book, measure, title, meta, go, prev, next, listen, muallim, tajweed, themeBtn, legend, goBtn, tSel, cap, sheet };
+    B = { box, stage, book, measure, title, meta, go, prev, next, listen, muallim, tajweed, themeBtn, legend, goBtn, tSel, cap, sheet, sideL, sideR, rSel, sTaf, sTr };
   }
 
   // ---- the toolbar ----
@@ -474,6 +613,12 @@
     B.tajweed.setAttribute('aria-pressed', String(q.tajweed()));
     B.legend.hidden = !q.tajweed();
     B.tSel.value = q.transAudio();
+    B.rSel.value = q.reciter();
+    B.rSel.parentNode.setAttribute('aria-pressed', String(!q.muallim()));
+    B.sTaf.value = SP.taf ? q.tafsir() : '';
+    B.sTaf.parentNode.setAttribute('aria-pressed', String(SP.taf));
+    B.sTr.value = SP.tr;
+    B.sTr.parentNode.setAttribute('aria-pressed', String(!!SP.tr));
     B.tSel.parentNode.setAttribute('aria-pressed', String(!!q.transAudio()));
     const t = THEMES.find((x) => x[0] === q.theme()) || THEMES[0];
     B.themeBtn.querySelector('span').textContent = T(t[1]);
@@ -517,7 +662,7 @@
   async function caption(i) {
     const q = Q(), k = q.transAudio();
     const a = q.transAudios.find((x) => x[0] === k);
-    if (!a || i < 0) { B.cap.hidden = true; capFor = -2; return; }
+    if (!a || i < 0 || side) { B.cap.hidden = true; capFor = -2; return; } // beside the pages, it is under its verse
     if (capFor === `${k}:${i}`) return;
     capFor = `${k}:${i}`;
     B.cap.hidden = false;
@@ -611,7 +756,9 @@
     B.book.querySelectorAll('.ay.is-play').forEach((n) => n.classList.remove('is-play'));
     if (reciting >= 0) B.book.querySelectorAll(`.ay[data-i="${reciting}"]`).forEach((n) => n.classList.add('is-play'));
     B.book.querySelectorAll('.ay.is-sel').forEach((n) => n.classList.remove('is-sel'));
-    if (sheetAt >= 0) B.book.querySelectorAll(`.ay[data-i="${sheetAt}"]`).forEach((n) => n.classList.add('is-sel'));
+    const sel = sheetAt >= 0 ? sheetAt : noteAt;
+    if (sel >= 0) B.book.querySelectorAll(`.ay[data-i="${sel}"]`).forEach((n) => n.classList.add('is-sel'));
+    paintSide();
   }
   // The recitation moved on: light its verse, and turn to its page when it is not open.
   window.addEventListener('noon-ayah', (ev) => {
@@ -629,6 +776,7 @@
       }
     }
     paint();
+    if (on && side) scrollNote(i);
   });
   function setZoom(d) {
     zoom = Math.max(1, Math.min(2.5, Math.round((zoom + d) * 4) / 4));
@@ -660,7 +808,7 @@
     B.box.hidden = true;
     if (Q().playing() >= 0) Q().pause(); // the recitation follows the pages, so it stops with them
     reciting = -1;
-    B.sheet.hidden = true; sheetAt = -1;
+    B.sheet.hidden = true; sheetAt = -1; noteAt = -1;
     B.cap.hidden = true; capFor = -2;
     if (!keepBody) document.body.classList.remove('qr-open');
     if (lock) { lock.release().catch(() => {}); lock = null; }

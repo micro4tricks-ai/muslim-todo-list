@@ -1753,5 +1753,11 @@ window.noonI18n.use({
   'عرض المزيد': "Daha fazla göster",
   'نتائج': "sonuç",
   'بالنص كما كتبته': "Yazdığınız gibi",
-  'فيها كل الكلمات بصيغها': "Tüm kelimeler, her biçimiyle"
+  'فيها كل الكلمات بصيغها': "Tüm kelimeler, her biçimiyle",
+  'التلقين': "Telkin (tekrar et)",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وبجانبها التفسير والترجمة، وفيه التجويد الملوّن والتلقين والاستماع لكبار القرّاء': "Elle çevrilen Medine Mushafı'nın 604 sayfası; yanında tefsir ve meal, renkli tecvid, telkin ve büyük kâriler",
+  'التفسير بجانب الصفحات': "Sayfaların yanında tefsir",
+  'بلا تفسير': "Tefsirsiz",
+  'بلا ترجمة': "Mealsiz",
+  'الترجمة تحت كل آية': "Her ayetin altında meal"
 });

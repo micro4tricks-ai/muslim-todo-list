@@ -1753,5 +1753,11 @@ window.noonI18n.use({
   'عرض المزيد': "Tampilkan lebih banyak",
   'نتائج': "hasil",
   'بالنص كما كتبته': "Persis seperti yang Anda tulis",
-  'فيها كل الكلمات بصيغها': "Memuat semua kata, dalam bentuk apa pun"
+  'فيها كل الكلمات بصيغها': "Memuat semua kata, dalam bentuk apa pun",
+  'التلقين': "Talqin (ulangi)",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وبجانبها التفسير والترجمة، وفيه التجويد الملوّن والتلقين والاستماع لكبار القرّاء': "604 halaman Mushaf Madinah yang Anda balik dengan tangan, dengan tafsir dan terjemahan di sampingnya, warna tajwid, talqin, dan para qari ternama",
+  'التفسير بجانب الصفحات': "Tafsir di samping halaman",
+  'بلا تفسير': "Tanpa tafsir",
+  'بلا ترجمة': "Tanpa terjemahan",
+  'الترجمة تحت كل آية': "Terjemahan di bawah setiap ayat"
 });

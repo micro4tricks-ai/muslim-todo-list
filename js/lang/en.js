@@ -1614,5 +1614,11 @@ window.noonI18n.use({
   'عرض المزيد': "Show more",
   'نتائج': "results",
   'بالنص كما كتبته': "As you wrote it",
-  'فيها كل الكلمات بصيغها': "With all the words, in any form"
+  'فيها كل الكلمات بصيغها': "With all the words, in any form",
+  'التلقين': "Repeat after",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وبجانبها التفسير والترجمة، وفيه التجويد الملوّن والتلقين والاستماع لكبار القرّاء': "The 604 pages of the Madinah Mushaf, turned by hand, with tafsir and translation beside them, tajweed colours, repeat-after and the great reciters",
+  'التفسير بجانب الصفحات': "Tafsir beside the pages",
+  'بلا تفسير': "No tafsir",
+  'بلا ترجمة': "No translation",
+  'الترجمة تحت كل آية': "Translation under each verse"
 });

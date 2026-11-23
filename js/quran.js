@@ -318,7 +318,7 @@
     // The Mushaf itself comes first, on its own row: the tajweed colours, the teaching recitation and
     // listening are in its toolbar (js/mushaf-book.js).
     if (window.noonMushafBook) {
-      mode(false, 'المصحف', '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وفيه التجويد الملوّن والمصحف المعلّم والاستماع', () => window.noonMushafBook.open());
+      mode(false, 'المصحف المعلّم', '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وبجانبها التفسير والترجمة، وفيه التجويد الملوّن والتلقين والاستماع لكبار القرّاء', () => window.noonMushafBook.open());
       modes.lastChild.classList.add('is-main');
     }
     if (window.noonFlipbook) mode(false, 'مصاحف مترجمة ومصوّرة', 'ترجمات المعاني بلغات كثيرة، وطبعات المصحف والتفاسير من مجمع الملك فهد', flipMushafs);
@@ -1177,7 +1177,12 @@
     tajweed: () => !!S.tajweed, legend: TAJWEED,
     setTajweed: async (on) => { if (on) await data('tajweed'); S.tajweed = on; save(); },
     muallim: () => S.reciter === 'muallim',
-    setMuallim: (on) => { Object.assign(S, on ? { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 } : { reciter: 'ar.alafasy', repeat: 1, gap: 0 }); save(); },
+    // Off again: back to the reciter chosen before it.
+    setMuallim: (on) => { Object.assign(S, on ? { reciter: 'muallim', repeat: 3, gap: 1, rate: 1 } : { reciter: S.voice || 'ar.alafasy', repeat: 1, gap: 0 }); save(); },
+    // The reciters to choose from (the teaching recitation is its own switch).
+    reciters: RECITERS.filter((r) => r[0] !== 'muallim'),
+    reciter: () => (S.reciter === 'muallim' ? S.voice || 'ar.alafasy' : S.reciter),
+    setReciter: (k) => { if (S.reciter === 'muallim') Object.assign(S, { repeat: 1, gap: 0 }); Object.assign(S, { reciter: k, voice: k }); save(); },
     // The verse sheet: tafsir and translation of one verse.
     ref: (i) => refText(i), text: (i) => txt.uthmani[i], tafsirs: TAFSIRS, trans: TRANS,
     tafsir: () => (TAFSIRS.find((x) => x[0] === S.tafsir) || TAFSIRS[0])[0], setTafsir: (k) => { S.tafsir = k; save(); },

@@ -1753,5 +1753,11 @@ window.noonI18n.use({
   'عرض المزيد': "Mostrar más",
   'نتائج': "resultados",
   'بالنص كما كتبته': "Tal como lo escribiste",
-  'فيها كل الكلمات بصيغها': "Con todas las palabras, en cualquier forma"
+  'فيها كل الكلمات بصيغها': "Con todas las palabras, en cualquier forma",
+  'التلقين': "Repetir tras el recitador",
+  '٦٠٤ صفحات كمصحف المدينة تقلّبها بيدك، وبجانبها التفسير والترجمة، وفيه التجويد الملوّن والتلقين والاستماع لكبار القرّاء': "Las 604 páginas del Mushaf de Medina, que pasas con la mano, con tafsir y traducción al lado, colores de tajwid, repetición y grandes recitadores",
+  'التفسير بجانب الصفحات': "Tafsir junto a las páginas",
+  'بلا تفسير': "Sin tafsir",
+  'بلا ترجمة': "Sin traducción",
+  'الترجمة تحت كل آية': "Traducción bajo cada aleya"
 });
