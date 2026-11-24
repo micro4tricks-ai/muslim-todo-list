@@ -1,5 +1,7 @@
 package io.github.micro4tricks.muslimtodo;
 
+import android.app.UiModeManager;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
@@ -62,6 +64,12 @@ public class MainActivity extends BridgeActivity {
                 recreate();
                 return true;
             }
+
+            // On a television, tell the page, so the remote's arrows move between its buttons (js/tv.js).
+            @Override
+            public void onPageLoaded(WebView view) {
+                if (onTv()) view.evaluateJavascript("window.noonTvMode && window.noonTvMode(true)", null);
+            }
         });
         // Capacitor sends every link outside the app to the browser, frames included. The live
         // broadcast (YouTube inside the website's tv.html) is a frame, so frames load in place;
@@ -80,6 +88,7 @@ public class MainActivity extends BridgeActivity {
                 });
             }
         });
+        if (onTv()) bridge.getWebView().setFocusable(true);
         bridge.setWebViewClient(new BridgeWebViewClient(bridge) {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -87,5 +96,10 @@ public class MainActivity extends BridgeActivity {
                 return super.shouldOverrideUrlLoading(view, request);
             }
         });
+    }
+
+    private boolean onTv() {
+        UiModeManager ui = (UiModeManager) getSystemService(UI_MODE_SERVICE);
+        return ui != null && ui.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION;
     }
 }

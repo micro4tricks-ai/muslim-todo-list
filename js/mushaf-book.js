@@ -588,6 +588,8 @@
     });
     box.addEventListener('keydown', (ev) => {
       if (ev.target.closest('input, select, .mb-sheet') && ev.key !== 'Escape') return;
+      // On a television the arrows move along the toolbar and the panels (js/tv.js); on the pages they turn them.
+      if (document.documentElement.classList.contains('is-tv') && ev.target.closest('.mb-tools, .mb-go, .mb-bar, .mb-side') && ev.key !== 'Escape') return;
       if (ev.key === 'ArrowLeft' || ev.key === 'PageDown') { ev.preventDefault(); turn(1); }
       else if (ev.key === 'ArrowRight' || ev.key === 'PageUp') { ev.preventDefault(); turn(-1); }
       else if (ev.key === 'Escape' && !sheet.hidden) closeVerse();
